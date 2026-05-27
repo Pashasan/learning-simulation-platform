@@ -1,5 +1,7 @@
 # Educational Game Platform
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 Interactive browser-based games for learning data analysis, statistics, and marketing analytics. Vanilla HTML/CSS/JS with Supabase for auth and persistence. No build step.
 
 ## ▶ Try it live
@@ -181,3 +183,11 @@ Then visit:
 - `http://localhost:8000/choice-games/analytics/` for the analytics quiz game
 - `http://localhost:8000/simulation-games/resource-allocation/brew-and-budget/` for Brew & Budget
 - `http://localhost:8000/simulation-games/product-design/robo-vault/` for RoboVault
+
+## Contributing
+
+Contributions are welcome — new quiz volumes, code labs, simulation variants, bug fixes, docs improvements, accessibility work, and translations. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, PR conventions, and where to start. Beginner-friendly issues are tagged `good first issue` and `help wanted`.
+
+## License
+
+[MIT](LICENSE) — free to use, modify, and distribute with attribution.
