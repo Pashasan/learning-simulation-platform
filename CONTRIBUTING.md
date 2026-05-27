@@ -3,9 +3,11 @@
 Thanks for your interest in contributing! This project is two things at once:
 
 1. **A framework** for turning reference material (course notes, papers, slides, datasets) into interactive quizzes, code labs, and simulations.
-2. **A working library** of educational games built using that framework, covering data analysis, statistics, and marketing analytics.
+2. **A working library** of interactive learning apps built using that framework, covering data analysis, statistics, and marketing analytics.
 
 Both are open to contributions. The most valuable kind is **adding your own content built from your own reference material** — see "Add your own game" below.
+
+> **New to contributing?** Start with [docs/FIRST_CONTRIBUTION.md](docs/FIRST_CONTRIBUTION.md) — a walkthrough of two small, real PRs (a 5-minute typo fix and a 30-minute quiz-question improvement) that teaches the workflow before you tackle anything bigger.
 
 ## Quick start
 

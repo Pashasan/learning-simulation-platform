@@ -1,0 +1,54 @@
+name: Propose new content (quiz, lab, simulation)
+description: Propose a new quiz volume, code lab, simulation variant, or new game type built from reference material.
+title: "[Content] "
+labels: ["new-content"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to **propose** new content before building it, so we can sketch the scope together. If you've already built it and are opening a PR, you can skip this and open the PR directly — but a proposal first usually leads to a smoother review.
+
+        See **[docs/GAME_DESIGN_GUIDE.md](https://github.com/Pashasan/learning-simulation-platform/blob/main/docs/GAME_DESIGN_GUIDE.md)** for the 7-phase conversion methodology, and **[references/README.md](https://github.com/Pashasan/learning-simulation-platform/blob/main/references/README.md)** for how to bundle your source material.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of artifact?
+      options:
+        - Quiz volume (concept walkthrough with multiple-choice + visualizations)
+        - Code lab (X-Ray / Assemble / Rewire style)
+        - Simulation variant (reuses existing mechanics, new theme/data)
+        - Survey module
+        - New game type (different mechanics entirely)
+    validations:
+      required: true
+  - type: input
+    id: topic
+    attributes:
+      label: Topic / learning goal
+      description: One sentence — what should a player understand after playing it?
+      placeholder: "After playing, students will understand how multicollinearity inflates variance in OLS regression."
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source material
+      description: Lecture notes, paper, textbook chapter, dataset, etc. Link to it or paste a citation. If you can't redistribute it, link only — the `references/` folder will hold whatever can be shared, and `mapping.md` will reference the rest.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope sketch
+      description: |
+        Roughly: how many screens / questions / minutes? Which concepts does it cover and in what order?
+        Don't worry about polishing — this is just to align on size before you build it.
+    validations:
+      required: true
+  - type: textarea
+    id: open-questions
+    attributes:
+      label: Open questions
+      description: Anything you'd like input on before starting? (visualization choices, scoring, narrative framing, etc.)
+    validations:
+      required: false

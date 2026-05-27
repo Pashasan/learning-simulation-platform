@@ -1,0 +1,75 @@
+name: Bug report
+description: Something is broken or behaving incorrectly in a game, lab, or simulation.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. The more specific you are, the faster it gets fixed.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Which game / area?
+      options:
+        - Platform hub
+        - Analytics quiz
+        - Quantitative Marketing Methods quiz
+        - Brew & Budget (simulation)
+        - RoboVault (simulation)
+        - Code labs
+        - Survey (course feedback)
+        - Auth / Supabase wiring
+        - Docs / setup
+        - Other (describe below)
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: URL or path
+      description: The exact page where you saw the bug (a GitHub Pages URL, or a path like `code-labs/regression-basics/`).
+      placeholder: "https://pashasan.github.io/learning-simulation-platform/..."
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a clean state.
+      placeholder: |
+        1. Open the analytics quiz at Vol 2
+        2. Answer the first question correctly
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+      description: Include a screenshot or browser console error if you have one.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser + OS
+      placeholder: "e.g. Chrome 134 on macOS 14.5, Firefox 128 on Windows 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Demo mode or full (Supabase) mode?
+      options:
+        - Demo mode (GitHub Pages or no Supabase config)
+        - Full mode (own Supabase project)
+        - Not sure
+    validations:
+      required: true

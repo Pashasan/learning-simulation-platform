@@ -1,4 +1,6 @@
-# Educational Game Platform
+# Generative Education Platform
+
+### Education Materials → Interactive Apps
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -42,7 +44,7 @@ The site runs in **demo mode** (no login, no setup) on GitHub Pages. Pick a game
 
 ## How it works
 
-The platform is two things at once: **a working library** of educational games you can run and learn from, and **a framework** for building your own from raw material.
+The platform is two things at once: **a working library** of interactive learning apps you can run and learn from, and **a framework** for building your own from raw material.
 
 The conversion workflow:
 
@@ -204,7 +206,14 @@ Then visit:
 
 ## Contributing
 
-Contributions are welcome — new quiz volumes, code labs, simulation variants, bug fixes, docs improvements, accessibility work, and translations. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, PR conventions, and where to start. Beginner-friendly issues are tagged `good first issue` and `help wanted`.
+Contributions are welcome — new quiz volumes, code labs, simulation variants, bug fixes, docs improvements, accessibility work, and translations.
+
+- **New to open source?** Start with [docs/FIRST_CONTRIBUTION.md](docs/FIRST_CONTRIBUTION.md) — a walkthrough of two small real PRs.
+- **Ready to dive in?** Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, PR conventions, and where to start.
+- **Looking for somewhere to start?** Browse issues tagged [`good first issue`](https://github.com/Pashasan/learning-simulation-platform/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) or [`help wanted`](https://github.com/Pashasan/learning-simulation-platform/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+- **Reporting a security issue?** See [SECURITY.md](SECURITY.md) — please don't file public issues for vulnerabilities.
+
+All participants are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an improvement to the framework, the platform, or an existing game.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Not sure if your idea fits? Open a [Discussion](https://github.com/Pashasan/learning-simulation-platform/discussions) instead — it's a lower-commitment place to think out loud.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the project?
+      options:
+        - Framework (templates, scaffolding, conversion tooling)
+        - A specific game (please specify in the description)
+        - Docs / methodology
+        - Auth / Supabase wiring
+        - Performance / accessibility / polish
+        - Other (describe below)
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Lead with the user need, not the implementation. ("Contributors get confused when..." rather than "We should add...")
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Rough sketch — exact details can be worked out in the PR.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you ruled out and why.
+    validations:
+      required: false

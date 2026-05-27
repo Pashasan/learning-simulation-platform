@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/Pashasan/learning-simulation-platform/discussions
+    about: For open-ended questions, ideas, or anything that isn't a clear bug or feature request, please start a Discussion instead.
+  - name: Security vulnerability
+    url: https://github.com/Pashasan/learning-simulation-platform/security/advisories/new
+    about: Report a security issue privately through GitHub's private vulnerability reporting. Do not file a public issue.
