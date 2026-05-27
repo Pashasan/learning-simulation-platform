@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Interactive browser-based games for learning data analysis, statistics, and marketing analytics. Vanilla HTML/CSS/JS with Supabase for auth and persistence. No build step.
+**A framework for turning reference material — course notes, papers, slides, datasets — into interactive quizzes, code labs, and simulations.** Drop your sources into `references/`, pick a template, generate a learnable artifact. Comes with a working library covering data analysis, statistics, and marketing analytics that you can use as-is or remix. Vanilla HTML/CSS/JS, optional Supabase for auth and persistence, no build step.
 
 ## ▶ Try it live
 
@@ -39,6 +39,24 @@ The site runs in **demo mode** (no login, no setup) on GitHub Pages. Pick a game
 | **[Brew & Budget](https://pashasan.github.io/learning-simulation-platform/simulation-games/resource-allocation/brew-and-budget/)** — marketing budget allocation sim | **[RoboVault](https://pashasan.github.io/learning-simulation-platform/simulation-games/product-design/robo-vault/)** — product design with consumer research |
 | ![Code lab](docs/images/code-lab.png) | ![Survey lounge](docs/images/survey-lounge.png) |
 | **[Code labs](https://pashasan.github.io/learning-simulation-platform/code-labs/python-basics/)** — X-Ray / Assemble / Rewire exercises | **[Surveys](https://pashasan.github.io/learning-simulation-platform/survey-games/course-feedback/)** — course feedback collection |
+
+## How it works
+
+The platform is two things at once: **a working library** of educational games you can run and learn from, and **a framework** for building your own from raw material.
+
+The conversion workflow:
+
+1. **Drop reference material into [`references/`](references/)** — slides, lecture notes, papers, datasets, notebooks, anything you want to convert into interactive content. The folder is the canonical source-of-truth location for the content you'll build games from.
+2. **Pick a template** that matches the kind of artifact you want:
+   - **Quiz volume** (concept walkthrough with multiple-choice + visualizations) → `choice-games/<topic>/templates/`
+   - **Code lab** (X-Ray / Assemble / Rewire style coding exercise) → existing labs under `code-labs/` as references
+   - **Simulation variant** (resource-allocation or product-design style sim) → `simulation-games/<type>/`
+   - **Survey** → `survey-games/course-feedback/` as a reference
+   - **New game type entirely** → [docs/ADDING_GAME_TYPES.md](docs/ADDING_GAME_TYPES.md)
+3. **Generate the interactive content** from your reference using the methodology in [docs/GAME_DESIGN_GUIDE.md](docs/GAME_DESIGN_GUIDE.md) — a 7-phase pipeline (analyze → extract concepts → narrative → screens → questions → interactions → polish) with case studies showing how real course sessions became finished games.
+4. **Serve and play** — `python -m http.server 8000`, no build step, refresh-to-iterate.
+
+Keep your additions private (just a local folder), or open a PR to add them to the shared library so others can learn from your material too — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Run locally
 
