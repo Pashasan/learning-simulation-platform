@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Settings | Quantitative Marketing Methods</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a14 0%, #141428 50%, #0f1e60 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #6c8ebf;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #8daed4;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #d4a03c, #6c8ebf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.95em;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section h2 {
+            color: #6c8ebf;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(108, 142, 191, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #6c8ebf;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .volume-stats {
+            margin-top: 20px;
+        }
+
+        .volume-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .volume-stat-row .volume-name {
+            color: #ccc;
+            font-weight: 600;
+        }
+
+        .volume-stat-row .volume-detail {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .grade-dist {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .grade-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .grade-A { background: rgba(108, 142, 191, 0.2); color: #6c8ebf; }
+        .grade-B { background: rgba(100, 180, 255, 0.2); color: #64b4ff; }
+        .grade-C { background: rgba(255, 200, 50, 0.2); color: #ffc832; }
+        .grade-D { background: rgba(255, 150, 50, 0.2); color: #ff9632; }
+        .grade-F { background: rgba(212, 160, 60, 0.2); color: #d4a03c; }
+
+        .danger-zone {
+            border: 1px solid rgba(212, 160, 60, 0.3);
+        }
+
+        .danger-zone h2 {
+            color: #d4a03c;
+            border-bottom-color: rgba(212, 160, 60, 0.3);
+        }
+
+        .danger-text {
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .btn-delete {
+            padding: 12px 30px;
+            font-size: 0.95em;
+            background: transparent;
+            border: 1px solid #d4a03c;
+            color: #d4a03c;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: rgba(212, 160, 60, 0.15);
+        }
+
+        .confirm-dialog {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(212, 160, 60, 0.08);
+            border: 1px solid rgba(212, 160, 60, 0.3);
+            border-radius: 10px;
+        }
+
+        .confirm-dialog p {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .confirm-dialog .warning {
+            color: #d4a03c;
+            font-weight: bold;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-confirm-delete {
+            padding: 10px 24px;
+            font-size: 0.9em;
+            background: #d4a03c;
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-confirm-delete:hover {
+            background: #b8882e;
+        }
+
+        .btn-confirm-delete:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            padding: 10px 24px;
+            font-size: 0.9em;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #888;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-cancel:hover {
+            border-color: #aaa;
+            color: #aaa;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(108, 142, 191, 0.3);
+            border-top-color: #6c8ebf;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            color: #d4a03c;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; Back to Games</a>
+
+        <h1>Settings</h1>
+        <p class="subtitle" id="user-email"></p>
+
+        <!-- Stats Section -->
+        <div class="section" id="stats-section">
+            <h2>Your Stats</h2>
+            <div class="loading" id="stats-loading">
+                <div class="loading-spinner"></div>
+                <p>Loading your stats...</p>
+            </div>
+            <div id="stats-content" style="display: none;">
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="volume-stats" id="volume-stats"></div>
+                <div id="grade-section" style="margin-top: 20px;">
+                    <p style="color: #888; font-size: 0.9em; margin-bottom: 10px;">Grade Distribution</p>
+                    <div class="grade-dist" id="grade-dist"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="section danger-zone">
+            <h2>Delete Account</h2>
+            <p class="danger-text">
+                Deleting your account will remove any personally identifiable information and data
+                associated with your account from the platform. This action cannot be undone.
+            </p>
+            <button class="btn-delete" id="btn-delete" onclick="showConfirmDialog()">Delete My Account</button>
+
+            <div class="confirm-dialog" id="confirm-dialog">
+                <p class="warning">Are you sure you want to delete your account?</p>
+                <p>This will:</p>
+                <p>
+                    &bull; Anonymize your data across all games<br>
+                    &bull; Delete your login account<br>
+                    &bull; Sign you out permanently<br>
+                    &bull; This action <strong>cannot</strong> be undone
+                </p>
+                <div class="confirm-buttons">
+                    <button class="btn-confirm-delete" id="btn-confirm" onclick="deleteAccount()">Yes, Delete My Account</button>
+                    <button class="btn-cancel" onclick="hideConfirmDialog()">Cancel</button>
+                </div>
+                <p class="error-msg" id="delete-error" style="display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase setup
+        const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+        function __makeDemoSupabaseClient() {
+          const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+          const session = { user: DEMO_USER, access_token: 'demo' };
+          const ok = (data) => Promise.resolve({ data, error: null });
+          const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+          function builder() {
+            const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+            builderMethods.forEach((m) => { b[m] = () => b; });
+            return b;
+          }
+          return {
+            auth: {
+              getSession: () => ok({ session }),
+              getUser: () => ok({ user: DEMO_USER }),
+              signInWithPassword: () => ok({ user: DEMO_USER, session }),
+              signUp: () => ok({ user: DEMO_USER, session }),
+              signOut: () => ok(null),
+              onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+            },
+            from: () => builder(),
+            rpc: () => Promise.resolve({ data: null, error: null }),
+          };
+        }
+
+        const { createClient } = supabase;
+        const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+
+        // Auth guard: redirect to login if not authenticated
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = session.user;
+            document.getElementById('user-email').textContent = currentUser.email;
+            loadStats();
+        });
+
+        // Load personal stats
+        async function loadStats() {
+            try {
+                const userId = currentUser.id;
+
+                const { data: scores, error } = await supabaseClient
+                    .from('choice_quant_mktg_scores')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                if (!scores || scores.length === 0) {
+                    document.getElementById('stats-loading').style.display = 'none';
+                    document.getElementById('stats-content').style.display = 'block';
+                    document.getElementById('stats-grid').innerHTML = '<p style="color: #888; grid-column: 1 / -1;">No games played yet. Go play some volumes!</p>';
+                    document.getElementById('volume-stats').innerHTML = '';
+                    document.getElementById('grade-section').style.display = 'none';
+                    return;
+                }
+
+                // Calculate stats
+                var totalGames = scores.length;
+                var bestScore = Math.max(...scores.map(s => s.score || 0));
+                var avgScore = Math.round(scores.reduce((sum, s) => sum + (s.score || 0), 0) / totalGames);
+                var totalBadges = scores.reduce((sum, s) => sum + (s.badge_count || 0), 0);
+                var bestStreak = Math.max(...scores.map(s => s.max_streak || 0));
+                var memberSince = new Date(currentUser.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+                // Volume breakdown
+                var volumeMap = {};
+                scores.forEach(function(s) {
+                    if (!volumeMap[s.volume_id]) {
+                        volumeMap[s.volume_id] = { games: 0, bestScore: 0, scores: [] };
+                    }
+                    volumeMap[s.volume_id].games++;
+                    volumeMap[s.volume_id].bestScore = Math.max(volumeMap[s.volume_id].bestScore, s.score || 0);
+                    volumeMap[s.volume_id].scores.push(s.score || 0);
+                });
+
+                var volumeCount = Object.keys(volumeMap).length;
+
+                // Grade distribution
+                var gradeCounts = {};
+                scores.forEach(function(s) {
+                    if (s.grade) {
+                        gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
+                    }
+                });
+
+                // Render overview stats
+                document.getElementById('stats-grid').innerHTML =
+                    renderStatCard(totalGames, 'Games Played') +
+                    renderStatCard(volumeCount, 'Volumes Played') +
+                    renderStatCard(bestScore, 'Best Score') +
+                    renderStatCard(avgScore, 'Avg Score') +
+                    renderStatCard(totalBadges, 'Badges Earned') +
+                    renderStatCard(bestStreak, 'Best Streak') +
+                    renderStatCard(memberSince, 'Member Since');
+
+                // Render per-volume stats
+                var volumeHtml = '';
+                Object.keys(volumeMap).sort().forEach(function(vid) {
+                    var v = volumeMap[vid];
+                    var avg = Math.round(v.scores.reduce((a, b) => a + b, 0) / v.scores.length);
+                    volumeHtml += '<div class="volume-stat-row">' +
+                        '<span class="volume-name">' + escapeHtml(vid) + '</span>' +
+                        '<span class="volume-detail">' + v.games + ' plays &middot; Best: ' + v.bestScore + ' &middot; Avg: ' + avg + '</span>' +
+                        '</div>';
+                });
+                document.getElementById('volume-stats').innerHTML = volumeHtml;
+
+                // Render grade distribution
+                var gradeOrder = ['A+', 'A', 'B', 'C', 'D', 'F'];
+                var gradeHtml = '';
+                gradeOrder.forEach(function(g) {
+                    if (gradeCounts[g]) {
+                        var cls = g.startsWith('A') ? 'grade-A' : 'grade-' + g;
+                        gradeHtml += '<span class="grade-chip ' + cls + '">' + g + ': ' + gradeCounts[g] + '</span>';
+                    }
+                });
+                if (gradeHtml) {
+                    document.getElementById('grade-dist').innerHTML = gradeHtml;
+                } else {
+                    document.getElementById('grade-section').style.display = 'none';
+                }
+
+                document.getElementById('stats-loading').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
+
+            } catch (err) {
+                document.getElementById('stats-loading').innerHTML = '<p style="color: #d4a03c;">Failed to load stats: ' + escapeHtml(err.message) + '</p>';
+            }
+        }
+
+        function renderStatCard(value, label) {
+            return '<div class="stat-card">' +
+                '<div class="stat-value">' + escapeHtml(String(value)) + '</div>' +
+                '<div class="stat-label">' + escapeHtml(label) + '</div>' +
+                '</div>';
+        }
+
+        // Confirm dialog
+        function showConfirmDialog() {
+            document.getElementById('confirm-dialog').style.display = 'block';
+            document.getElementById('btn-delete').style.display = 'none';
+        }
+
+        function hideConfirmDialog() {
+            document.getElementById('confirm-dialog').style.display = 'none';
+            document.getElementById('btn-delete').style.display = 'inline-block';
+            document.getElementById('delete-error').style.display = 'none';
+        }
+
+        // Account deletion: anonymize data + delete auth user via server-side function
+        async function deleteAccount() {
+            var confirmBtn = document.getElementById('btn-confirm');
+            var errorDiv = document.getElementById('delete-error');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Deleting...';
+            errorDiv.style.display = 'none';
+
+            try {
+                var { error } = await supabaseClient.rpc('delete_my_account');
+                if (error) throw error;
+
+                // Sign out locally (server session is already gone)
+                await supabaseClient.auth.signOut();
+                window.location.href = 'index.html';
+
+            } catch (err) {
+                errorDiv.textContent = 'Error: ' + err.message;
+                errorDiv.style.display = 'block';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Yes, Delete My Account';
+            }
+        }
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

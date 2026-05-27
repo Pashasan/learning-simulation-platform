@@ -1,0 +1,18 @@
+# Local environment / secrets
+.env
+.env.local
+.env.*.local
+
+# IDE / tooling working directories
+.vscode/
+.idea/
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~

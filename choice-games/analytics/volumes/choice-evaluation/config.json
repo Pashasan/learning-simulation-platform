@@ -1,0 +1,35 @@
+{
+  "id": "choice-evaluation",
+  "title": "The Choice Lab: Evaluation",
+  "subtitle": "BeatBox Audio \u2014 Part 2",
+  "tagline": "Judge and Extend the Model",
+  "description": "Evaluate a choice model with confusion matrices, ROC curves, and extend to multinomial choice with interactive tools.",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Blood", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "3+ Streak" },
+    "perfect": { "icon": "⭐", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "detective": { "icon": "🔍", "name": "Error Detective", "description": "Classification Error Expert" },
+    "strategist": { "icon": "🧠", "name": "Market Strategist", "description": "Multinomial Choice Expert" },
+    "master": { "icon": "🏆", "name": "Evaluation Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Chief Analytics Officer" },
+    { "minCorrect": 5, "title": "Senior Evaluator" },
+    { "minCorrect": 3, "title": "Junior Evaluator" },
+    { "minCorrect": 0, "title": "Trainee" }
+  ]
+}

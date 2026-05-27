@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../../favicon.ico">
+<title>GPT 1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0A0E1A; }
+  #scene { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  #hud {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  #hud.interactive { pointer-events: auto; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<canvas id="hud"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

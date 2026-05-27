@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.ico">
+<title>Settings | Brew &amp; Budget</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Space Mono', monospace;
+        background: linear-gradient(135deg, #2E2218 0%, #3D2B1A 50%, #4A3422 100%);
+        min-height: 100vh;
+        color: #F0E6D6;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #F5C842;
+        text-decoration: none;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: #FFD866;
+    }
+
+    h1 {
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, #F5C842, #D9B68C);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: #B09878;
+        font-size: 0.9em;
+        margin-bottom: 30px;
+    }
+
+    .section {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(180, 140, 80, 0.15);
+    }
+
+    .section h2 {
+        color: #F5C842;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(245, 200, 66, 0.25);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 14px;
+    }
+
+    .stat-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid rgba(180, 140, 80, 0.1);
+    }
+
+    .stat-value {
+        font-size: 1.7em;
+        font-weight: bold;
+        color: #F5C842;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 0.8em;
+        color: #B09878;
+    }
+
+    .difficulty-stats {
+        margin-top: 20px;
+    }
+
+    .difficulty-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid rgba(180, 140, 80, 0.08);
+    }
+
+    .difficulty-row .diff-name {
+        color: #D9B68C;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .difficulty-row .diff-detail {
+        color: #B09878;
+        font-size: 0.85em;
+    }
+
+    .grade-dist {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .grade-chip {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+
+    .grade-A { background: rgba(102, 204, 102, 0.2); color: #66cc66; }
+    .grade-B { background: rgba(100, 180, 255, 0.2); color: #64b4ff; }
+    .grade-C { background: rgba(245, 200, 66, 0.2); color: #F5C842; }
+    .grade-D { background: rgba(255, 150, 50, 0.2); color: #ff9632; }
+    .grade-F { background: rgba(204, 68, 68, 0.2); color: #cc4444; }
+
+    .danger-zone {
+        border-color: rgba(204, 68, 68, 0.3);
+    }
+
+    .danger-zone h2 {
+        color: #CC4444;
+        border-bottom-color: rgba(204, 68, 68, 0.3);
+    }
+
+    .danger-text {
+        color: #B09878;
+        font-size: 0.85em;
+        margin-bottom: 20px;
+        line-height: 1.7;
+    }
+
+    .btn-delete {
+        padding: 12px 28px;
+        font-size: 0.9em;
+        font-family: 'Space Mono', monospace;
+        font-weight: 700;
+        background: transparent;
+        border: 1px solid #CC4444;
+        color: #CC4444;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-delete:hover {
+        background: rgba(204, 68, 68, 0.15);
+    }
+
+    .confirm-dialog {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(204, 68, 68, 0.08);
+        border: 1px solid rgba(204, 68, 68, 0.3);
+        border-radius: 10px;
+    }
+
+    .confirm-dialog p {
+        color: #C4B8A8;
+        font-size: 0.85em;
+        margin-bottom: 14px;
+        line-height: 1.7;
+    }
+
+    .confirm-dialog .warning {
+        color: #CC4444;
+        font-weight: bold;
+    }
+
+    .confirm-buttons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-confirm-delete {
+        padding: 10px 22px;
+        font-size: 0.85em;
+        font-family: 'Space Mono', monospace;
+        font-weight: 700;
+        background: #CC4444;
+        border: none;
+        color: #F0E6D6;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .btn-confirm-delete:hover {
+        background: #b33c3c;
+    }
+
+    .btn-confirm-delete:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        padding: 10px 22px;
+        font-size: 0.85em;
+        font-family: 'Space Mono', monospace;
+        background: transparent;
+        border: 1px solid rgba(180, 140, 80, 0.3);
+        color: #B09878;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-cancel:hover {
+        border-color: #D9B68C;
+        color: #D9B68C;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #B09878;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border: 3px solid rgba(245, 200, 66, 0.3);
+        border-top-color: #F5C842;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .error-msg {
+        color: #CC4444;
+        font-size: 0.85em;
+        margin-top: 10px;
+    }
+
+    .adventure-tier {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .adventure-tier .tier-name {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: #D4A030;
+    }
+
+    .adventure-tier .tier-rep {
+        font-size: 0.85em;
+        color: #B09878;
+    }
+
+    .adventure-progress-bar {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        height: 12px;
+        margin-bottom: 6px;
+        overflow: hidden;
+    }
+
+    .adventure-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #8B4513, #D4A030);
+        border-radius: 6px;
+        transition: width 0.5s ease;
+    }
+
+    .adventure-progress-label {
+        font-size: 0.75em;
+        color: #B09878;
+        margin-bottom: 20px;
+    }
+
+    .adventure-stats-row {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .badge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+    }
+
+    .badge-card {
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(180, 140, 80, 0.12);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .badge-card.earned {
+        background: rgba(212, 160, 48, 0.12);
+        border-color: rgba(212, 160, 48, 0.3);
+    }
+
+    .badge-card.locked {
+        background: rgba(0, 0, 0, 0.15);
+        opacity: 0.5;
+    }
+
+    .badge-card .badge-name {
+        font-size: 0.85em;
+        font-weight: bold;
+        color: #D4A030;
+    }
+
+    .badge-card.locked .badge-name {
+        color: #B09878;
+    }
+
+    .badge-card .badge-desc {
+        font-size: 0.75em;
+        color: #B09878;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <a href="game.html" class="back-link">&larr; Back to Game</a>
+
+        <h1>Settings</h1>
+        <p class="subtitle" id="user-email"></p>
+
+        <!-- Stats Section -->
+        <div class="section" id="stats-section">
+            <h2>Your Stats</h2>
+            <div class="loading" id="stats-loading">
+                <div class="loading-spinner"></div>
+                <p>Loading your stats...</p>
+            </div>
+            <div id="stats-content" style="display: none;">
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="difficulty-stats" id="difficulty-stats"></div>
+                <div id="grade-section" style="margin-top: 20px;">
+                    <p style="color: #B09878; font-size: 0.85em; margin-bottom: 10px;">Grade Distribution</p>
+                    <div class="grade-dist" id="grade-dist"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adventure Progress -->
+        <div class="section" id="adventure-section" style="display: none;">
+            <h2>Adventure Progress</h2>
+            <div id="adventure-content"></div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="section danger-zone">
+            <h2>Delete Account</h2>
+            <p class="danger-text">
+                Deleting your account will remove any personally identifiable information and data
+                associated with your account from the platform. This action cannot be undone.
+            </p>
+            <button class="btn-delete" id="btn-delete" onclick="showConfirmDialog()">Delete My Account</button>
+
+            <div class="confirm-dialog" id="confirm-dialog">
+                <p class="warning">Are you sure you want to delete your account?</p>
+                <p>This will:</p>
+                <p>
+                    &bull; Anonymize your data across all games<br>
+                    &bull; Delete your login account<br>
+                    &bull; Sign you out permanently<br>
+                    &bull; This action <strong>cannot</strong> be undone
+                </p>
+                <div class="confirm-buttons">
+                    <button class="btn-confirm-delete" id="btn-confirm" onclick="deleteAccount()">Yes, Delete My Account</button>
+                    <button class="btn-cancel" onclick="hideConfirmDialog()">Cancel</button>
+                </div>
+                <p class="error-msg" id="delete-error" style="display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+    function __makeDemoSupabaseClient() {
+      const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+      const session = { user: DEMO_USER, access_token: 'demo' };
+      const ok = (data) => Promise.resolve({ data, error: null });
+      const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+      function builder() {
+        const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+        builderMethods.forEach((m) => { b[m] = () => b; });
+        return b;
+      }
+      return {
+        auth: {
+          getSession: () => ok({ session }),
+          getUser: () => ok({ user: DEMO_USER }),
+          signInWithPassword: () => ok({ user: DEMO_USER, session }),
+          signUp: () => ok({ user: DEMO_USER, session }),
+          signOut: () => ok(null),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        from: () => builder(),
+        rpc: () => Promise.resolve({ data: null, error: null }),
+      };
+    }
+
+    const { createClient } = supabase;
+    const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+
+    // Auth guard: redirect to login if not authenticated
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+            window.location.href = 'index.html';
+            return;
+        }
+        currentUser = session.user;
+        document.getElementById('user-email').textContent = currentUser.email;
+        loadStats();
+        loadAdventureProgress();
+    });
+
+    // Load personal stats
+    async function loadStats() {
+        try {
+            var userId = currentUser.id;
+
+            var { data: scores, error } = await supabaseClient
+                .from('sim_resource_alloc_scores')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            if (!scores || scores.length === 0) {
+                document.getElementById('stats-loading').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
+                document.getElementById('stats-grid').innerHTML = '<p style="color: #B09878; grid-column: 1 / -1;">No games played yet. Go play some rounds!</p>';
+                document.getElementById('difficulty-stats').innerHTML = '';
+                document.getElementById('grade-section').style.display = 'none';
+                return;
+            }
+
+            // Calculate stats
+            var totalGames = scores.length;
+            var bestPnl = Math.max(...scores.map(function(s) { return s.player_pnl || 0; }));
+            var avgPnl = Math.round(scores.reduce(function(sum, s) { return sum + (s.player_pnl || 0); }, 0) / totalGames);
+            var totalRevenue = scores.reduce(function(sum, s) { return sum + (s.total_revenue || 0); }, 0);
+            var totalCustomers = scores.reduce(function(sum, s) { return sum + (s.total_customers || 0); }, 0);
+            var maxTier = Math.max(...scores.map(function(s) { return s.analytics_tier || 0; }));
+            var memberSince = new Date(currentUser.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+            // Best grade
+            var gradeRank = { 'A+': 0, 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'F': 5 };
+            var bestGrade = scores.reduce(function(best, s) {
+                if (!s.grade) return best;
+                if (!best || (gradeRank[s.grade] !== undefined && gradeRank[s.grade] < gradeRank[best])) return s.grade;
+                return best;
+            }, null) || '-';
+
+            // Tier labels
+            var tierLabels = ['None', 'Basic', 'Advanced', 'Premium'];
+            var tierLabel = tierLabels[maxTier] || 'Tier ' + maxTier;
+
+            // Difficulty breakdown
+            var diffMap = {};
+            scores.forEach(function(s) {
+                var d = s.difficulty || 'unknown';
+                if (!diffMap[d]) {
+                    diffMap[d] = { games: 0, bestPnl: -Infinity, pnls: [] };
+                }
+                diffMap[d].games++;
+                diffMap[d].bestPnl = Math.max(diffMap[d].bestPnl, s.player_pnl || 0);
+                diffMap[d].pnls.push(s.player_pnl || 0);
+            });
+
+            // Grade distribution
+            var gradeCounts = {};
+            scores.forEach(function(s) {
+                if (s.grade) {
+                    gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
+                }
+            });
+
+            // Format currency
+            function fmtPnl(val) {
+                if (val >= 0) return '$' + val.toLocaleString();
+                return '-$' + Math.abs(val).toLocaleString();
+            }
+
+            // Render overview stats
+            document.getElementById('stats-grid').innerHTML =
+                renderStatCard(totalGames, 'Games Played') +
+                renderStatCard(fmtPnl(bestPnl), 'Best P&L') +
+                renderStatCard(fmtPnl(avgPnl), 'Avg P&L') +
+                renderStatCard(bestGrade, 'Best Grade') +
+                renderStatCard('$' + totalRevenue.toLocaleString(), 'Total Revenue') +
+                renderStatCard(totalCustomers.toLocaleString(), 'Total Customers') +
+                renderStatCard(tierLabel, 'Max Analytics Tier') +
+                renderStatCard(memberSince, 'Member Since');
+
+            // Render per-difficulty stats
+            var diffOrder = ['standard', 'expert', 'monopoly'];
+            var diffHtml = '';
+            diffOrder.forEach(function(d) {
+                if (diffMap[d]) {
+                    var v = diffMap[d];
+                    var avg = Math.round(v.pnls.reduce(function(a, b) { return a + b; }, 0) / v.pnls.length);
+                    diffHtml += '<div class="difficulty-row">' +
+                        '<span class="diff-name">' + escapeHtml(d) + '</span>' +
+                        '<span class="diff-detail">' + v.games + ' plays &middot; Best: ' + fmtPnl(v.bestPnl) + ' &middot; Avg: ' + fmtPnl(avg) + '</span>' +
+                        '</div>';
+                }
+            });
+            // Any other difficulties not in the standard list
+            Object.keys(diffMap).forEach(function(d) {
+                if (diffOrder.indexOf(d) === -1) {
+                    var v = diffMap[d];
+                    var avg = Math.round(v.pnls.reduce(function(a, b) { return a + b; }, 0) / v.pnls.length);
+                    diffHtml += '<div class="difficulty-row">' +
+                        '<span class="diff-name">' + escapeHtml(d) + '</span>' +
+                        '<span class="diff-detail">' + v.games + ' plays &middot; Best: ' + fmtPnl(v.bestPnl) + ' &middot; Avg: ' + fmtPnl(avg) + '</span>' +
+                        '</div>';
+                }
+            });
+            document.getElementById('difficulty-stats').innerHTML = diffHtml;
+
+            // Render grade distribution
+            var gradeOrder = ['A+', 'A', 'B', 'C', 'D', 'F'];
+            var gradeHtml = '';
+            gradeOrder.forEach(function(g) {
+                if (gradeCounts[g]) {
+                    var cls = g.startsWith('A') ? 'grade-A' : 'grade-' + g;
+                    gradeHtml += '<span class="grade-chip ' + cls + '">' + g + ': ' + gradeCounts[g] + '</span>';
+                }
+            });
+            if (gradeHtml) {
+                document.getElementById('grade-dist').innerHTML = gradeHtml;
+            } else {
+                document.getElementById('grade-section').style.display = 'none';
+            }
+
+            document.getElementById('stats-loading').style.display = 'none';
+            document.getElementById('stats-content').style.display = 'block';
+
+        } catch (err) {
+            document.getElementById('stats-loading').innerHTML = '<p style="color: #CC4444;">Failed to load stats: ' + escapeHtml(err.message) + '</p>';
+        }
+    }
+
+    // --- Adventure Progress ---
+    var REPUTATION_TIERS = [
+        { minRep: 0,    name: 'Street Cart' },
+        { minRep: 100,  name: 'Corner Shop' },
+        { minRep: 300,  name: 'Neighborhood Cafe' },
+        { minRep: 600,  name: 'Downtown Flagship' },
+        { minRep: 1000, name: 'Regional Chain' },
+        { minRep: 1500, name: 'Coffee Empire' },
+    ];
+
+    var PLAYBOOK_DEFS = [
+        { id: 'trap_detector',        label: 'Trap Detector' },
+        { id: 'natural_experimenter', label: 'Natural Experimenter' },
+        { id: 'data_scientist',       label: 'Data Scientist' },
+        { id: 'speed_demon',          label: 'Speed Demon' },
+        { id: 'blind_genius',         label: 'Blind Genius' },
+        { id: 'budget_master',        label: 'Budget Master' },
+        { id: 'volatile_victor',      label: 'Volatile Victor' },
+        { id: 'double_down',          label: 'Double Down' },
+        { id: 'triple_threat',        label: 'Triple Threat' },
+        { id: 'all_in',              label: 'All In' },
+        { id: 'perfect_run',         label: 'Perfect Run' },
+        { id: 'streak_runner',        label: 'Streak Runner' },
+        { id: 'marathon_runner',      label: 'Marathon Runner' },
+        { id: 'empire_builder',       label: 'Empire Builder' },
+    ];
+
+    function loadAdventureProgress() {
+        if (!currentUser) return;
+        var raw = localStorage.getItem('brewbudget_adventure_meta_' + currentUser.id);
+        if (!raw) return; // No adventure data — hide section
+
+        var data;
+        try { data = JSON.parse(raw); } catch (e) { return; }
+        if (!data.totalRuns) return; // Never played adventure
+
+        var section = document.getElementById('adventure-section');
+        section.style.display = 'block';
+
+        var rep = data.reputation || 0;
+        var playbook = data.playbook || [];
+
+        // Determine current and next tier
+        var currentTier = REPUTATION_TIERS[0];
+        var currentTierIdx = 0;
+        for (var i = 0; i < REPUTATION_TIERS.length; i++) {
+            if (rep >= REPUTATION_TIERS[i].minRep) {
+                currentTier = REPUTATION_TIERS[i];
+                currentTierIdx = i;
+            }
+        }
+        var nextTier = currentTierIdx < REPUTATION_TIERS.length - 1
+            ? REPUTATION_TIERS[currentTierIdx + 1] : null;
+
+        // Progress bar percentage
+        var pct = 100;
+        var progressLabel = currentTier.name + ' (MAX)';
+        if (nextTier) {
+            var prev = currentTier.minRep;
+            pct = Math.min(100, Math.round((rep - prev) / (nextTier.minRep - prev) * 100));
+            progressLabel = rep + ' / ' + nextTier.minRep + ' rep to ' + nextTier.name;
+        }
+
+        var html = '';
+
+        // Tier + rep
+        html += '<div class="adventure-tier">';
+        html += '<span class="tier-name">' + escapeHtml(currentTier.name) + '</span>';
+        html += '<span class="tier-rep">' + rep + ' reputation</span>';
+        html += '</div>';
+
+        // Progress bar
+        html += '<div class="adventure-progress-bar"><div class="adventure-progress-fill" style="width:' + pct + '%"></div></div>';
+        html += '<div class="adventure-progress-label">' + escapeHtml(progressLabel) + '</div>';
+
+        // Quick stats row
+        html += '<div class="adventure-stats-row">';
+        html += renderStatCard(data.totalRuns || 0, 'Runs');
+        html += renderStatCard(data.bestGrade || '-', 'Best Grade');
+        html += renderStatCard(data.currentStreak || 0, 'Current Streak');
+        html += renderStatCard(data.bestStreak || 0, 'Best Streak');
+        html += '</div>';
+
+        // Badges
+        html += '<p style="color: #D4A030; font-weight: bold; font-size: 0.9em; margin-bottom: 10px;">Playbook Badges (' + playbook.length + '/' + PLAYBOOK_DEFS.length + ')</p>';
+        html += '<div class="badge-grid">';
+        for (var j = 0; j < PLAYBOOK_DEFS.length; j++) {
+            var def = PLAYBOOK_DEFS[j];
+            var earned = playbook.indexOf(def.id) !== -1;
+            html += '<div class="badge-card ' + (earned ? 'earned' : 'locked') + '">';
+            html += '<span class="badge-name">' + (earned ? '\u2705 ' : '\uD83D\uDD12 ') + escapeHtml(def.label) + '</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        document.getElementById('adventure-content').innerHTML = html;
+    }
+
+    function renderStatCard(value, label) {
+        return '<div class="stat-card">' +
+            '<div class="stat-value">' + escapeHtml(String(value)) + '</div>' +
+            '<div class="stat-label">' + escapeHtml(label) + '</div>' +
+            '</div>';
+    }
+
+    // Confirm dialog
+    function showConfirmDialog() {
+        document.getElementById('confirm-dialog').style.display = 'block';
+        document.getElementById('btn-delete').style.display = 'none';
+    }
+
+    function hideConfirmDialog() {
+        document.getElementById('confirm-dialog').style.display = 'none';
+        document.getElementById('btn-delete').style.display = 'inline-block';
+        document.getElementById('delete-error').style.display = 'none';
+    }
+
+    // Account deletion: anonymize data + delete auth user via server-side function
+    async function deleteAccount() {
+        var confirmBtn = document.getElementById('btn-confirm');
+        var errorDiv = document.getElementById('delete-error');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
+        errorDiv.style.display = 'none';
+
+        try {
+            // Clean up localStorage (adventure meta + any user-keyed data)
+            if (currentUser) {
+                localStorage.removeItem('brewbudget_adventure_meta_' + currentUser.id);
+                var keys = Object.keys(localStorage);
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i].indexOf(currentUser.id) !== -1) localStorage.removeItem(keys[i]);
+                }
+            }
+
+            var { error } = await supabaseClient.rpc('delete_my_account');
+            if (error) throw error;
+
+            // Sign out locally (server session is already gone)
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+
+        } catch (err) {
+            errorDiv.textContent = 'Error: ' + err.message;
+            errorDiv.style.display = 'block';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Yes, Delete My Account';
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>

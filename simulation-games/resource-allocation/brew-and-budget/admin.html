@@ -1,0 +1,3733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon.ico">
+    <title>Admin Dashboard | Brew &amp; Budget</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: #2E2218;
+            min-height: 100vh;
+            color: #F0E6D6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Header */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: rgba(35, 25, 18, 0.92);
+            border: 1px solid rgba(180, 140, 80, 0.20);
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .admin-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #F5C842;
+            text-shadow: 0 0 12px rgba(245, 200, 66, 0.3);
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .admin-user span {
+            color: #B09878;
+            font-size: 0.85em;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85em;
+            font-weight: 700;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary {
+            background: rgba(180, 140, 80, 0.15);
+            color: #F0E6D6;
+            border: 1px solid rgba(180, 140, 80, 0.25);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(180, 140, 80, 0.25);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: rgba(35, 25, 18, 0.6);
+            border: 1px solid rgba(180, 140, 80, 0.15);
+            border-radius: 8px;
+            color: #B09878;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9em;
+            font-weight: 700;
+        }
+
+        .tab-btn:hover {
+            background: rgba(180, 140, 80, 0.15);
+            color: #F0E6D6;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(180deg, #7A6035, #6B5535);
+            border-color: rgba(245, 200, 66, 0.3);
+            color: #F5C842;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(35, 25, 18, 0.92);
+            border: 1px solid rgba(180, 140, 80, 0.15);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: #F5C842;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(180, 140, 80, 0.15);
+            font-size: 1em;
+        }
+
+        /* Leaderboard Table */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(180, 140, 80, 0.10);
+        }
+
+        .leaderboard-table th {
+            color: #F5C842;
+            font-weight: 600;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-table tr:hover {
+            background: rgba(180, 140, 80, 0.05);
+        }
+
+        .rank-cell { font-weight: bold; color: #B09878; }
+        .rank-cell.gold { color: #ffd700; }
+        .rank-cell.silver { color: #c0c0c0; }
+        .rank-cell.bronze { color: #cd7f32; }
+
+        .score-cell { color: #66CC66; font-weight: 600; }
+        .score-negative { color: #CC4444; font-weight: 600; }
+
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .analytics-stat {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(180, 140, 80, 0.08);
+        }
+
+        .analytics-stat .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #F5C842;
+            margin-bottom: 5px;
+        }
+
+        .analytics-stat .label {
+            font-size: 0.75em;
+            color: #B09878;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .analytics-stat .sub-value {
+            font-size: 0.75em;
+            color: #7A6035;
+            margin-top: 5px;
+        }
+
+        /* Filter controls */
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-row label {
+            color: #B09878;
+            font-size: 0.85em;
+        }
+
+        .filter-row select {
+            padding: 8px 32px 8px 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(180, 140, 80, 0.20);
+            border-radius: 6px;
+            color: #F0E6D6;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85em;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B09878' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+        }
+
+        .filter-row select option {
+            background: #2E2218;
+            color: #F0E6D6;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            display: inline-block;
+        }
+
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(180, 140, 80, 0.2);
+            border-radius: 24px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background: #F0E6D6;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #7A6035, #F5C842);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        /* Charts & Bars */
+        .chart-container {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container h4 {
+            color: #F5C842;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 250px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .bar-chart-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .bar-chart-label {
+            width: 140px;
+            font-size: 0.8em;
+            color: #B09878;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .bar-chart-bar-container {
+            flex: 1;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .bar-chart-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .bar-chart-value {
+            width: 70px;
+            text-align: right;
+            font-size: 0.8em;
+            color: #B09878;
+        }
+
+        /* Analytics Table */
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(180, 140, 80, 0.08);
+        }
+
+        .analytics-table th {
+            color: #F5C842;
+            font-weight: 600;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .analytics-table tr:hover {
+            background: rgba(180, 140, 80, 0.04);
+        }
+
+        .success-rate.high { color: #66CC66; }
+        .success-rate.medium { color: #F5C842; }
+        .success-rate.low { color: #CC4444; }
+
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .two-column-grid { grid-template-columns: 1fr; }
+            .admin-header { flex-direction: column; gap: 15px; text-align: center; }
+        }
+
+        .mini-table { max-height: 350px; overflow-y: auto; }
+
+        .refresh-btn {
+            float: right;
+            padding: 6px 12px;
+            background: rgba(245, 200, 66, 0.15);
+            border: 1px solid rgba(245, 200, 66, 0.3);
+            border-radius: 6px;
+            color: #F5C842;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75em;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(245, 200, 66, 0.25);
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .date-filter label {
+            color: #B09878;
+            font-size: 0.85em;
+        }
+
+        .date-filter select {
+            padding: 8px 32px 8px 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(180, 140, 80, 0.20);
+            border-radius: 6px;
+            color: #F0E6D6;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85em;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B09878' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+        }
+
+        .date-filter select option {
+            background: #2E2218;
+            color: #F0E6D6;
+        }
+
+        /* Access Denied & Loading */
+        .access-denied {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .access-denied h1 {
+            color: #CC4444;
+            margin-bottom: 20px;
+        }
+
+        .access-denied p {
+            color: #B09878;
+            margin-bottom: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #B09878;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7A6035;
+        }
+
+        /* Grade badge */
+        .grade-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .grade-badge.grade-a { background: rgba(102, 204, 102, 0.2); color: #66CC66; }
+        .grade-badge.grade-b { background: rgba(245, 200, 66, 0.2); color: #F5C842; }
+        .grade-badge.grade-c { background: rgba(255, 170, 68, 0.2); color: #FFAA44; }
+        .grade-badge.grade-d { background: rgba(204, 68, 68, 0.2); color: #CC4444; }
+        .grade-badge.grade-f { background: rgba(204, 68, 68, 0.3); color: #CC4444; }
+
+        /* Feedback */
+        .feedback-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(180, 140, 80, 0.08);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #F5C842;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            color: #B09878;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .star-display {
+            color: #F5C842;
+            font-size: 1.2em;
+        }
+
+        .feedback-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(180, 140, 80, 0.08);
+        }
+
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .feedback-user {
+            font-weight: 600;
+        }
+
+        .feedback-meta {
+            font-size: 0.8em;
+            color: #7A6035;
+        }
+
+        .feedback-rating {
+            color: #F5C842;
+        }
+
+        .feedback-text {
+            color: #B09878;
+            font-style: italic;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 5px;
+            border-left: 3px solid #F5C842;
+        }
+
+        .feedback-difficulty {
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(245, 200, 66, 0.15);
+            border-radius: 15px;
+            font-size: 0.75em;
+            color: #F5C842;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Access Denied Screen -->
+        <div id="access-denied" class="access-denied" style="display: none;">
+            <h1>Access Denied</h1>
+            <p>You don't have permission to access this page.</p>
+            <a href="index.html" class="btn btn-secondary">Back to Login</a>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading">
+            <p>Checking access...</p>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" style="display: none;">
+            <div class="admin-header">
+                <div class="admin-title">Brew &amp; Budget — Admin Dashboard</div>
+                <div class="admin-user">
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 0.75em; color: #B09878; cursor: pointer; white-space: nowrap;">
+                        <input type="checkbox" id="exclude-admin" style="accent-color: #F5C842; cursor: pointer;">
+                        Exclude Admin
+                    </label>
+                    <span id="admin-email"></span>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    <a href="game.html" class="btn btn-secondary">Back to Game</a>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('leaderboard', this)">Leaderboard</button>
+                <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
+                <button class="tab-btn" onclick="switchTab('feedback', this)">Feedback</button>
+                <button class="tab-btn" onclick="switchTab('adventure', this)">Adventure</button>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard-tab" class="tab-content active">
+                <div class="card">
+                    <h3>Leaderboard</h3>
+                    <div class="filter-row">
+                        <label>Difficulty:</label>
+                        <select id="lb-difficulty-filter" onchange="renderLeaderboard()">
+                            <option value="all">All Difficulties</option>
+                            <option value="monopoly">Monopoly</option>
+                            <option value="duopoly">Duopoly</option>
+                        </select>
+                        <label style="margin-left: 10px;">Mode:</label>
+                        <select id="lb-mode-filter" onchange="renderLeaderboard()">
+                            <option value="all">All Modes</option>
+                            <option value="revenue">Revenue</option>
+                            <option value="pnl">PnL</option>
+                        </select>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="lb-first-run" onchange="renderLeaderboard()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <label style="color: #B09878; font-size: 0.85em;">First Run Only</label>
+                    </div>
+                    <div id="leaderboard-content">
+                        <div class="loading">Loading leaderboard...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <!-- Overview Stats -->
+                <div class="card">
+                    <h3>Analytics Overview <button class="refresh-btn" onclick="loadAnalytics()">Refresh</button></h3>
+                    <div class="date-filter">
+                        <label>Time Range:</label>
+                        <select id="analytics-date-range" onchange="onDateRangeChange()">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="all">All time</option>
+                        </select>
+                        <label style="margin-left: 15px;">Difficulty:</label>
+                        <select id="analytics-difficulty-filter" onchange="loadAnalytics()">
+                            <option value="all">All Difficulties</option>
+                            <option value="monopoly">Monopoly</option>
+                            <option value="duopoly">Duopoly</option>
+                        </select>
+                        <label style="margin-left: 15px;">Mode:</label>
+                        <select id="analytics-mode-filter" onchange="loadAnalytics()">
+                            <option value="all">All Modes</option>
+                            <option value="revenue">Revenue</option>
+                            <option value="pnl">PnL</option>
+                        </select>
+                    </div>
+                    <div id="analytics-overview" class="analytics-grid">
+                        <div class="loading">Loading analytics...</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Daily Activity</h3>
+                        <div class="chart-container">
+                            <canvas id="daily-activity-chart" class="chart-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Event Types</h3>
+                        <div id="event-types-chart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- Difficulty Performance -->
+                <div class="card">
+                    <h3>Difficulty Performance</h3>
+                    <div id="difficulty-performance">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Score Distribution & Grade Distribution -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Grade Distribution</h3>
+                        <div id="grade-distribution">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Allocation Patterns (Avg per Difficulty)</h3>
+                        <div id="allocation-patterns">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session & Engagement -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Game Completion Funnel</h3>
+                        <div id="completion-funnel">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>User Engagement</h3>
+                        <div id="user-engagement">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tier Adoption -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Analytics Tier Adoption</h3>
+                        <div id="analytics-tier-adoption">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Concepts Learned</h3>
+                        <div id="concepts-learned">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Adoption Timing -->
+                <div class="card">
+                    <h3>Analytics Adoption Timing (Month of Purchase)</h3>
+                    <div class="chart-container">
+                        <canvas id="analytics-timing-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="analytics-timing-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Channel Spending Over Time -->
+                <div class="card">
+                    <h3>Avg Channel Spending Over Time (Months 1-12)</h3>
+                    <div class="chart-container">
+                        <canvas id="channel-spending-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="channel-spending-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px;"></div>
+                </div>
+
+                <!-- Financial Performance Over Time -->
+                <div class="card">
+                    <h3>Cumulative Financial Performance (Months 1-12, Completed Games)</h3>
+                    <div class="chart-container">
+                        <canvas id="financial-perf-chart" class="chart-canvas" style="height: 320px;"></canvas>
+                    </div>
+                    <div id="financial-perf-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Top vs Bottom Scorers: Spending -->
+                <div class="card">
+                    <h3>Channel Spending: Top vs Bottom Scorers (Months 1-12)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-bottom-spending-chart" class="chart-canvas" style="height: 320px;"></canvas>
+                    </div>
+                    <div id="top-bottom-spending-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Top vs Bottom Scorers: PnL -->
+                <div class="card">
+                    <h3>PnL Over Time: Top vs Bottom Scorers (Months 1-12)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-bottom-pnl-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-bottom-pnl-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Top vs Bottom Scorers: Total Monthly Spending -->
+                <div class="card">
+                    <h3>Total Monthly Spending: Top vs Bottom Scorers (Months 1-12)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-bottom-total-spending-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-bottom-total-spending-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Top vs Bottom Scorers: Analytics Adoption -->
+                <div class="card">
+                    <h3>Analytics Adoption: Top vs Bottom Scorers</h3>
+                    <div class="chart-container">
+                        <canvas id="top-bottom-adoption-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-bottom-adoption-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- #1 Scorer: Channel Spending -->
+                <div class="card">
+                    <h3 id="top-scorer-spending-title">Channel Spending: #1 Scorer (Best Run)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-scorer-spending-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-scorer-spending-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- #1 Scorer: PnL Over Time -->
+                <div class="card">
+                    <h3 id="top-scorer-pnl-title">PnL Over Time: #1 Scorer (Best Run)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-scorer-pnl-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-scorer-pnl-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- #1 Scorer: Analytics Adoption -->
+                <div class="card">
+                    <h3 id="top-scorer-adoption-title">Analytics Adoption: #1 Scorer (Best Run)</h3>
+                    <div class="chart-container">
+                        <canvas id="top-scorer-adoption-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="top-scorer-adoption-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Recent Events -->
+                <div class="card">
+                    <h3>Recent Events (Debug Log)</h3>
+                    <div id="recent-events" class="mini-table" style="max-height: 400px;">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Tab -->
+            <div id="feedback-tab" class="tab-content">
+                <div class="card">
+                    <h3>Feedback Summary</h3>
+                    <div class="filter-row" style="align-items: center; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="feedback-first-run-filter" onchange="updateFeedbackView()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label style="color: #B09878; font-size: 0.85em;">First Run Only</label>
+                        </div>
+                    </div>
+                    <div id="feedback-stats" class="feedback-stats">
+                        <div class="loading">Loading stats...</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Recent Feedback</h3>
+                    <div class="filter-row" style="align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #B09878; font-size: 0.85em;">Difficulty:</label>
+                            <select id="feedback-difficulty-filter" onchange="updateFeedbackView()" style="padding: 8px 32px 8px 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(180,140,80,0.20); border-radius: 6px; color: #F0E6D6; font-family: 'Space Mono', monospace; font-size: 0.85em; cursor: pointer; appearance: none; background-image: url(&quot;data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B09878' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e&quot;); background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;">
+                                <option value="all" style="background: #2E2218; color: #F0E6D6;">All Difficulties</option>
+                                <option value="monopoly" style="background: #2E2218; color: #F0E6D6;">Monopoly</option>
+                                <option value="duopoly" style="background: #2E2218; color: #F0E6D6;">Duopoly</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #B09878; font-size: 0.85em;">Filter:</label>
+                            <select id="feedback-comment-filter" onchange="updateFeedbackView()" style="padding: 8px 32px 8px 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(180,140,80,0.20); border-radius: 6px; color: #F0E6D6; font-family: 'Space Mono', monospace; font-size: 0.85em; cursor: pointer; appearance: none; background-image: url(&quot;data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B09878' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e&quot;); background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;">
+                                <option value="all" style="background: #2E2218; color: #F0E6D6;">All Feedback</option>
+                                <option value="with-comments" style="background: #2E2218; color: #F0E6D6;">With Comments Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="feedback-list">
+                        <div class="loading">Loading feedback...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adventure Tab -->
+            <div id="adventure-tab" class="tab-content">
+                <!-- Overview Stats -->
+                <div class="card">
+                    <h3>Adventure Overview <button class="refresh-btn" onclick="loadAdventure()">Refresh</button></h3>
+                    <div id="adventure-overview" class="analytics-grid">
+                        <div class="loading">Loading adventure data...</div>
+                    </div>
+                </div>
+
+                <!-- Grade Distribution -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Grade Distribution</h3>
+                        <div id="adventure-grade-dist"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Revenue Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="adventure-revenue-chart" class="chart-canvas" style="height: 250px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modifier Popularity & Performance -->
+                <div class="card">
+                    <h3>Modifier Popularity &amp; Performance</h3>
+                    <div id="adventure-modifier-analysis"></div>
+                </div>
+
+                <!-- Scenario Analysis -->
+                <div class="card">
+                    <h3>Scenario Analysis</h3>
+                    <div id="adventure-scenario-analysis"></div>
+                </div>
+
+                <!-- Allocation Strategies -->
+                <div class="card">
+                    <h3>Allocation Strategies: Player vs Oracle</h3>
+                    <div class="chart-container">
+                        <canvas id="adventure-alloc-chart" class="chart-canvas" style="height: 300px;"></canvas>
+                    </div>
+                    <div id="adventure-alloc-legend" style="display: flex; gap: 20px; justify-content: center; margin-top: 10px; flex-wrap: wrap;"></div>
+                </div>
+
+                <!-- Badge Rarity -->
+                <div class="card">
+                    <h3>Badge Rarity</h3>
+                    <div id="adventure-badge-rarity"></div>
+                </div>
+
+                <!-- Player Progression -->
+                <div class="card">
+                    <h3>Player Progression</h3>
+                    <div id="adventure-player-progression" style="max-height: 500px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Recent Runs -->
+                <div class="card">
+                    <h3>Recent Runs (Last 50)</h3>
+                    <div id="adventure-recent-runs" style="max-height: 500px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        const ADMIN_EMAIL = '';
+        const ADMIN_PASSWORD = 'CHANGE_ME';
+        async function promptAdminUnlock() {
+            if (sessionStorage.getItem('admin_unlocked') === 'yes') return true;
+            return await new Promise(function(resolve) {
+                var ov = document.createElement('div');
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,0.96);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
+                ov.innerHTML = '<div style="background:#161b22;padding:32px;border-radius:12px;border:1px solid #30363d;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"><div style="font-size:36px;margin-bottom:12px;">&#x1F512;</div><h2 style="color:#f0f6fc;margin:0 0 8px;font-size:18px;font-weight:600;">Admin access</h2><p style="color:#8b949e;margin:0 0 20px;font-size:13px;">Enter the admin password</p><input id="__pw_in" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;margin-bottom:8px;outline:none;" /><div id="__pw_err" style="color:#f85149;font-size:12px;min-height:16px;margin-bottom:8px;text-align:left;"></div><button id="__pw_btn" style="width:100%;padding:10px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Unlock</button></div>';
+                document.body.appendChild(ov);
+                var inp = ov.querySelector('#__pw_in');
+                var er = ov.querySelector('#__pw_err');
+                var bt = ov.querySelector('#__pw_btn');
+                function go() {
+                    if (inp.value === ADMIN_PASSWORD) {
+                        sessionStorage.setItem('admin_unlocked', 'yes');
+                        ov.remove();
+                        resolve(true);
+                    } else {
+                        er.textContent = 'Incorrect password';
+                        inp.value = '';
+                        inp.focus();
+                    }
+                }
+                bt.addEventListener('click', go);
+                inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+                setTimeout(function() { inp.focus(); }, 50);
+            });
+        }
+        const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+        function __makeDemoSupabaseClient() {
+          const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+          const session = { user: DEMO_USER, access_token: 'demo' };
+          const ok = (data) => Promise.resolve({ data, error: null });
+          const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+          function builder() {
+            const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+            builderMethods.forEach((m) => { b[m] = () => b; });
+            return b;
+          }
+          return {
+            auth: {
+              getSession: () => ok({ session }),
+              getUser: () => ok({ user: DEMO_USER }),
+              signInWithPassword: () => ok({ user: DEMO_USER, session }),
+              signUp: () => ok({ user: DEMO_USER, session }),
+              signOut: () => ok(null),
+              onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+            },
+            from: () => builder(),
+            rpc: () => Promise.resolve({ data: null, error: null }),
+          };
+        }
+
+        const { createClient } = supabase;
+        const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let adminUserId = null;
+        let allScores = [];
+        let analyticsData = [];
+        let allAnalyticsData = [];
+        let analyticsLoaded = false;
+        let allFeedback = [];
+        let feedbackLoaded = false;
+        let adventureScores = [];
+        let adventureLoaded = false;
+
+        function isExcludeAdmin() {
+            return document.getElementById('exclude-admin').checked;
+        }
+
+        function getVisibleAnalyticsData() {
+            if (isExcludeAdmin() && adminUserId) {
+                return allAnalyticsData.filter(function(e) { return e.user_id !== adminUserId; });
+            }
+            return allAnalyticsData;
+        }
+
+        function getAnalyticsModeFilter() {
+            return document.getElementById('analytics-mode-filter').value;
+        }
+
+        function eventMatchesMode(e, modeFilter) {
+            if (modeFilter === 'all') return true;
+            var eventMode = (e.event_data && e.event_data.game_mode) || 'revenue';
+            return eventMode === modeFilter;
+        }
+
+        // Central difficulty matching — excludes expert, treats medium as duopoly
+        function difficultyMatches(recordDifficulty, filterValue) {
+            if (recordDifficulty === 'expert') return false;
+            if (filterValue === 'all') return true;
+            if (filterValue === 'duopoly') return recordDifficulty === 'medium' || recordDifficulty === 'duopoly';
+            return recordDifficulty === filterValue;
+        }
+
+        // Display name for difficulty values stored in DB
+        function difficultyDisplayName(d) {
+            if (d === 'medium' || d === 'duopoly') return 'Duopoly';
+            if (d === 'monopoly') return 'Monopoly';
+            return d;
+        }
+
+        function getFilteredScores() {
+            var scores = allScores;
+            if (isExcludeAdmin()) {
+                scores = scores.filter(function(s) { return s.user_email !== ADMIN_EMAIL; });
+            }
+            var difficultyFilter = document.getElementById('analytics-difficulty-filter').value;
+            scores = scores.filter(function(s) { return difficultyMatches(s.difficulty, difficultyFilter); });
+            var modeFilter = document.getElementById('analytics-mode-filter').value;
+            if (modeFilter !== 'all') {
+                scores = scores.filter(function(s) { return (s.game_mode || 'revenue') === modeFilter; });
+            }
+            return scores;
+        }
+
+        // ============== UTILITY ==============
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatPnl(val) {
+            if (val == null) return '-';
+            const num = Number(val);
+            const sign = num >= 0 ? '+' : '';
+            return sign + '$' + num.toLocaleString();
+        }
+
+        function gradeClass(grade) {
+            if (!grade) return 'grade-f';
+            const letter = grade.charAt(0).toUpperCase();
+            if (letter === 'A') return 'grade-a';
+            if (letter === 'B') return 'grade-b';
+            if (letter === 'C') return 'grade-c';
+            if (letter === 'D') return 'grade-d';
+            return 'grade-f';
+        }
+
+        // ============== INIT ==============
+
+        async function init() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+
+            if (!session) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('access-denied').style.display = 'block';
+                return;
+            }
+            document.getElementById('loading-screen').style.display = 'none';
+            await promptAdminUnlock();
+
+            currentUser = session.user;
+            adminUserId = session.user.id;
+            document.getElementById('admin-email').textContent = currentUser.email;
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+
+            document.getElementById('exclude-admin').addEventListener('change', onExcludeAdminChange);
+
+            loadLeaderboard();
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        // ============== TAB SWITCHING ==============
+
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            if (tabName === 'analytics' && !analyticsLoaded) {
+                loadAnalytics();
+            }
+            if (tabName === 'feedback' && !feedbackLoaded) {
+                loadFeedback();
+            }
+            if (tabName === 'adventure' && !adventureLoaded) {
+                loadAdventure();
+            }
+        }
+
+        // ============== EXCLUDE ADMIN ==============
+
+        function onExcludeAdminChange() {
+            // Re-render the currently active tab
+            if (document.getElementById('leaderboard-tab').classList.contains('active')) {
+                renderLeaderboard();
+            }
+            if (document.getElementById('analytics-tab').classList.contains('active') && analyticsLoaded) {
+                applyAdminFilterToAnalytics();
+                renderAllAnalytics();
+            }
+            if (document.getElementById('feedback-tab').classList.contains('active') && feedbackLoaded) {
+                updateFeedbackView();
+            }
+            if (document.getElementById('adventure-tab').classList.contains('active') && adventureLoaded) {
+                renderAllAdventure();
+            }
+        }
+
+        function applyAdminFilterToAnalytics() {
+            var difficultyFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = document.getElementById('analytics-mode-filter').value;
+            var source = getVisibleAnalyticsData();
+            analyticsData = source.filter(function(e) {
+                if (!difficultyMatches(e.difficulty, difficultyFilter)) return false;
+                if (modeFilter !== 'all') {
+                    var eventMode = (e.event_data && e.event_data.game_mode) || 'revenue';
+                    if (eventMode !== modeFilter) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderAllAnalytics() {
+            renderOverviewStats();
+            renderDailyActivityChart();
+            renderEventTypesChart();
+            renderDifficultyPerformance();
+            renderGradeDistribution();
+            renderAllocationPatterns();
+            renderCompletionFunnel();
+            renderUserEngagement();
+            renderAnalyticsTierAdoption();
+            renderConceptsLearned();
+            renderAnalyticsTimingChart();
+            renderChannelSpendingChart();
+            renderFinancialPerfChart();
+            renderTopBottomSpending();
+            renderTopBottomPnl();
+            renderTopBottomTotalSpending();
+            renderTopBottomAdoption();
+            renderTopScorerSpending();
+            renderTopScorerPnl();
+            renderTopScorerAdoption();
+            renderRecentEvents();
+        }
+
+        // ============== LEADERBOARD ==============
+
+        async function loadLeaderboard() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('sim_resource_alloc_scores')
+                    .select('*')
+                    .eq('game_id', 'brew-and-budget')
+                    .order('player_pnl', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+                allScores = data || [];
+                renderLeaderboard();
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboard-content').innerHTML =
+                    '<p style="color: #CC4444;">Error loading leaderboard.</p>';
+            }
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-content');
+            const difficultyFilter = document.getElementById('lb-difficulty-filter').value;
+            const modeFilter = document.getElementById('lb-mode-filter').value;
+            const firstRunOnly = document.getElementById('lb-first-run').checked;
+
+            let scores = allScores;
+
+            if (isExcludeAdmin()) {
+                scores = scores.filter(s => s.user_email !== ADMIN_EMAIL);
+            }
+
+            scores = scores.filter(s => difficultyMatches(s.difficulty, difficultyFilter));
+
+            if (modeFilter !== 'all') {
+                scores = scores.filter(s => (s.game_mode || 'revenue') === modeFilter);
+            }
+
+            if (firstRunOnly) {
+                scores = scores.filter(s => s.run_number === 1);
+            }
+
+            scores = scores.sort((a, b) => (b.player_pnl || 0) - (a.player_pnl || 0));
+
+            if (scores.length === 0) {
+                container.innerHTML = '<div class="empty-state">No scores found.</div>';
+                return;
+            }
+
+            let html = `
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Difficulty</th>
+                            <th>Mode</th>
+                            <th>Run #</th>
+                            <th>Player PnL</th>
+                            <th>Oracle PnL</th>
+                            <th>Revenue</th>
+                            <th>Customers</th>
+                            <th>Grade</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            scores.slice(0, 100).forEach(function(score, index) {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const pnlClass = (score.player_pnl || 0) >= 0 ? 'score-cell' : 'score-negative';
+                const date = score.created_at ? new Date(score.created_at).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric'
+                }) : '-';
+
+                html += `
+                    <tr>
+                        <td class="rank-cell ${rankClass}">#${index + 1}</td>
+                        <td>${escapeHtml(score.display_name || score.user_email)}</td>
+                        <td>${escapeHtml(difficultyDisplayName(score.difficulty))}</td>
+                        <td style="color: ${(score.game_mode || 'revenue') === 'pnl' ? '#44AAFF' : '#66CC66'};">${(score.game_mode || 'revenue') === 'pnl' ? 'PnL' : 'Revenue'}</td>
+                        <td>${score.run_number || 1}</td>
+                        <td class="${pnlClass}">${formatPnl(score.player_pnl)}</td>
+                        <td style="color: #B09878;">${formatPnl(score.oracle_pnl)}</td>
+                        <td>$${(score.total_revenue || 0).toLocaleString()}</td>
+                        <td>${(score.total_customers || 0).toLocaleString()}</td>
+                        <td><span class="grade-badge ${gradeClass(score.grade)}">${escapeHtml(score.grade || '-')}</span></td>
+                        <td style="color: #7A6035;">${date}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ============== ANALYTICS ==============
+
+        function onDateRangeChange() {
+            analyticsLoaded = false;
+            loadAnalytics();
+        }
+
+        async function fetchAllEvents(dateFilter) {
+            const pageSize = 1000;
+            var allData = [];
+            var from = 0;
+
+            while (true) {
+                var query = supabaseClient
+                    .from('sim_resource_alloc_events')
+                    .select('*')
+                    .eq('game_id', 'brew-and-budget')
+                    .order('created_at', { ascending: false })
+                    .range(from, from + pageSize - 1);
+
+                if (dateFilter) {
+                    query = query.gte('created_at', dateFilter);
+                }
+
+                var result = await query;
+                if (result.error) throw result.error;
+                if (!result.data || result.data.length === 0) break;
+
+                allData = allData.concat(result.data);
+                if (result.data.length < pageSize) break;
+                from += pageSize;
+            }
+
+            return allData;
+        }
+
+        async function loadAnalytics() {
+            var dateRange = document.getElementById('analytics-date-range').value;
+            var difficultyFilter = document.getElementById('analytics-difficulty-filter').value;
+
+            var dateFilter = null;
+            if (dateRange !== 'all') {
+                var days = parseInt(dateRange);
+                var cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                dateFilter = cutoff.toISOString();
+            }
+
+            try {
+                document.getElementById('analytics-overview').innerHTML =
+                    '<div class="loading">Loading analytics...</div>';
+
+                allAnalyticsData = await fetchAllEvents(dateFilter);
+                analyticsLoaded = true;
+
+                applyAdminFilterToAnalytics();
+                renderAllAnalytics();
+
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('analytics-overview').innerHTML =
+                    '<p style="color: #CC4444;">Error loading analytics: ' + escapeHtml(error.message) + '</p>';
+            }
+        }
+
+        function renderOverviewStats() {
+            var container = document.getElementById('analytics-overview');
+
+            var totalEvents = analyticsData.length;
+            var uniqueUsers = new Set(analyticsData.map(function(e) { return e.user_id; })).size;
+            var uniqueSessions = new Set(analyticsData.map(function(e) { return e.session_id; })).size;
+            var gameStarts = analyticsData.filter(function(e) { return e.event_type === 'game_start'; }).length;
+            var gameCompletes = analyticsData.filter(function(e) { return e.event_type === 'game_complete'; }).length;
+            var completionRate = gameStarts > 0 ? ((gameCompletes / gameStarts) * 100).toFixed(1) : 0;
+
+            // Avg PnL from game_complete events
+            var completeEvents = analyticsData.filter(function(e) {
+                return e.event_type === 'game_complete' && e.event_data;
+            });
+            var totalPnl = 0;
+            completeEvents.forEach(function(e) {
+                totalPnl += (e.event_data.playerPnL || 0);
+            });
+            var avgPnl = completeEvents.length > 0 ? Math.round(totalPnl / completeEvents.length) : 0;
+
+            container.innerHTML = [
+                '<div class="analytics-stat"><div class="value">' + totalEvents.toLocaleString() + '</div><div class="label">Total Events</div></div>',
+                '<div class="analytics-stat"><div class="value">' + uniqueUsers + '</div><div class="label">Unique Users</div></div>',
+                '<div class="analytics-stat"><div class="value">' + uniqueSessions + '</div><div class="label">Sessions</div></div>',
+                '<div class="analytics-stat"><div class="value">' + gameStarts + '</div><div class="label">Games Started</div></div>',
+                '<div class="analytics-stat"><div class="value">' + gameCompletes + '</div><div class="label">Games Completed</div><div class="sub-value">' + completionRate + '% completion</div></div>',
+                '<div class="analytics-stat"><div class="value">' + formatPnl(avgPnl) + '</div><div class="label">Avg Player PnL</div><div class="sub-value">' + completeEvents.length + ' completed games</div></div>',
+            ].join('');
+        }
+
+        function renderDailyActivityChart() {
+            var canvas = document.getElementById('daily-activity-chart');
+            var ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+
+            var width = canvas.offsetWidth;
+            var height = canvas.offsetHeight;
+
+            // Group events by date
+            var dailyCounts = {};
+            analyticsData.forEach(function(e) {
+                var date = (e.timestamp_client || e.created_at || '').split('T')[0];
+                if (date) {
+                    dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+                }
+            });
+
+            var dates = Object.keys(dailyCounts).sort().slice(-30);
+            var counts = dates.map(function(d) { return dailyCounts[d]; });
+            var maxCount = Math.max.apply(null, counts.concat([1]));
+
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (dates.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available', width / 2, height / 2);
+                return;
+            }
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 50 };
+            var chartWidth = width - padding.left - padding.right;
+            var chartHeight = height - padding.top - padding.bottom;
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(180, 140, 80, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, height - padding.bottom);
+            ctx.lineTo(width - padding.right, height - padding.bottom);
+            ctx.stroke();
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(180, 140, 80, 0.08)';
+            for (var i = 0; i <= 4; i++) {
+                var y = padding.top + (chartHeight * i / 4);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '10px "Space Mono", monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(Math.round(maxCount * (4 - i) / 4), padding.left - 5, y + 3);
+            }
+
+            // Line chart
+            ctx.strokeStyle = '#F5C842';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            dates.forEach(function(date, i) {
+                var x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                var cy = height - padding.bottom - (chartHeight * counts[i] / maxCount);
+                if (i === 0) ctx.moveTo(x, cy);
+                else ctx.lineTo(x, cy);
+            });
+            ctx.stroke();
+
+            // Points
+            ctx.fillStyle = '#F5C842';
+            dates.forEach(function(date, i) {
+                var x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                var cy = height - padding.bottom - (chartHeight * counts[i] / maxCount);
+                ctx.beginPath();
+                ctx.arc(x, cy, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // X labels
+            ctx.fillStyle = '#7A6035';
+            ctx.font = '9px "Space Mono", monospace';
+            ctx.textAlign = 'center';
+            dates.forEach(function(date, i) {
+                if (i % Math.ceil(dates.length / 6) === 0 || i === dates.length - 1) {
+                    var x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                    ctx.fillText(date.slice(5), x, height - padding.bottom + 15);
+                }
+            });
+        }
+
+        function renderEventTypesChart() {
+            var container = document.getElementById('event-types-chart');
+
+            var typeCounts = {};
+            analyticsData.forEach(function(e) {
+                typeCounts[e.event_type] = (typeCounts[e.event_type] || 0) + 1;
+            });
+
+            var sorted = Object.entries(typeCounts).sort(function(a, b) { return b[1] - a[1]; });
+            var maxCount = sorted[0] ? sorted[0][1] : 1;
+
+            var colors = {
+                'session_start': '#F5C842',
+                'game_start': '#FFAA44',
+                'month_allocation': '#44AAFF',
+                'game_complete': '#66CC66',
+            };
+
+            var html = '';
+            sorted.forEach(function(entry) {
+                var type = entry[0];
+                var count = entry[1];
+                var pct = (count / maxCount) * 100;
+                var color = colors[type] || '#B09878';
+                html += '<div class="bar-chart-row">' +
+                    '<div class="bar-chart-label" title="' + escapeHtml(type) + '">' + escapeHtml(type) + '</div>' +
+                    '<div class="bar-chart-bar-container">' +
+                    '<div class="bar-chart-bar" style="width: ' + pct + '%; background: ' + color + ';"></div>' +
+                    '</div>' +
+                    '<div class="bar-chart-value">' + count.toLocaleString() + '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html || '<div class="empty-state">No events</div>';
+        }
+
+        function renderDifficultyPerformance() {
+            var container = document.getElementById('difficulty-performance');
+
+            var filteredScores = getFilteredScores();
+            var diffStats = {};
+            filteredScores.forEach(function(s) {
+                var d = (s.difficulty === 'medium') ? 'duopoly' : s.difficulty;
+                if (!diffStats[d]) {
+                    diffStats[d] = { games: 0, totalPnl: 0, totalRev: 0, totalCust: 0, users: new Set() };
+                }
+                diffStats[d].games++;
+                diffStats[d].totalPnl += (s.player_pnl || 0);
+                diffStats[d].totalRev += (s.total_revenue || 0);
+                diffStats[d].totalCust += (s.total_customers || 0);
+                diffStats[d].users.add(s.user_id);
+            });
+
+            if (Object.keys(diffStats).length === 0) {
+                container.innerHTML = '<div class="empty-state">No game data</div>';
+                return;
+            }
+
+            var diffOrder = ['monopoly', 'duopoly'];
+
+            var html = '<table class="analytics-table"><thead><tr>' +
+                '<th>Difficulty</th><th>Players</th><th>Games</th>' +
+                '<th>Avg PnL</th><th>Avg Revenue</th><th>Avg Customers</th>' +
+                '</tr></thead><tbody>';
+
+            diffOrder.forEach(function(d) {
+                var stats = diffStats[d];
+                if (!stats) return;
+                var avgPnl = Math.round(stats.totalPnl / stats.games);
+                var avgRev = Math.round(stats.totalRev / stats.games);
+                var avgCust = Math.round(stats.totalCust / stats.games);
+                var pnlClass = avgPnl >= 0 ? 'high' : 'low';
+
+                html += '<tr>' +
+                    '<td>' + escapeHtml(difficultyDisplayName(d)) + '</td>' +
+                    '<td>' + stats.users.size + '</td>' +
+                    '<td>' + stats.games + '</td>' +
+                    '<td class="success-rate ' + pnlClass + '">' + formatPnl(avgPnl) + '</td>' +
+                    '<td>$' + avgRev.toLocaleString() + '</td>' +
+                    '<td>' + avgCust.toLocaleString() + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderGradeDistribution() {
+            var container = document.getElementById('grade-distribution');
+
+            var filteredScores = getFilteredScores();
+            var gradeCounts = {};
+            filteredScores.forEach(function(s) {
+                var g = s.grade || 'N/A';
+                gradeCounts[g] = (gradeCounts[g] || 0) + 1;
+            });
+
+            var gradeOrder = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F', 'N/A'];
+            var sorted = gradeOrder.filter(function(g) { return gradeCounts[g]; })
+                .map(function(g) { return [g, gradeCounts[g]]; });
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No grade data</div>';
+                return;
+            }
+
+            var maxCount = Math.max.apply(null, sorted.map(function(e) { return e[1]; }));
+
+            var gradeColors = {
+                'A+': '#66CC66', 'A': '#66CC66',
+                'B+': '#F5C842', 'B': '#F5C842',
+                'C+': '#FFAA44', 'C': '#FFAA44',
+                'D': '#CC4444', 'F': '#CC4444', 'N/A': '#7A6035'
+            };
+
+            var html = '';
+            sorted.forEach(function(entry) {
+                var grade = entry[0];
+                var count = entry[1];
+                var pct = (count / maxCount) * 100;
+                var color = gradeColors[grade] || '#B09878';
+                html += '<div class="bar-chart-row">' +
+                    '<div class="bar-chart-label">' + escapeHtml(grade) + '</div>' +
+                    '<div class="bar-chart-bar-container">' +
+                    '<div class="bar-chart-bar" style="width: ' + pct + '%; background: ' + color + ';"></div>' +
+                    '</div>' +
+                    '<div class="bar-chart-value">' + count + '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderAllocationPatterns() {
+            var container = document.getElementById('allocation-patterns');
+
+            // Extract month_allocation events to understand spending patterns
+            var allocByDifficulty = {};
+            analyticsData.forEach(function(e) {
+                if (e.event_type !== 'month_allocation' || !e.event_data) return;
+                var d = (e.difficulty === 'medium') ? 'duopoly' : (e.difficulty || 'unknown');
+                if (!allocByDifficulty[d]) {
+                    allocByDifficulty[d] = { chA: 0, chB: 0, chC: 0, count: 0 };
+                }
+                var alloc = e.event_data.alloc || {};
+                allocByDifficulty[d].chA += (alloc.a || e.event_data.channel_a || 0);
+                allocByDifficulty[d].chB += (alloc.b || e.event_data.channel_b || 0);
+                allocByDifficulty[d].chC += (alloc.c || e.event_data.channel_c || 0);
+                allocByDifficulty[d].count++;
+            });
+
+            if (Object.keys(allocByDifficulty).length === 0) {
+                container.innerHTML = '<div class="empty-state">No allocation data</div>';
+                return;
+            }
+
+            var diffOrder = ['monopoly', 'duopoly'];
+            var html = '<table class="analytics-table"><thead><tr>' +
+                '<th>Difficulty</th><th>Avg Discovery</th><th>Avg Conversion</th><th>Avg Social Buzz</th><th>Months</th>' +
+                '</tr></thead><tbody>';
+
+            diffOrder.forEach(function(d) {
+                var data = allocByDifficulty[d];
+                if (!data) return;
+                var avgA = '$' + Math.round(data.chA / data.count).toLocaleString();
+                var avgB = '$' + Math.round(data.chB / data.count).toLocaleString();
+                var avgC = '$' + Math.round(data.chC / data.count).toLocaleString();
+
+                html += '<tr>' +
+                    '<td>' + escapeHtml(difficultyDisplayName(d)) + '</td>' +
+                    '<td style="color: #FFAA44;">' + avgA + '</td>' +
+                    '<td style="color: #44AAFF;">' + avgB + '</td>' +
+                    '<td style="color: #CC66FF;">' + avgC + '</td>' +
+                    '<td>' + data.count + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderCompletionFunnel() {
+            var container = document.getElementById('completion-funnel');
+
+            // session_start events have difficulty=null, so count from unfiltered data
+            var sessionStarts = getVisibleAnalyticsData().filter(function(e) { return e.event_type === 'session_start'; }).length;
+            var gameStarts = analyticsData.filter(function(e) { return e.event_type === 'game_start'; }).length;
+            var gameCompletes = analyticsData.filter(function(e) { return e.event_type === 'game_complete'; }).length;
+
+            // Count timer_expired from game_complete event_data (field is camelCase: timerExpired)
+            var timerExpired = analyticsData.filter(function(e) {
+                return e.event_type === 'game_complete' && e.event_data && e.event_data.timerExpired;
+            }).length;
+
+            var maxVal = Math.max(sessionStarts, 1);
+
+            var steps = [
+                { label: 'Sessions', count: sessionStarts, color: '#F5C842' },
+                { label: 'Games Started', count: gameStarts, color: '#FFAA44' },
+                { label: 'Games Completed', count: gameCompletes, color: '#66CC66' },
+                { label: 'Timer Expired', count: timerExpired, color: '#CC4444' },
+            ];
+
+            var html = '';
+            steps.forEach(function(step) {
+                var pct = (step.count / maxVal) * 100;
+                var rate = sessionStarts > 0 ? ((step.count / sessionStarts) * 100).toFixed(0) : 0;
+                html += '<div class="bar-chart-row">' +
+                    '<div class="bar-chart-label">' + step.label + '</div>' +
+                    '<div class="bar-chart-bar-container">' +
+                    '<div class="bar-chart-bar" style="width: ' + pct + '%; background: ' + step.color + ';"></div>' +
+                    '</div>' +
+                    '<div class="bar-chart-value">' + step.count + ' (' + rate + '%)</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html || '<div class="empty-state">No funnel data</div>';
+        }
+
+        function renderUserEngagement() {
+            var container = document.getElementById('user-engagement');
+
+            var userStats = {};
+            analyticsData.forEach(function(e) {
+                if (!e.user_id) return;
+                if (!userStats[e.user_id]) {
+                    userStats[e.user_id] = {
+                        displayName: e.display_name || 'Unknown',
+                        sessions: new Set(),
+                        starts: 0,
+                        completions: 0,
+                        events: 0
+                    };
+                }
+                userStats[e.user_id].events++;
+                if (e.session_id) userStats[e.user_id].sessions.add(e.session_id);
+                if (e.event_type === 'game_start') userStats[e.user_id].starts++;
+                if (e.event_type === 'game_complete') userStats[e.user_id].completions++;
+            });
+
+            var sorted = Object.entries(userStats)
+                .map(function(entry) {
+                    var id = entry[0];
+                    var data = entry[1];
+                    return {
+                        id: id,
+                        displayName: data.displayName,
+                        sessions: data.sessions.size,
+                        starts: data.starts,
+                        completions: data.completions,
+                        events: data.events,
+                        completionRate: data.starts > 0 ? ((data.completions / data.starts) * 100).toFixed(0) : 0
+                    };
+                })
+                .sort(function(a, b) { return b.events - a.events; })
+                .slice(0, 15);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No user data</div>';
+                return;
+            }
+
+            var html = '<table class="analytics-table"><thead><tr>' +
+                '<th>User</th><th>Sessions</th><th>Games</th><th>Completed</th><th>Rate</th><th>Events</th>' +
+                '</tr></thead><tbody>';
+
+            sorted.forEach(function(user) {
+                html += '<tr>' +
+                    '<td>' + escapeHtml(user.displayName) + '</td>' +
+                    '<td>' + user.sessions + '</td>' +
+                    '<td>' + user.starts + '</td>' +
+                    '<td>' + user.completions + '</td>' +
+                    '<td>' + user.completionRate + '%</td>' +
+                    '<td>' + user.events + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderAnalyticsTierAdoption() {
+            var container = document.getElementById('analytics-tier-adoption');
+
+            var filteredScores = getFilteredScores();
+            var tierCounts = { 0: 0, 1: 0, 2: 0, 3: 0 };
+            filteredScores.forEach(function(s) {
+                var tier = s.analytics_tier || 0;
+                tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+            });
+
+            var total = filteredScores.length;
+            if (total === 0) {
+                container.innerHTML = '<div class="empty-state">No data</div>';
+                return;
+            }
+
+            var tierLabels = {
+                0: 'No Analytics',
+                1: 'Tier 1 (Basic)',
+                2: 'Tier 2 (Advanced)',
+                3: 'Tier 3 (Premium)'
+            };
+
+            var tierColors = {
+                0: '#7A6035',
+                1: '#FFAA44',
+                2: '#44AAFF',
+                3: '#66CC66'
+            };
+
+            var maxCount = Math.max.apply(null, Object.values(tierCounts));
+
+            var html = '';
+            [0, 1, 2, 3].forEach(function(tier) {
+                var count = tierCounts[tier] || 0;
+                var pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                var rate = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
+                html += '<div class="bar-chart-row">' +
+                    '<div class="bar-chart-label">' + tierLabels[tier] + '</div>' +
+                    '<div class="bar-chart-bar-container">' +
+                    '<div class="bar-chart-bar" style="width: ' + pct + '%; background: ' + tierColors[tier] + ';"></div>' +
+                    '</div>' +
+                    '<div class="bar-chart-value">' + count + ' (' + rate + '%)</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderConceptsLearned() {
+            var container = document.getElementById('concepts-learned');
+
+            // Count concept occurrences from scores
+            var filteredScores = getFilteredScores();
+            var conceptCounts = {};
+            filteredScores.forEach(function(s) {
+                if (!s.concepts_learned || !Array.isArray(s.concepts_learned)) return;
+                s.concepts_learned.forEach(function(concept) {
+                    conceptCounts[concept] = (conceptCounts[concept] || 0) + 1;
+                });
+            });
+
+            var sorted = Object.entries(conceptCounts).sort(function(a, b) { return b[1] - a[1]; });
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No concept data</div>';
+                return;
+            }
+
+            var maxCount = sorted[0][1];
+            var html = '';
+            sorted.forEach(function(entry) {
+                var concept = entry[0];
+                var count = entry[1];
+                var pct = (count / maxCount) * 100;
+                html += '<div class="bar-chart-row">' +
+                    '<div class="bar-chart-label" title="' + escapeHtml(concept) + '">' + escapeHtml(concept) + '</div>' +
+                    '<div class="bar-chart-bar-container">' +
+                    '<div class="bar-chart-bar" style="width: ' + pct + '%; background: linear-gradient(90deg, #F5C842, #FFAA44);"></div>' +
+                    '</div>' +
+                    '<div class="bar-chart-value">' + count + '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderRecentEvents() {
+            var container = document.getElementById('recent-events');
+            var recent = analyticsData.slice(0, 100);
+
+            if (recent.length === 0) {
+                container.innerHTML = '<div class="empty-state">No events recorded</div>';
+                return;
+            }
+
+            var html = '<table class="analytics-table"><thead><tr>' +
+                '<th>Time</th><th>User</th><th>Event</th><th>Difficulty</th><th>Details</th>' +
+                '</tr></thead><tbody>';
+
+            recent.forEach(function(e) {
+                var time = new Date(e.timestamp_client || e.created_at).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                var details = '-';
+                if (e.event_data) {
+                    var d = e.event_data;
+                    if (e.event_type === 'month_allocation') {
+                        var alloc = d.alloc || {};
+                        var a = alloc.a || 0;
+                        var b = alloc.b || 0;
+                        var c = alloc.c || 0;
+                        details = 'M' + (d.month != null ? d.month + 1 : '?') + ': $' + (a/1000).toFixed(0) + 'k / $' + (b/1000).toFixed(0) + 'k / $' + (c/1000).toFixed(0) + 'k';
+                    } else if (e.event_type === 'game_complete') {
+                        details = 'PnL: ' + formatPnl(d.playerPnL) + ', Grade: ' + escapeHtml(d.grade || '-');
+                    } else if (e.event_type === 'game_start') {
+                        details = 'Run #' + (d.run_number || e.run_number || '?');
+                    }
+                }
+
+                html += '<tr>' +
+                    '<td style="white-space: nowrap;">' + time + '</td>' +
+                    '<td>' + escapeHtml(e.display_name || '-') + '</td>' +
+                    '<td>' + escapeHtml(e.event_type) + '</td>' +
+                    '<td>' + escapeHtml(difficultyDisplayName(e.difficulty || '-')) + '</td>' +
+                    '<td>' + details + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ============== CANVAS CHART HELPERS ==============
+
+        function setupCanvas(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+            var w = canvas.offsetWidth;
+            var h = canvas.offsetHeight;
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(0, 0, w, h);
+            return { canvas: canvas, ctx: ctx, w: w, h: h };
+        }
+
+        function drawLineChart(ctx, w, h, padding, datasets, xLabels, yFormat) {
+            var chartW = w - padding.left - padding.right;
+            var chartH = h - padding.top - padding.bottom;
+            var n = xLabels.length;
+
+            // Find global max across all datasets
+            var globalMax = 1;
+            var globalMin = 0;
+            datasets.forEach(function(ds) {
+                ds.data.forEach(function(v) {
+                    if (v > globalMax) globalMax = v;
+                    if (v < globalMin) globalMin = v;
+                });
+            });
+
+            // If we have negative values, center the zero line
+            var yMin = globalMin < 0 ? globalMin * 1.1 : 0;
+            var yMax = globalMax * 1.1 || 1;
+            var yRange = yMax - yMin;
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(180, 140, 80, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, h - padding.bottom);
+            ctx.lineTo(w - padding.right, h - padding.bottom);
+            ctx.stroke();
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(180, 140, 80, 0.08)';
+            var gridSteps = 5;
+            for (var g = 0; g <= gridSteps; g++) {
+                var yVal = yMin + (yRange * g / gridSteps);
+                var yPos = h - padding.bottom - (chartH * (yVal - yMin) / yRange);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, yPos);
+                ctx.lineTo(w - padding.right, yPos);
+                ctx.stroke();
+
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '10px "Space Mono", monospace';
+                ctx.textAlign = 'right';
+                var label = yFormat ? yFormat(yVal) : Math.round(yVal).toLocaleString();
+                ctx.fillText(label, padding.left - 5, yPos + 3);
+            }
+
+            // Zero line if applicable
+            if (yMin < 0) {
+                var zeroY = h - padding.bottom - (chartH * (0 - yMin) / yRange);
+                ctx.strokeStyle = 'rgba(240, 230, 214, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, zeroY);
+                ctx.lineTo(w - padding.right, zeroY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw each dataset
+            datasets.forEach(function(ds) {
+                ctx.strokeStyle = ds.color;
+                ctx.lineWidth = ds.lineWidth || 2;
+                if (ds.dashed) {
+                    ctx.setLineDash(ds.dashed);
+                } else {
+                    ctx.setLineDash([]);
+                }
+                ctx.beginPath();
+                for (var i = 0; i < n; i++) {
+                    var x = padding.left + (chartW * i / (n - 1 || 1));
+                    var y = h - padding.bottom - (chartH * (ds.data[i] - yMin) / yRange);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Points
+                ctx.fillStyle = ds.color;
+                for (var i = 0; i < n; i++) {
+                    var x = padding.left + (chartW * i / (n - 1 || 1));
+                    var y = h - padding.bottom - (chartH * (ds.data[i] - yMin) / yRange);
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // X-axis labels
+            ctx.fillStyle = '#7A6035';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'center';
+            for (var i = 0; i < n; i++) {
+                var x = padding.left + (chartW * i / (n - 1 || 1));
+                ctx.fillText(xLabels[i], x, h - padding.bottom + 15);
+            }
+        }
+
+        function renderLegend(containerId, items) {
+            var html = '';
+            items.forEach(function(item) {
+                var dashStyle = item.dashed ? 'border-top: 2px dashed ' + item.color : 'border-top: 2px solid ' + item.color;
+                html += '<div style="display: flex; align-items: center; gap: 6px; font-size: 0.8em; color: #B09878;">' +
+                    '<span style="display: inline-block; width: 20px; height: 0; ' + dashStyle + ';"></span>' +
+                    item.label + '</div>';
+            });
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        // ============== ANALYTICS ADOPTION TIMING ==============
+
+        function renderAnalyticsTimingChart() {
+            var c = setupCanvas('analytics-timing-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            // Get analytics_purchase events filtered by difficulty and mode
+            var diffFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = getAnalyticsModeFilter();
+            var visibleData = getVisibleAnalyticsData();
+            var purchaseEvents = visibleData.filter(function(e) {
+                if (e.event_type !== 'analytics_purchase') return false;
+                if (!difficultyMatches(e.difficulty, diffFilter)) return false;
+                if (!eventMatchesMode(e, modeFilter)) return false;
+                return true;
+            });
+
+            // Count completed games (to compute percentages)
+            var completedGames = visibleData.filter(function(e) {
+                if (e.event_type !== 'game_complete') return false;
+                if (!difficultyMatches(e.difficulty, diffFilter)) return false;
+                if (!eventMatchesMode(e, modeFilter)) return false;
+                return true;
+            }).length;
+
+            if (purchaseEvents.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No analytics purchase data', w / 2, h / 2);
+                return;
+            }
+
+            // Group by tier and month
+            var tierNames = {
+                1: 'Tier 1 (Basic)',
+                2: 'Tier 2 (Advanced)',
+                3: 'Tier 3 (Premium)',
+                'comp_intel': 'Competitor Intel'
+            };
+            var tierColors = {
+                1: '#FFAA44',
+                2: '#44AAFF',
+                3: '#66CC66',
+                'comp_intel': '#CC66FF'
+            };
+
+            // For each tier, count purchases at each month (0-11)
+            var tierMonthCounts = {};
+            [1, 2, 3, 'comp_intel'].forEach(function(tier) {
+                tierMonthCounts[tier] = new Array(12).fill(0);
+            });
+
+            purchaseEvents.forEach(function(e) {
+                var tier = e.event_data.tier;
+                var month = e.event_data.month;
+                if (tier != null && month != null && month >= 0 && month < 12) {
+                    if (tierMonthCounts[tier]) {
+                        tierMonthCounts[tier][month]++;
+                    }
+                }
+            });
+
+            // Convert to cumulative percentages of completed games
+            var datasets = [];
+            [1, 2, 3, 'comp_intel'].forEach(function(tier) {
+                var counts = tierMonthCounts[tier];
+                var cumulative = [];
+                var running = 0;
+                for (var m = 0; m < 12; m++) {
+                    running += counts[m];
+                    var pct = completedGames > 0 ? (running / completedGames) * 100 : 0;
+                    cumulative.push(pct);
+                }
+                // Only include if there's any data
+                if (running > 0) {
+                    datasets.push({
+                        label: tierNames[tier],
+                        color: tierColors[tier],
+                        data: cumulative,
+                        lineWidth: 2
+                    });
+                }
+            });
+
+            if (datasets.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No analytics purchase data', w / 2, h / 2);
+                return;
+            }
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 55 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return Math.round(v) + '%';
+            });
+
+            // Title annotation
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Cumulative % of ' + completedGames + ' completed games', padding.left, padding.top - 6);
+
+            renderLegend('analytics-timing-legend', datasets.map(function(ds) {
+                return { label: ds.label, color: ds.color };
+            }));
+        }
+
+        // ============== CHANNEL SPENDING OVER TIME ==============
+
+        function renderChannelSpendingChart() {
+            var c = setupCanvas('channel-spending-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var diffFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = getAnalyticsModeFilter();
+
+            // Get month_allocation events
+            var allocEvents = getVisibleAnalyticsData().filter(function(e) {
+                if (e.event_type !== 'month_allocation') return false;
+                if (!difficultyMatches(e.difficulty, diffFilter)) return false;
+                if (!eventMatchesMode(e, modeFilter)) return false;
+                return e.event_data && e.event_data.month != null;
+            });
+
+            if (allocEvents.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No allocation data', w / 2, h / 2);
+                document.getElementById('channel-spending-legend').innerHTML = '';
+                return;
+            }
+
+            // Aggregate: for each month, compute average spending per channel
+            var monthData = [];
+            for (var m = 0; m < 12; m++) {
+                monthData.push({ sumA: 0, sumB: 0, sumC: 0, count: 0 });
+            }
+
+            allocEvents.forEach(function(e) {
+                var m = e.event_data.month;
+                if (m >= 0 && m < 12) {
+                    var alloc = e.event_data.alloc || {};
+                    monthData[m].sumA += (alloc.a || 0);
+                    monthData[m].sumB += (alloc.b || 0);
+                    monthData[m].sumC += (alloc.c || 0);
+                    monthData[m].count++;
+                }
+            });
+
+            var avgA = monthData.map(function(d) { return d.count > 0 ? d.sumA / d.count : 0; });
+            var avgB = monthData.map(function(d) { return d.count > 0 ? d.sumB / d.count : 0; });
+            var avgC = monthData.map(function(d) { return d.count > 0 ? d.sumC / d.count : 0; });
+
+            var datasets = [
+                { label: 'Discovery (Ch A)', color: '#FFAA44', data: avgA, lineWidth: 2 },
+                { label: 'Conversion (Ch B)', color: '#44AAFF', data: avgB, lineWidth: 2 },
+                { label: 'Social Buzz (Ch C)', color: '#CC66FF', data: avgC, lineWidth: 2 },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 60 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return '$' + Math.round(v / 1000) + 'k';
+            });
+
+            var totalAllocations = monthData.reduce(function(s, d) { return s + d.count; }, 0);
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Avg across ' + totalAllocations + ' monthly allocations', padding.left, padding.top - 6);
+
+            renderLegend('channel-spending-legend', datasets.map(function(ds) {
+                return { label: ds.label, color: ds.color };
+            }));
+        }
+
+        // ============== FINANCIAL PERFORMANCE OVER TIME ==============
+
+        function renderFinancialPerfChart() {
+            var c = setupCanvas('financial-perf-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var diffFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = getAnalyticsModeFilter();
+
+            // Get month_complete events from completed games only.
+            // A "completed game" session has a game_complete event.
+            // Find session IDs of completed games.
+            var visibleData = getVisibleAnalyticsData();
+            var completedSessionIds = new Set();
+            visibleData.forEach(function(e) {
+                if (e.event_type !== 'game_complete') return;
+                if (!difficultyMatches(e.difficulty, diffFilter)) return;
+                if (!eventMatchesMode(e, modeFilter)) return;
+                if (e.session_id) completedSessionIds.add(e.session_id);
+            });
+
+            var monthCompleteEvents = visibleData.filter(function(e) {
+                if (e.event_type !== 'month_complete') return false;
+                if (!difficultyMatches(e.difficulty, diffFilter)) return false;
+                if (!eventMatchesMode(e, modeFilter)) return false;
+                if (!completedSessionIds.has(e.session_id)) return false;
+                return e.event_data && e.event_data.month != null;
+            });
+
+            if (monthCompleteEvents.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No completed game data', w / 2, h / 2);
+                document.getElementById('financial-perf-legend').innerHTML = '';
+                return;
+            }
+
+            // Aggregate by month
+            var monthAgg = [];
+            for (var m = 0; m < 12; m++) {
+                monthAgg.push({
+                    playerRevSum: 0, playerProfitSum: 0,
+                    compRevSum: 0,
+                    playerSpendSum: 0,
+                    count: 0
+                });
+            }
+
+            monthCompleteEvents.forEach(function(e) {
+                var m = e.event_data.month;
+                if (m >= 0 && m < 12) {
+                    var d = e.event_data;
+                    monthAgg[m].playerRevSum += (d.ytd_revenue || 0);
+                    monthAgg[m].playerProfitSum += (d.ytd_profit || 0);
+                    if (d.competitor) {
+                        monthAgg[m].compRevSum += (d.competitor.revenue || 0);
+                    }
+                    if (d.player && d.player.alloc) {
+                        var alloc = d.player.alloc;
+                        monthAgg[m].playerSpendSum += ((alloc.a || 0) + (alloc.b || 0) + (alloc.c || 0));
+                    }
+                    monthAgg[m].count++;
+                }
+            });
+
+            // Compute cumulative averages
+            var avgYtdRevenue = monthAgg.map(function(d) { return d.count > 0 ? d.playerRevSum / d.count : 0; });
+            var avgYtdProfit = monthAgg.map(function(d) { return d.count > 0 ? d.playerProfitSum / d.count : 0; });
+
+            // For competitor revenue, we need cumulative from monthly values
+            // month_complete.competitor.revenue is per-month, not cumulative
+            var avgCompMonthlyRev = monthAgg.map(function(d) { return d.count > 0 ? d.compRevSum / d.count : 0; });
+            var avgCompCumRev = [];
+            var compRunning = 0;
+            for (var m = 0; m < 12; m++) {
+                compRunning += avgCompMonthlyRev[m];
+                avgCompCumRev.push(compRunning);
+            }
+
+            // Cumulative player spend
+            var avgMonthlySpend = monthAgg.map(function(d) { return d.count > 0 ? d.playerSpendSum / d.count : 0; });
+            var avgCumSpend = [];
+            var spendRunning = 0;
+            for (var m = 0; m < 12; m++) {
+                spendRunning += avgMonthlySpend[m];
+                avgCumSpend.push(spendRunning);
+            }
+
+            var hasCompetitor = avgCompCumRev.some(function(v) { return v > 0; });
+
+            var datasets = [
+                { label: 'Player Revenue (YTD)', color: '#66CC66', data: avgYtdRevenue, lineWidth: 2.5 },
+                { label: 'Player PnL (YTD)', color: '#F5C842', data: avgYtdProfit, lineWidth: 2.5 },
+                { label: 'Player Mkt Spend (Cum)', color: '#CC4444', data: avgCumSpend, lineWidth: 1.5, dashed: [6, 3] },
+            ];
+
+            if (hasCompetitor) {
+                datasets.push({
+                    label: 'Competitor Revenue (Cum)', color: '#55AACC', data: avgCompCumRev, lineWidth: 1.5, dashed: [4, 4]
+                });
+            }
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 70 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+                if (Math.abs(v) >= 1000) return '$' + Math.round(v / 1000) + 'k';
+                return '$' + Math.round(v);
+            });
+
+            var gameCount = completedSessionIds.size;
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Avg across ' + gameCount + ' completed games', padding.left, padding.top - 6);
+
+            renderLegend('financial-perf-legend', datasets.map(function(ds) {
+                return { label: ds.label, color: ds.color, dashed: !!ds.dashed };
+            }));
+        }
+
+        // ============== TOP vs BOTTOM SCORERS ==============
+
+        // Helper: split completed-game session IDs into top quartile and bottom quartile by PnL
+        function getTopBottomSessions() {
+            var diffFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = document.getElementById('analytics-mode-filter').value;
+            var scores = isExcludeAdmin() ? allScores.filter(function(s) { return s.user_email !== ADMIN_EMAIL; }) : allScores;
+            var filteredScores = scores.filter(function(s) {
+                if (!difficultyMatches(s.difficulty, diffFilter)) return false;
+                if (modeFilter !== 'all' && (s.game_mode || 'revenue') !== modeFilter) return false;
+                return s.player_pnl != null;
+            });
+
+            if (filteredScores.length < 4) return null; // need at least 4 games
+
+            // Sort by PnL descending
+            filteredScores.sort(function(a, b) { return (b.player_pnl || 0) - (a.player_pnl || 0); });
+
+            var quartile = Math.max(1, Math.floor(filteredScores.length / 4));
+            var topScores = filteredScores.slice(0, quartile);
+            var bottomScores = filteredScores.slice(-quartile);
+
+            // Match scores to sessions via user_id + difficulty + run_number
+            function scoreKey(s) {
+                return s.user_id + ':' + s.difficulty + ':' + (s.run_number || 1);
+            }
+
+            var topKeys = new Set(topScores.map(scoreKey));
+            var bottomKeys = new Set(bottomScores.map(scoreKey));
+
+            // Find matching session IDs from events
+            var topSessions = new Set();
+            var bottomSessions = new Set();
+
+            getVisibleAnalyticsData().forEach(function(e) {
+                if (e.event_type !== 'game_start' || !e.session_id) return;
+                var key = e.user_id + ':' + e.difficulty + ':' + (e.run_number || 1);
+                if (topKeys.has(key)) topSessions.add(e.session_id);
+                if (bottomKeys.has(key)) bottomSessions.add(e.session_id);
+            });
+
+            return {
+                topSessions: topSessions,
+                bottomSessions: bottomSessions,
+                topCount: topSessions.size,
+                bottomCount: bottomSessions.size,
+                topAvgPnl: Math.round(topScores.reduce(function(s, x) { return s + (x.player_pnl || 0); }, 0) / topScores.length),
+                bottomAvgPnl: Math.round(bottomScores.reduce(function(s, x) { return s + (x.player_pnl || 0); }, 0) / bottomScores.length),
+            };
+        }
+
+        function getMonthlyDataBySessions(sessions) {
+            var allocByMonth = [];
+            var completeByMonth = [];
+            for (var m = 0; m < 12; m++) {
+                allocByMonth.push({ sumA: 0, sumB: 0, sumC: 0, count: 0 });
+                completeByMonth.push({ profitSum: 0, revSum: 0, count: 0 });
+            }
+
+            getVisibleAnalyticsData().forEach(function(e) {
+                if (!sessions.has(e.session_id)) return;
+                var d = e.event_data;
+                if (!d || d.month == null || d.month < 0 || d.month >= 12) return;
+                var m = d.month;
+
+                if (e.event_type === 'month_allocation' && d.alloc) {
+                    allocByMonth[m].sumA += (d.alloc.a || 0);
+                    allocByMonth[m].sumB += (d.alloc.b || 0);
+                    allocByMonth[m].sumC += (d.alloc.c || 0);
+                    allocByMonth[m].count++;
+                }
+
+                if (e.event_type === 'month_complete') {
+                    completeByMonth[m].profitSum += (d.ytd_profit || 0);
+                    completeByMonth[m].revSum += (d.ytd_revenue || 0);
+                    completeByMonth[m].count++;
+                }
+            });
+
+            return {
+                avgA: allocByMonth.map(function(d) { return d.count > 0 ? d.sumA / d.count : 0; }),
+                avgB: allocByMonth.map(function(d) { return d.count > 0 ? d.sumB / d.count : 0; }),
+                avgC: allocByMonth.map(function(d) { return d.count > 0 ? d.sumC / d.count : 0; }),
+                avgProfit: completeByMonth.map(function(d) { return d.count > 0 ? d.profitSum / d.count : 0; }),
+                avgRev: completeByMonth.map(function(d) { return d.count > 0 ? d.revSum / d.count : 0; }),
+            };
+        }
+
+        function renderTopBottomSpending() {
+            var c = setupCanvas('top-bottom-spending-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var groups = getTopBottomSessions();
+            if (!groups || groups.topCount < 1 || groups.bottomCount < 1) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Need at least 4 completed games', w / 2, h / 2);
+                document.getElementById('top-bottom-spending-legend').innerHTML = '';
+                return;
+            }
+
+            var topData = getMonthlyDataBySessions(groups.topSessions);
+            var bottomData = getMonthlyDataBySessions(groups.bottomSessions);
+
+            var datasets = [
+                { label: 'Top 25% — Discovery', color: '#FFAA44', data: topData.avgA, lineWidth: 2.5 },
+                { label: 'Top 25% — Conversion', color: '#44AAFF', data: topData.avgB, lineWidth: 2.5 },
+                { label: 'Top 25% — Social Buzz', color: '#CC66FF', data: topData.avgC, lineWidth: 2.5 },
+                { label: 'Bottom 25% — Discovery', color: '#FFAA44', data: bottomData.avgA, lineWidth: 1.5, dashed: [6, 3] },
+                { label: 'Bottom 25% — Conversion', color: '#44AAFF', data: bottomData.avgB, lineWidth: 1.5, dashed: [6, 3] },
+                { label: 'Bottom 25% — Social Buzz', color: '#CC66FF', data: bottomData.avgC, lineWidth: 1.5, dashed: [6, 3] },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 60 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return '$' + Math.round(v / 1000) + 'k';
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Top ' + groups.topCount + ' games (avg PnL ' + formatPnl(groups.topAvgPnl) + ') vs Bottom ' + groups.bottomCount + ' (avg PnL ' + formatPnl(groups.bottomAvgPnl) + ')', padding.left, padding.top - 6);
+
+            renderLegend('top-bottom-spending-legend', [
+                { label: 'Top — Discovery', color: '#FFAA44' },
+                { label: 'Top — Conversion', color: '#44AAFF' },
+                { label: 'Top — Social Buzz', color: '#CC66FF' },
+                { label: 'Bottom — Discovery (dashed)', color: '#FFAA44', dashed: true },
+                { label: 'Bottom — Conversion (dashed)', color: '#44AAFF', dashed: true },
+                { label: 'Bottom — Social Buzz (dashed)', color: '#CC66FF', dashed: true },
+            ]);
+        }
+
+        function renderTopBottomPnl() {
+            var c = setupCanvas('top-bottom-pnl-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var groups = getTopBottomSessions();
+            if (!groups || groups.topCount < 1 || groups.bottomCount < 1) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Need at least 4 completed games', w / 2, h / 2);
+                document.getElementById('top-bottom-pnl-legend').innerHTML = '';
+                return;
+            }
+
+            var topData = getMonthlyDataBySessions(groups.topSessions);
+            var bottomData = getMonthlyDataBySessions(groups.bottomSessions);
+
+            var datasets = [
+                { label: 'Top 25% — PnL', color: '#66CC66', data: topData.avgProfit, lineWidth: 2.5 },
+                { label: 'Top 25% — Revenue', color: '#F5C842', data: topData.avgRev, lineWidth: 1.5, dashed: [6, 3] },
+                { label: 'Bottom 25% — PnL', color: '#CC4444', data: bottomData.avgProfit, lineWidth: 2.5 },
+                { label: 'Bottom 25% — Revenue', color: '#CC4444', data: bottomData.avgRev, lineWidth: 1.5, dashed: [6, 3] },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 70 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+                if (Math.abs(v) >= 1000) return '$' + Math.round(v / 1000) + 'k';
+                return '$' + Math.round(v);
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Top ' + groups.topCount + ' vs Bottom ' + groups.bottomCount + ' (by final PnL)', padding.left, padding.top - 6);
+
+            renderLegend('top-bottom-pnl-legend', [
+                { label: 'Top 25% — PnL', color: '#66CC66' },
+                { label: 'Top 25% — Revenue', color: '#F5C842', dashed: true },
+                { label: 'Bottom 25% — PnL', color: '#CC4444' },
+                { label: 'Bottom 25% — Revenue', color: '#CC4444', dashed: true },
+            ]);
+        }
+
+        function renderTopBottomTotalSpending() {
+            var c = setupCanvas('top-bottom-total-spending-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var groups = getTopBottomSessions();
+            if (!groups || groups.topCount < 1 || groups.bottomCount < 1) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Need at least 4 completed games', w / 2, h / 2);
+                document.getElementById('top-bottom-total-spending-legend').innerHTML = '';
+                return;
+            }
+
+            var topData = getMonthlyDataBySessions(groups.topSessions);
+            var bottomData = getMonthlyDataBySessions(groups.bottomSessions);
+
+            // Sum all channels per month
+            var topTotal = [];
+            var bottomTotal = [];
+            for (var m = 0; m < 12; m++) {
+                topTotal.push(topData.avgA[m] + topData.avgB[m] + topData.avgC[m]);
+                bottomTotal.push(bottomData.avgA[m] + bottomData.avgB[m] + bottomData.avgC[m]);
+            }
+
+            var datasets = [
+                { label: 'Top 25%', color: '#66CC66', data: topTotal, lineWidth: 2.5 },
+                { label: 'Bottom 25%', color: '#CC4444', data: bottomTotal, lineWidth: 2, dashed: [6, 3] },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 60 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return '$' + Math.round(v / 1000) + 'k';
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Top ' + groups.topCount + ' games (avg PnL ' + formatPnl(groups.topAvgPnl) + ') vs Bottom ' + groups.bottomCount + ' (avg PnL ' + formatPnl(groups.bottomAvgPnl) + ')', padding.left, padding.top - 6);
+
+            renderLegend('top-bottom-total-spending-legend', [
+                { label: 'Top 25% — Total Spend', color: '#66CC66' },
+                { label: 'Bottom 25% — Total Spend (dashed)', color: '#CC4444', dashed: true },
+            ]);
+        }
+
+        function renderTopBottomAdoption() {
+            var c = setupCanvas('top-bottom-adoption-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var groups = getTopBottomSessions();
+            if (!groups || groups.topCount < 1 || groups.bottomCount < 1) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Need at least 4 completed games', w / 2, h / 2);
+                document.getElementById('top-bottom-adoption-legend').innerHTML = '';
+                return;
+            }
+
+            var tierNames = {
+                1: 'Tier 1 (Basic)',
+                2: 'Tier 2 (Advanced)',
+                3: 'Tier 3 (Premium)',
+                'comp_intel': 'Competitor Intel'
+            };
+            var tierColors = {
+                1: '#FFAA44',
+                2: '#44AAFF',
+                3: '#66CC66',
+                'comp_intel': '#CC66FF'
+            };
+            var tiers = [1, 2, 3, 'comp_intel'];
+
+            // Get analytics_purchase events for top and bottom sessions
+            var visibleData = getVisibleAnalyticsData();
+            var topPurchases = visibleData.filter(function(e) {
+                return e.event_type === 'analytics_purchase' && groups.topSessions.has(e.session_id);
+            });
+            var bottomPurchases = visibleData.filter(function(e) {
+                return e.event_type === 'analytics_purchase' && groups.bottomSessions.has(e.session_id);
+            });
+
+            // For each group+tier, count purchases per month then compute cumulative %
+            function buildAdoptionCurves(purchases, totalGames) {
+                var curves = {};
+                tiers.forEach(function(tier) {
+                    var monthCounts = new Array(12).fill(0);
+                    purchases.forEach(function(e) {
+                        var d = e.event_data;
+                        if (d && d.tier == tier && d.month != null && d.month >= 0 && d.month < 12) {
+                            monthCounts[d.month]++;
+                        }
+                    });
+                    var cumulative = [];
+                    var running = 0;
+                    for (var m = 0; m < 12; m++) {
+                        running += monthCounts[m];
+                        cumulative.push(totalGames > 0 ? (running / totalGames) * 100 : 0);
+                    }
+                    if (running > 0) {
+                        curves[tier] = cumulative;
+                    }
+                });
+                return curves;
+            }
+
+            var topCurves = buildAdoptionCurves(topPurchases, groups.topCount);
+            var bottomCurves = buildAdoptionCurves(bottomPurchases, groups.bottomCount);
+
+            var datasets = [];
+            tiers.forEach(function(tier) {
+                if (topCurves[tier]) {
+                    datasets.push({
+                        label: 'Top — ' + tierNames[tier],
+                        color: tierColors[tier],
+                        data: topCurves[tier],
+                        lineWidth: 2.5
+                    });
+                }
+                if (bottomCurves[tier]) {
+                    datasets.push({
+                        label: 'Bottom — ' + tierNames[tier],
+                        color: tierColors[tier],
+                        data: bottomCurves[tier],
+                        lineWidth: 1.5,
+                        dashed: [6, 3]
+                    });
+                }
+            });
+
+            if (datasets.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No analytics purchase data for top/bottom groups', w / 2, h / 2);
+                document.getElementById('top-bottom-adoption-legend').innerHTML = '';
+                return;
+            }
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 55 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return Math.round(v) + '%';
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Top ' + groups.topCount + ' vs Bottom ' + groups.bottomCount + ' games — cumulative adoption', padding.left, padding.top - 6);
+
+            // Build legend items
+            var legendItems = [];
+            tiers.forEach(function(tier) {
+                if (topCurves[tier] || bottomCurves[tier]) {
+                    legendItems.push({ label: 'Top — ' + tierNames[tier], color: tierColors[tier] });
+                    legendItems.push({ label: 'Bottom — ' + tierNames[tier] + ' (dashed)', color: tierColors[tier], dashed: true });
+                }
+            });
+            renderLegend('top-bottom-adoption-legend', legendItems);
+        }
+
+        // ============== #1 SCORER DEEP DIVE ==============
+
+        // Helper: find the #1 scorer by PnL and return all their sessions for the filtered difficulty
+        function getTopScorerInfo() {
+            var diffFilter = document.getElementById('analytics-difficulty-filter').value;
+            var modeFilter = document.getElementById('analytics-mode-filter').value;
+            var scores = isExcludeAdmin() ? allScores.filter(function(s) { return s.user_email !== ADMIN_EMAIL; }) : allScores;
+            var filteredScores = scores.filter(function(s) {
+                if (!difficultyMatches(s.difficulty, diffFilter)) return false;
+                if (modeFilter !== 'all' && (s.game_mode || 'revenue') !== modeFilter) return false;
+                return s.player_pnl != null;
+            });
+
+            if (filteredScores.length === 0) return null;
+
+            // Sort by PnL descending
+            filteredScores.sort(function(a, b) { return (b.player_pnl || 0) - (a.player_pnl || 0); });
+
+            // Build a map of all sessions grouped by user_id -> { difficulty:run -> session_id }
+            // Events may have null difficulty/run_number, so we check per-session
+            // if any event carries the matching values.
+            var visibleData = getVisibleAnalyticsData();
+            var userSessionMap = {}; // user_id -> { 'diff:run' -> session_id }
+            var sessionBuckets = {}; // session_id -> array of events
+            visibleData.forEach(function(e) {
+                if (!e.session_id) return;
+                if (!sessionBuckets[e.session_id]) sessionBuckets[e.session_id] = { userId: e.user_id, events: [] };
+                sessionBuckets[e.session_id].events.push(e);
+            });
+            Object.keys(sessionBuckets).forEach(function(sid) {
+                var bucket = sessionBuckets[sid];
+                var uid = bucket.userId;
+                if (!userSessionMap[uid]) userSessionMap[uid] = {};
+                bucket.events.forEach(function(e) {
+                    if (e.difficulty != null && e.run_number != null) {
+                        var key = e.difficulty + ':' + e.run_number;
+                        userSessionMap[uid][key] = sid;
+                    }
+                });
+            });
+
+            // Walk down the leaderboard and find the best score that has event data
+            for (var i = 0; i < filteredScores.length; i++) {
+                var score = filteredScores[i];
+                var map = userSessionMap[score.user_id];
+                if (!map) continue;
+                var key = score.difficulty + ':' + (score.run_number || 1);
+                var sessionId = map[key];
+                if (sessionId) {
+                    var sessions = new Set();
+                    sessions.add(sessionId);
+                    return {
+                        sessions: sessions,
+                        displayName: score.display_name || score.user_email,
+                        bestPnl: score.player_pnl,
+                        runNumber: score.run_number || 1,
+                        difficulty: score.difficulty,
+                        rank: i + 1,
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        function renderTopScorerSpending() {
+            var c = setupCanvas('top-scorer-spending-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var info = getTopScorerInfo();
+            if (!info || info.sessions.size === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No completed games', w / 2, h / 2);
+                document.getElementById('top-scorer-spending-legend').innerHTML = '';
+                document.getElementById('top-scorer-spending-title').textContent = 'Channel Spending: #1 Scorer (Best Run)';
+                return;
+            }
+
+            var rankLabel = '#' + info.rank + ' Scorer';
+            document.getElementById('top-scorer-spending-title').textContent =
+                'Channel Spending: ' + info.displayName + ' — ' + rankLabel + ' (Best Run)';
+
+            var data = getMonthlyDataBySessions(info.sessions);
+
+            var datasets = [
+                { label: 'Discovery', color: '#FFAA44', data: data.avgA, lineWidth: 2.5 },
+                { label: 'Conversion', color: '#44AAFF', data: data.avgB, lineWidth: 2.5 },
+                { label: 'Social Buzz', color: '#CC66FF', data: data.avgC, lineWidth: 2.5 },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 60 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return '$' + Math.round(v / 1000) + 'k';
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Run #' + info.runNumber + ' — PnL: ' + formatPnl(info.bestPnl), padding.left, padding.top - 6);
+
+            renderLegend('top-scorer-spending-legend', [
+                { label: 'Discovery', color: '#FFAA44' },
+                { label: 'Conversion', color: '#44AAFF' },
+                { label: 'Social Buzz', color: '#CC66FF' },
+            ]);
+        }
+
+        function renderTopScorerPnl() {
+            var c = setupCanvas('top-scorer-pnl-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var info = getTopScorerInfo();
+            if (!info || info.sessions.size === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No completed games', w / 2, h / 2);
+                document.getElementById('top-scorer-pnl-legend').innerHTML = '';
+                document.getElementById('top-scorer-pnl-title').textContent = 'PnL Over Time: #1 Scorer (Best Run)';
+                return;
+            }
+
+            var rankLabel = '#' + info.rank + ' Scorer';
+            document.getElementById('top-scorer-pnl-title').textContent =
+                'PnL Over Time: ' + info.displayName + ' — ' + rankLabel + ' (Best Run)';
+
+            var data = getMonthlyDataBySessions(info.sessions);
+
+            var datasets = [
+                { label: 'PnL (YTD Profit)', color: '#66CC66', data: data.avgProfit, lineWidth: 2.5 },
+                { label: 'Revenue (YTD)', color: '#F5C842', data: data.avgRev, lineWidth: 1.5, dashed: [6, 3] },
+            ];
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 70 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+                if (Math.abs(v) >= 1000) return '$' + Math.round(v / 1000) + 'k';
+                return '$' + Math.round(v);
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Run #' + info.runNumber + ' — PnL: ' + formatPnl(info.bestPnl), padding.left, padding.top - 6);
+
+            renderLegend('top-scorer-pnl-legend', [
+                { label: 'PnL (YTD Profit)', color: '#66CC66' },
+                { label: 'Revenue (YTD)', color: '#F5C842', dashed: true },
+            ]);
+        }
+
+        function renderTopScorerAdoption() {
+            var c = setupCanvas('top-scorer-adoption-chart');
+            var ctx = c.ctx;
+            var w = c.w;
+            var h = c.h;
+
+            var info = getTopScorerInfo();
+            if (!info || info.sessions.size === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No completed games', w / 2, h / 2);
+                document.getElementById('top-scorer-adoption-legend').innerHTML = '';
+                document.getElementById('top-scorer-adoption-title').textContent = 'Analytics Adoption: #1 Scorer (Best Run)';
+                return;
+            }
+
+            var rankLabel = '#' + info.rank + ' Scorer';
+            document.getElementById('top-scorer-adoption-title').textContent =
+                'Analytics Adoption: ' + info.displayName + ' — ' + rankLabel + ' (Best Run)';
+
+            var tierNames = {
+                1: 'Tier 1 (Basic)',
+                2: 'Tier 2 (Advanced)',
+                3: 'Tier 3 (Premium)',
+                'comp_intel': 'Competitor Intel'
+            };
+            var tierColors = {
+                1: '#FFAA44',
+                2: '#44AAFF',
+                3: '#66CC66',
+                'comp_intel': '#CC66FF'
+            };
+            var tiers = [1, 2, 3, 'comp_intel'];
+
+            // Get analytics_purchase events for this scorer's sessions
+            var purchases = getVisibleAnalyticsData().filter(function(e) {
+                return e.event_type === 'analytics_purchase' && info.sessions.has(e.session_id);
+            });
+
+            // For each tier, count purchases per month then compute cumulative % of runs
+            var datasets = [];
+            tiers.forEach(function(tier) {
+                var monthCounts = new Array(12).fill(0);
+                purchases.forEach(function(e) {
+                    var d = e.event_data;
+                    if (d && d.tier == tier && d.month != null && d.month >= 0 && d.month < 12) {
+                        monthCounts[d.month]++;
+                    }
+                });
+                var cumulative = [];
+                var running = 0;
+                for (var m = 0; m < 12; m++) {
+                    running += monthCounts[m];
+                    cumulative.push(running > 0 ? 100 : 0);
+                }
+                if (running > 0) {
+                    datasets.push({
+                        label: tierNames[tier],
+                        color: tierColors[tier],
+                        data: cumulative,
+                        lineWidth: 2.5
+                    });
+                }
+            });
+
+            if (datasets.length === 0) {
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '14px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('No analytics purchases by this player', w / 2, h / 2);
+                document.getElementById('top-scorer-adoption-legend').innerHTML = '';
+                return;
+            }
+
+            var xLabels = [];
+            for (var m = 1; m <= 12; m++) xLabels.push('M' + m);
+
+            var padding = { top: 20, right: 20, bottom: 40, left: 55 };
+            drawLineChart(ctx, w, h, padding, datasets, xLabels, function(v) {
+                return Math.round(v) + '%';
+            });
+
+            ctx.fillStyle = '#B09878';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Run #' + info.runNumber + ' — purchases by month', padding.left, padding.top - 6);
+
+            renderLegend('top-scorer-adoption-legend', datasets.map(function(ds) {
+                return { label: ds.label, color: ds.color };
+            }));
+        }
+
+        // ============== FEEDBACK ==============
+
+        async function loadFeedback() {
+            try {
+                var { data, error } = await supabaseClient
+                    .from('sim_resource_alloc_feedback')
+                    .select('*')
+                    .eq('game_id', 'brew-and-budget')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                allFeedback = data || [];
+                feedbackLoaded = true;
+                updateFeedbackView();
+            } catch (error) {
+                console.error('Error loading feedback:', error);
+                document.getElementById('feedback-stats').innerHTML =
+                    '<p style="color: #CC4444;">Error loading feedback.</p>';
+            }
+        }
+
+        function updateFeedbackView() {
+            var firstRunOnly = document.getElementById('feedback-first-run-filter').checked;
+            var difficultyFilter = document.getElementById('feedback-difficulty-filter').value;
+            var commentFilter = document.getElementById('feedback-comment-filter').value;
+
+            renderFeedbackStats(firstRunOnly);
+            renderFeedbackList(difficultyFilter, commentFilter, firstRunOnly);
+        }
+
+        function renderFeedbackStats(firstRunOnly) {
+            var container = document.getElementById('feedback-stats');
+            var feedback = allFeedback.filter(function(f) { return f.difficulty !== 'expert'; });
+
+            if (isExcludeAdmin()) {
+                feedback = feedback.filter(function(f) { return f.user_email !== ADMIN_EMAIL; });
+            }
+
+            if (firstRunOnly) {
+                feedback = feedback.filter(function(f) { return f.run_number === 1; });
+            }
+
+            if (feedback.length === 0) {
+                container.innerHTML = '<div class="empty-state">No feedback yet.</div>';
+                return;
+            }
+
+            var totalCount = feedback.length;
+            var avgRating = (feedback.reduce(function(sum, f) { return sum + (f.rating || 0); }, 0) / totalCount).toFixed(1);
+            var withComments = feedback.filter(function(f) { return f.feedback_text; }).length;
+
+            // Per-difficulty stats
+            var diffStats = {};
+            feedback.forEach(function(f) {
+                if (f.difficulty === 'expert') return;
+                var d = (f.difficulty === 'medium') ? 'duopoly' : (f.difficulty || 'unknown');
+                if (!diffStats[d]) diffStats[d] = { count: 0, total: 0 };
+                diffStats[d].count++;
+                diffStats[d].total += (f.rating || 0);
+            });
+
+            var clampedAvg = Math.max(0, Math.min(5, Math.round(avgRating)));
+
+            var html = '<div class="stat-box">' +
+                '<div class="stat-value">' + totalCount + '</div>' +
+                '<div class="stat-label">Total Responses' + (firstRunOnly ? ' (1st Run)' : '') + '</div>' +
+                '</div>' +
+                '<div class="stat-box">' +
+                '<div class="stat-value">' + avgRating + '</div>' +
+                '<div class="stat-label">Average Rating' + (firstRunOnly ? ' (1st Run)' : '') + '</div>' +
+                '<div class="star-display">' + '\u2605'.repeat(clampedAvg) + '\u2606'.repeat(5 - clampedAvg) + '</div>' +
+                '</div>' +
+                '<div class="stat-box">' +
+                '<div class="stat-value">' + withComments + '</div>' +
+                '<div class="stat-label">With Comments</div>' +
+                '</div>';
+
+            var diffOrder = ['monopoly', 'duopoly'];
+            diffOrder.forEach(function(d) {
+                var stats = diffStats[d];
+                if (!stats) return;
+                var avg = (stats.total / stats.count).toFixed(1);
+                var clampedDiffAvg = Math.max(0, Math.min(5, Math.round(avg)));
+                html += '<div class="stat-box">' +
+                    '<div class="stat-value">' + avg + '</div>' +
+                    '<div class="stat-label">' + escapeHtml(difficultyDisplayName(d)) + '</div>' +
+                    '<div style="font-size: 0.75em; color: #7A6035;">(' + stats.count + ' responses)</div>' +
+                    '<div class="star-display">' + '\u2605'.repeat(clampedDiffAvg) + '\u2606'.repeat(5 - clampedDiffAvg) + '</div>' +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderFeedbackList(difficultyFilter, commentFilter, firstRunOnly) {
+            var container = document.getElementById('feedback-list');
+            var feedback = allFeedback;
+
+            if (isExcludeAdmin()) {
+                feedback = feedback.filter(function(f) { return f.user_email !== ADMIN_EMAIL; });
+            }
+
+            if (firstRunOnly) {
+                feedback = feedback.filter(function(f) { return f.run_number === 1; });
+            }
+
+            feedback = feedback.filter(function(f) { return difficultyMatches(f.difficulty, difficultyFilter); });
+
+            if (commentFilter === 'with-comments') {
+                feedback = feedback.filter(function(f) { return f.feedback_text; });
+            }
+
+            if (feedback.length === 0) {
+                container.innerHTML = '<div class="empty-state">No feedback found.</div>';
+                return;
+            }
+
+            var html = '';
+            feedback.forEach(function(f) {
+                var date = new Date(f.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                var clampedRating = Math.max(0, Math.min(5, Math.round(f.rating) || 0));
+                html += '<div class="feedback-item">' +
+                    '<div class="feedback-header">' +
+                    '<div>' +
+                    '<span class="feedback-user">' + escapeHtml(f.display_name || f.user_email) + '</span>' +
+                    '<span class="feedback-difficulty">' + escapeHtml(difficultyDisplayName(f.difficulty || '-')) + '</span>' +
+                    '<span style="color: #7A6035; font-size: 0.85em;"> - Run #' + (f.run_number || '?') + '</span>' +
+                    '</div>' +
+                    '<div>' +
+                    '<span class="feedback-rating">' + '\u2605'.repeat(clampedRating) + '\u2606'.repeat(5 - clampedRating) + '</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="feedback-meta">' + date + '</div>' +
+                    (f.feedback_text ? '<div class="feedback-text">"' + escapeHtml(f.feedback_text) + '"</div>' : '') +
+                    '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ============== ADVENTURE ==============
+
+        function getVisibleAdventureScores() {
+            if (isExcludeAdmin() && adminUserId) {
+                return adventureScores.filter(function(s) { return s.user_email !== ADMIN_EMAIL; });
+            }
+            return adventureScores;
+        }
+
+        async function loadAdventure() {
+            try {
+                document.getElementById('adventure-overview').innerHTML =
+                    '<div class="loading">Loading adventure data...</div>';
+
+                var pageSize = 1000;
+                var allData = [];
+                var from = 0;
+                while (true) {
+                    var result = await supabaseClient
+                        .from('sim_resource_alloc_scores')
+                        .select('*')
+                        .eq('game_id', 'brew-and-budget')
+                        .eq('difficulty', 'adventure')
+                        .order('created_at', { ascending: false })
+                        .range(from, from + pageSize - 1);
+                    if (result.error) throw result.error;
+                    if (!result.data || result.data.length === 0) break;
+                    allData = allData.concat(result.data);
+                    if (result.data.length < pageSize) break;
+                    from += pageSize;
+                }
+
+                adventureScores = allData;
+                adventureLoaded = true;
+                renderAllAdventure();
+            } catch (error) {
+                console.error('Error loading adventure:', error);
+                document.getElementById('adventure-overview').innerHTML =
+                    '<p style="color: #CC4444;">Error loading adventure data: ' + escapeHtml(error.message) + '</p>';
+            }
+        }
+
+        function renderAllAdventure() {
+            var scores = getVisibleAdventureScores();
+            renderAdventureOverview(scores);
+            renderAdventureGradeDist(scores);
+            renderAdventureRevenueDist(scores);
+            renderAdventureModifierAnalysis(scores);
+            renderAdventureScenarioAnalysis(scores);
+            renderAdventureAllocChart(scores);
+            renderAdventureBadgeRarity(scores);
+            renderAdventurePlayerProgression(scores);
+            renderAdventureRecentRuns(scores);
+        }
+
+        function renderAdventureOverview(scores) {
+            var container = document.getElementById('adventure-overview');
+            if (scores.length === 0) {
+                container.innerHTML = '<div class="empty-state">No adventure runs yet.</div>';
+                return;
+            }
+
+            var totalRuns = scores.length;
+            var uniquePlayers = new Set(scores.map(function(s) { return s.user_id; })).size;
+
+            var gradeOrder = { 'A+': 12, 'A': 11, 'B+': 10, 'B': 9, 'C+': 8, 'C': 7, 'D': 5, 'F': 2 };
+            var gradeSum = 0;
+            var gradeCount = 0;
+            scores.forEach(function(s) {
+                if (s.grade && gradeOrder[s.grade] !== undefined) {
+                    gradeSum += gradeOrder[s.grade];
+                    gradeCount++;
+                }
+            });
+            var avgGradeNum = gradeCount > 0 ? gradeSum / gradeCount : 0;
+            var gradeLabels = Object.entries(gradeOrder).sort(function(a, b) { return b[1] - a[1]; });
+            var avgGradeLabel = '-';
+            for (var i = 0; i < gradeLabels.length; i++) {
+                if (avgGradeNum >= gradeLabels[i][1]) {
+                    avgGradeLabel = gradeLabels[i][0];
+                    break;
+                }
+            }
+
+            var revSum = 0;
+            scores.forEach(function(s) { revSum += (s.total_revenue || 0); });
+            var avgRevenue = Math.round(revSum / totalRuns);
+
+            var repSum = 0;
+            var repCount = 0;
+            var multSum = 0;
+            var multCount = 0;
+            scores.forEach(function(s) {
+                var ad = s.adventure_data;
+                if (ad) {
+                    if (ad.rep_earned !== undefined) { repSum += ad.rep_earned; repCount++; }
+                    if (ad.multiplier !== undefined) { multSum += ad.multiplier; multCount++; }
+                }
+            });
+            var avgRep = repCount > 0 ? (repSum / repCount).toFixed(1) : '-';
+            var avgMult = multCount > 0 ? (multSum / multCount).toFixed(2) : '-';
+
+            container.innerHTML =
+                '<div class="analytics-stat"><div class="value">' + totalRuns + '</div><div class="label">Total Runs</div></div>' +
+                '<div class="analytics-stat"><div class="value">' + uniquePlayers + '</div><div class="label">Unique Players</div></div>' +
+                '<div class="analytics-stat"><div class="value">' + avgGradeLabel + '</div><div class="label">Avg Grade</div></div>' +
+                '<div class="analytics-stat"><div class="value">$' + avgRevenue.toLocaleString() + '</div><div class="label">Avg Revenue</div></div>' +
+                '<div class="analytics-stat"><div class="value">' + avgRep + '</div><div class="label">Avg Rep Earned</div></div>' +
+                '<div class="analytics-stat"><div class="value">' + avgMult + 'x</div><div class="label">Avg Multiplier</div></div>';
+        }
+
+        function renderAdventureGradeDist(scores) {
+            var container = document.getElementById('adventure-grade-dist');
+            if (scores.length === 0) {
+                container.innerHTML = '<div class="empty-state">No data.</div>';
+                return;
+            }
+
+            var gradeOrder = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F'];
+            var gradeCounts = {};
+            gradeOrder.forEach(function(g) { gradeCounts[g] = 0; });
+            scores.forEach(function(s) {
+                var g = s.grade || 'F';
+                if (gradeCounts[g] !== undefined) gradeCounts[g]++;
+            });
+
+            var maxCount = Math.max.apply(null, Object.values(gradeCounts)) || 1;
+            var gradeColors = {
+                'A+': '#66CC66', 'A': '#66CC66',
+                'B+': '#F5C842', 'B': '#F5C842',
+                'C+': '#FFAA44', 'C': '#FFAA44',
+                'D': '#CC4444', 'F': '#CC4444'
+            };
+
+            var html = '<div style="display: flex; gap: 8px; align-items: flex-end; height: 180px; padding-top: 10px;">';
+            gradeOrder.forEach(function(g) {
+                var count = gradeCounts[g];
+                var pct = (count / maxCount) * 100;
+                var barH = Math.max(pct, 2);
+                html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">' +
+                    '<div style="font-size: 0.75em; color: #B09878; margin-bottom: 4px;">' + count + '</div>' +
+                    '<div style="width: 100%; max-width: 40px; height: ' + barH + '%; background: ' + gradeColors[g] + '; border-radius: 4px 4px 0 0; opacity: 0.8; min-height: 2px;"></div>' +
+                    '<div style="font-size: 0.75em; color: #F0E6D6; margin-top: 6px; font-weight: 600;">' + g + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderAdventureRevenueDist(scores) {
+            var canvas = document.getElementById('adventure-revenue-chart');
+            if (scores.length === 0) {
+                canvas.style.display = 'none';
+                return;
+            }
+            canvas.style.display = '';
+
+            var revenues = scores.map(function(s) { return s.total_revenue || 0; });
+            var minRev = Math.min.apply(null, revenues);
+            var maxRev = Math.max.apply(null, revenues);
+            var binCount = 10;
+            var range = maxRev - minRev || 1;
+            var binSize = range / binCount;
+
+            var bins = [];
+            var binLabels = [];
+            for (var i = 0; i < binCount; i++) {
+                bins.push(0);
+                var lo = Math.round(minRev + i * binSize);
+                var hi = Math.round(minRev + (i + 1) * binSize);
+                binLabels.push('$' + (lo / 1000).toFixed(0) + 'K');
+            }
+            revenues.forEach(function(r) {
+                var idx = Math.min(Math.floor((r - minRev) / binSize), binCount - 1);
+                bins[idx]++;
+            });
+
+            var c = setupCanvas('adventure-revenue-chart');
+            var ctx = c.ctx, w = c.w, h = c.h;
+            var padding = { top: 20, right: 20, bottom: 30, left: 50 };
+            var chartW = w - padding.left - padding.right;
+            var chartH = h - padding.top - padding.bottom;
+            var maxBin = Math.max.apply(null, bins) || 1;
+
+            // Axes
+            ctx.strokeStyle = 'rgba(180, 140, 80, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, h - padding.bottom);
+            ctx.lineTo(w - padding.right, h - padding.bottom);
+            ctx.stroke();
+
+            // Bars
+            var barWidth = chartW / binCount * 0.8;
+            var gap = chartW / binCount * 0.2;
+            for (var i = 0; i < binCount; i++) {
+                var barH = (bins[i] / maxBin) * chartH;
+                var x = padding.left + (chartW / binCount) * i + gap / 2;
+                var y = h - padding.bottom - barH;
+                ctx.fillStyle = 'rgba(245, 200, 66, 0.6)';
+                ctx.fillRect(x, y, barWidth, barH);
+
+                // Count label
+                if (bins[i] > 0) {
+                    ctx.fillStyle = '#F0E6D6';
+                    ctx.font = '10px "Space Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(bins[i], x + barWidth / 2, y - 4);
+                }
+
+                // X label
+                ctx.fillStyle = '#7A6035';
+                ctx.font = '9px "Space Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(binLabels[i], x + barWidth / 2, h - padding.bottom + 14);
+            }
+
+            // Y-axis labels
+            ctx.fillStyle = '#7A6035';
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.textAlign = 'right';
+            for (var g = 0; g <= 4; g++) {
+                var val = Math.round(maxBin * g / 4);
+                var yPos = h - padding.bottom - (chartH * g / 4);
+                ctx.fillText(val, padding.left - 5, yPos + 3);
+            }
+        }
+
+        function renderAdventureModifierAnalysis(scores) {
+            var container = document.getElementById('adventure-modifier-analysis');
+            var withData = scores.filter(function(s) { return s.adventure_data; });
+            if (withData.length === 0) {
+                container.innerHTML = '<div class="empty-state">No adventure data with modifiers yet.</div>';
+                return;
+            }
+
+            var modNames = {
+                'budget_crunch': 'Budget Crunch',
+                'flying_blind': 'Flying Blind',
+                'speed_round': 'Speed Round',
+                'volatile': 'Volatile Market'
+            };
+            var gradeValues = { 'A+': 12, 'A': 11, 'B+': 10, 'B': 9, 'C+': 8, 'C': 7, 'D': 5, 'F': 2 };
+
+            // Per-modifier stats
+            var modStats = {};
+            Object.keys(modNames).forEach(function(id) {
+                modStats[id] = { count: 0, gradeSum: 0, gradeCount: 0 };
+            });
+
+            // No-modifier baseline
+            var noModCount = 0;
+            var noModGradeSum = 0;
+            var noModGradeCount = 0;
+
+            withData.forEach(function(s) {
+                var mods = s.adventure_data.modifiers || [];
+                var gv = gradeValues[s.grade];
+                if (mods.length === 0) {
+                    noModCount++;
+                    if (gv !== undefined) { noModGradeSum += gv; noModGradeCount++; }
+                }
+                mods.forEach(function(m) {
+                    if (modStats[m]) {
+                        modStats[m].count++;
+                        if (gv !== undefined) { modStats[m].gradeSum += gv; modStats[m].gradeCount++; }
+                    }
+                });
+            });
+
+            var gradeLabelsMap = Object.entries(gradeValues).sort(function(a, b) { return b[1] - a[1]; });
+            function numToGrade(n) {
+                for (var i = 0; i < gradeLabelsMap.length; i++) {
+                    if (n >= gradeLabelsMap[i][1]) return gradeLabelsMap[i][0];
+                }
+                return 'F';
+            }
+
+            var html = '<table class="leaderboard-table"><thead><tr>' +
+                '<th>Modifier</th><th>Times Used</th><th>% of Runs</th><th>Avg Grade</th>' +
+                '</tr></thead><tbody>';
+
+            // No modifiers row
+            var noModAvg = noModGradeCount > 0 ? numToGrade(noModGradeSum / noModGradeCount) : '-';
+            var noModPct = withData.length > 0 ? ((noModCount / withData.length) * 100).toFixed(1) : '0';
+            html += '<tr><td style="color: #B09878;">(No modifiers)</td><td>' + noModCount + '</td><td>' + noModPct + '%</td>' +
+                '<td><span class="grade-badge ' + gradeClass(noModAvg) + '">' + noModAvg + '</span></td></tr>';
+
+            Object.keys(modNames).forEach(function(id) {
+                var st = modStats[id];
+                var avg = st.gradeCount > 0 ? numToGrade(st.gradeSum / st.gradeCount) : '-';
+                var pct = withData.length > 0 ? ((st.count / withData.length) * 100).toFixed(1) : '0';
+                html += '<tr><td>' + escapeHtml(modNames[id]) + '</td><td>' + st.count + '</td><td>' + pct + '%</td>' +
+                    '<td><span class="grade-badge ' + gradeClass(avg) + '">' + avg + '</span></td></tr>';
+            });
+
+            html += '</tbody></table>';
+
+            // Modifier combos
+            var comboCounts = {};
+            withData.forEach(function(s) {
+                var mods = (s.adventure_data.modifiers || []).slice().sort();
+                if (mods.length >= 2) {
+                    var key = mods.join(' + ');
+                    if (!comboCounts[key]) comboCounts[key] = { count: 0, gradeSum: 0, gradeCount: 0 };
+                    comboCounts[key].count++;
+                    var gv = gradeValues[s.grade];
+                    if (gv !== undefined) { comboCounts[key].gradeSum += gv; comboCounts[key].gradeCount++; }
+                }
+            });
+
+            var comboEntries = Object.entries(comboCounts).sort(function(a, b) { return b[1].count - a[1].count; });
+            if (comboEntries.length > 0) {
+                html += '<h4 style="color: #F5C842; margin-top: 20px; font-size: 0.9em;">Modifier Combos</h4>';
+                html += '<table class="leaderboard-table"><thead><tr><th>Combo</th><th>Uses</th><th>Avg Grade</th></tr></thead><tbody>';
+                comboEntries.forEach(function(entry) {
+                    var label = entry[0].split(' + ').map(function(id) { return modNames[id] || id; }).join(' + ');
+                    var avg = entry[1].gradeCount > 0 ? numToGrade(entry[1].gradeSum / entry[1].gradeCount) : '-';
+                    html += '<tr><td>' + escapeHtml(label) + '</td><td>' + entry[1].count + '</td>' +
+                        '<td><span class="grade-badge ' + gradeClass(avg) + '">' + avg + '</span></td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderAdventureScenarioAnalysis(scores) {
+            var container = document.getElementById('adventure-scenario-analysis');
+            var withData = scores.filter(function(s) { return s.adventure_data && s.adventure_data.scenario_name; });
+            if (withData.length === 0) {
+                container.innerHTML = '<div class="empty-state">No scenario data yet.</div>';
+                return;
+            }
+
+            var gradeValues = { 'A+': 12, 'A': 11, 'B+': 10, 'B': 9, 'C+': 8, 'C': 7, 'D': 5, 'F': 2 };
+            var gradeLabelsMap = Object.entries(gradeValues).sort(function(a, b) { return b[1] - a[1]; });
+            function numToGrade(n) {
+                for (var i = 0; i < gradeLabelsMap.length; i++) {
+                    if (n >= gradeLabelsMap[i][1]) return gradeLabelsMap[i][0];
+                }
+                return 'F';
+            }
+
+            // Per scenario name
+            var scenarioStats = {};
+            withData.forEach(function(s) {
+                var name = s.adventure_data.scenario_name;
+                if (!scenarioStats[name]) scenarioStats[name] = { count: 0, gradeSum: 0, gradeCount: 0, revSum: 0 };
+                scenarioStats[name].count++;
+                scenarioStats[name].revSum += (s.total_revenue || 0);
+                var gv = gradeValues[s.grade];
+                if (gv !== undefined) { scenarioStats[name].gradeSum += gv; scenarioStats[name].gradeCount++; }
+            });
+
+            var html = '<table class="leaderboard-table"><thead><tr>' +
+                '<th>Scenario</th><th>Runs</th><th>Avg Grade</th><th>Avg Revenue</th>' +
+                '</tr></thead><tbody>';
+            Object.entries(scenarioStats).sort(function(a, b) { return b[1].count - a[1].count; }).forEach(function(entry) {
+                var st = entry[1];
+                var avg = st.gradeCount > 0 ? numToGrade(st.gradeSum / st.gradeCount) : '-';
+                var avgRev = '$' + Math.round(st.revSum / st.count).toLocaleString();
+                html += '<tr><td>' + escapeHtml(entry[0]) + '</td><td>' + st.count + '</td>' +
+                    '<td><span class="grade-badge ' + gradeClass(avg) + '">' + avg + '</span></td>' +
+                    '<td>' + avgRev + '</td></tr>';
+            });
+            html += '</tbody></table>';
+
+            // Per role permutation
+            var roleStats = {};
+            withData.forEach(function(s) {
+                var roles = s.adventure_data.roles;
+                if (!roles) return;
+                var key = 'A=' + roles.a + ', B=' + roles.b + ', C=' + roles.c;
+                if (!roleStats[key]) roleStats[key] = { count: 0, gradeSum: 0, gradeCount: 0 };
+                roleStats[key].count++;
+                var gv = gradeValues[s.grade];
+                if (gv !== undefined) { roleStats[key].gradeSum += gv; roleStats[key].gradeCount++; }
+            });
+
+            html += '<h4 style="color: #F5C842; margin-top: 20px; font-size: 0.9em;">Role Permutations</h4>';
+            html += '<table class="leaderboard-table"><thead><tr><th>Roles</th><th>Runs</th><th>Avg Grade</th></tr></thead><tbody>';
+            Object.entries(roleStats).sort(function(a, b) { return b[1].count - a[1].count; }).forEach(function(entry) {
+                var st = entry[1];
+                var avg = st.gradeCount > 0 ? numToGrade(st.gradeSum / st.gradeCount) : '-';
+                html += '<tr><td style="font-size: 0.85em;">' + escapeHtml(entry[0]) + '</td><td>' + st.count + '</td>' +
+                    '<td><span class="grade-badge ' + gradeClass(avg) + '">' + avg + '</span></td></tr>';
+            });
+            html += '</tbody></table>';
+
+            container.innerHTML = html;
+        }
+
+        function renderAdventureAllocChart(scores) {
+            var canvas = document.getElementById('adventure-alloc-chart');
+            var withData = scores.filter(function(s) {
+                return s.adventure_data && s.adventure_data.allocations && s.adventure_data.allocations.length > 0;
+            });
+            if (withData.length === 0) {
+                canvas.style.display = 'none';
+                document.getElementById('adventure-alloc-legend').innerHTML = '<div class="empty-state">No allocation data yet.</div>';
+                return;
+            }
+            canvas.style.display = '';
+
+            // Find max months across all runs
+            var maxMonths = 0;
+            withData.forEach(function(s) {
+                var len = s.adventure_data.allocations.length;
+                if (len > maxMonths) maxMonths = len;
+            });
+
+            // Compute avg % per channel per month
+            var playerA = [], playerB = [], playerC = [];
+            var oracleA = [], oracleB = [], oracleC = [];
+            var xLabels = [];
+
+            for (var m = 0; m < maxMonths; m++) {
+                var pA = 0, pB = 0, pC = 0, pCount = 0;
+                withData.forEach(function(s) {
+                    var alloc = s.adventure_data.allocations;
+                    if (m < alloc.length) {
+                        var budget = s.adventure_data.monthly_budget || 300000;
+                        pA += (alloc[m].a || 0) / budget * 100;
+                        pB += (alloc[m].b || 0) / budget * 100;
+                        pC += (alloc[m].c || 0) / budget * 100;
+                        pCount++;
+                    }
+                });
+                playerA.push(pCount > 0 ? pA / pCount : 0);
+                playerB.push(pCount > 0 ? pB / pCount : 0);
+                playerC.push(pCount > 0 ? pC / pCount : 0);
+                xLabels.push('M' + (m + 1));
+            }
+
+            // Oracle avg (usually constant across months for a given scenario, take first run's oracle as representative)
+            var oA = 0, oB = 0, oC = 0, oCount = 0;
+            withData.forEach(function(s) {
+                var oracle = s.adventure_data.oracle_alloc;
+                var budget = s.adventure_data.monthly_budget || 300000;
+                if (oracle) {
+                    oA += (oracle.a || 0) / budget * 100;
+                    oB += (oracle.b || 0) / budget * 100;
+                    oC += (oracle.c || 0) / budget * 100;
+                    oCount++;
+                }
+            });
+            for (var m = 0; m < maxMonths; m++) {
+                oracleA.push(oCount > 0 ? oA / oCount : 0);
+                oracleB.push(oCount > 0 ? oB / oCount : 0);
+                oracleC.push(oCount > 0 ? oC / oCount : 0);
+            }
+
+            var datasets = [
+                { label: 'Player A%', data: playerA, color: '#66CC66', lineWidth: 2 },
+                { label: 'Player B%', data: playerB, color: '#44AAFF', lineWidth: 2 },
+                { label: 'Player C%', data: playerC, color: '#CC4444', lineWidth: 2 },
+                { label: 'Oracle A%', data: oracleA, color: '#66CC66', lineWidth: 1.5, dashed: [5, 5] },
+                { label: 'Oracle B%', data: oracleB, color: '#44AAFF', lineWidth: 1.5, dashed: [5, 5] },
+                { label: 'Oracle C%', data: oracleC, color: '#CC4444', lineWidth: 1.5, dashed: [5, 5] },
+            ];
+
+            var c = setupCanvas('adventure-alloc-chart');
+            var padding = { top: 20, right: 20, bottom: 30, left: 50 };
+            drawLineChart(c.ctx, c.w, c.h, padding, datasets, xLabels, function(v) { return v.toFixed(0) + '%'; });
+
+            renderLegend('adventure-alloc-legend', datasets);
+        }
+
+        function renderAdventureBadgeRarity(scores) {
+            var container = document.getElementById('adventure-badge-rarity');
+            var withData = scores.filter(function(s) { return s.adventure_data && s.adventure_data.all_badges; });
+            if (withData.length === 0) {
+                container.innerHTML = '<div class="empty-state">No badge data yet.</div>';
+                return;
+            }
+
+            var badgeDefs = [
+                { id: 'trap_detector', label: 'Trap Detector' },
+                { id: 'natural_experimenter', label: 'Natural Experimenter' },
+                { id: 'data_scientist', label: 'Data Scientist' },
+                { id: 'speed_demon', label: 'Speed Demon' },
+                { id: 'blind_genius', label: 'Blind Genius' },
+                { id: 'budget_master', label: 'Budget Master' },
+                { id: 'volatile_victor', label: 'Volatile Victor' },
+                { id: 'double_down', label: 'Double Down' },
+                { id: 'triple_threat', label: 'Triple Threat' },
+                { id: 'all_in', label: 'All In' },
+                { id: 'perfect_run', label: 'Perfect Run' },
+                { id: 'streak_runner', label: 'Streak Runner' },
+                { id: 'marathon_runner', label: 'Marathon Runner' },
+                { id: 'empire_builder', label: 'Empire Builder' },
+            ];
+
+            // Count unique players who have each badge (from their most recent run)
+            var playerLatest = {};
+            withData.forEach(function(s) {
+                if (!playerLatest[s.user_id] || new Date(s.created_at) > new Date(playerLatest[s.user_id].created_at)) {
+                    playerLatest[s.user_id] = s;
+                }
+            });
+
+            var totalPlayers = Object.keys(playerLatest).length;
+            var badgeCounts = {};
+            badgeDefs.forEach(function(b) { badgeCounts[b.id] = 0; });
+            Object.values(playerLatest).forEach(function(s) {
+                var badges = s.adventure_data.all_badges || [];
+                badges.forEach(function(id) {
+                    if (badgeCounts[id] !== undefined) badgeCounts[id]++;
+                });
+            });
+
+            // Sort rarest first
+            var sorted = badgeDefs.slice().sort(function(a, b) { return badgeCounts[a.id] - badgeCounts[b.id]; });
+
+            var html = '<table class="leaderboard-table"><thead><tr>' +
+                '<th>Badge</th><th>Players</th><th>% of Players</th><th>Rarity</th>' +
+                '</tr></thead><tbody>';
+            sorted.forEach(function(b) {
+                var count = badgeCounts[b.id];
+                var pct = totalPlayers > 0 ? ((count / totalPlayers) * 100).toFixed(1) : '0';
+                var rarity = count === 0 ? 'Unearned' : pct <= 10 ? 'Legendary' : pct <= 30 ? 'Rare' : pct <= 60 ? 'Uncommon' : 'Common';
+                var rarityColor = count === 0 ? '#555' : pct <= 10 ? '#F5C842' : pct <= 30 ? '#9B59B6' : pct <= 60 ? '#44AAFF' : '#66CC66';
+                html += '<tr><td>' + escapeHtml(b.label) + '</td><td>' + count + ' / ' + totalPlayers + '</td>' +
+                    '<td>' + pct + '%</td>' +
+                    '<td style="color: ' + rarityColor + '; font-weight: 600;">' + rarity + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderAdventurePlayerProgression(scores) {
+            var container = document.getElementById('adventure-player-progression');
+            var withData = scores.filter(function(s) { return s.adventure_data; });
+            if (withData.length === 0) {
+                container.innerHTML = '<div class="empty-state">No player data yet.</div>';
+                return;
+            }
+
+            // Group by player, use latest run for current state
+            var players = {};
+            withData.forEach(function(s) {
+                if (!players[s.user_id]) {
+                    players[s.user_id] = { name: s.display_name || s.user_email, runs: [], latest: s };
+                }
+                players[s.user_id].runs.push(s);
+                if (new Date(s.created_at) > new Date(players[s.user_id].latest.created_at)) {
+                    players[s.user_id].latest = s;
+                }
+            });
+
+            var gradeValues = { 'A+': 12, 'A': 11, 'B+': 10, 'B': 9, 'C+': 8, 'C': 7, 'D': 5, 'F': 2 };
+
+            var playerList = Object.values(players).map(function(p) {
+                var ad = p.latest.adventure_data;
+                var bestGradeVal = 0;
+                var bestGrade = '-';
+                p.runs.forEach(function(r) {
+                    var gv = gradeValues[r.grade] || 0;
+                    if (gv > bestGradeVal) { bestGradeVal = gv; bestGrade = r.grade; }
+                });
+                return {
+                    name: p.name,
+                    runs: p.runs.length,
+                    tier: ad ? (ad.tier || '-') : '-',
+                    reputation: ad ? (ad.reputation || 0) : 0,
+                    badges: ad ? (ad.all_badges || []).length : 0,
+                    bestGrade: bestGrade,
+                    streak: ad ? (ad.streak || 0) : 0,
+                };
+            });
+
+            playerList.sort(function(a, b) { return b.reputation - a.reputation; });
+
+            var html = '<table class="leaderboard-table"><thead><tr>' +
+                '<th>#</th><th>Player</th><th>Runs</th><th>Tier</th><th>Reputation</th><th>Badges</th><th>Best Grade</th><th>Streak</th>' +
+                '</tr></thead><tbody>';
+            playerList.forEach(function(p, idx) {
+                html += '<tr>' +
+                    '<td class="rank-cell">' + (idx + 1) + '</td>' +
+                    '<td>' + escapeHtml(p.name) + '</td>' +
+                    '<td>' + p.runs + '</td>' +
+                    '<td style="color: #F5C842;">' + escapeHtml(p.tier) + '</td>' +
+                    '<td>' + p.reputation + '</td>' +
+                    '<td>' + p.badges + '</td>' +
+                    '<td><span class="grade-badge ' + gradeClass(p.bestGrade) + '">' + p.bestGrade + '</span></td>' +
+                    '<td>' + p.streak + '</td>' +
+                    '</tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderAdventureRecentRuns(scores) {
+            var container = document.getElementById('adventure-recent-runs');
+            if (scores.length === 0) {
+                container.innerHTML = '<div class="empty-state">No runs yet.</div>';
+                return;
+            }
+
+            var recent = scores.slice(0, 50);
+            var html = '<table class="leaderboard-table"><thead><tr>' +
+                '<th>Player</th><th>Date</th><th>Scenario</th><th>Modifiers</th><th>Grade</th><th>Revenue</th><th>Rep</th><th>New Badges</th>' +
+                '</tr></thead><tbody>';
+
+            var modNames = {
+                'budget_crunch': 'Budget Crunch',
+                'flying_blind': 'Flying Blind',
+                'speed_round': 'Speed Round',
+                'volatile': 'Volatile Market'
+            };
+
+            recent.forEach(function(s) {
+                var date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                }) : '-';
+                var ad = s.adventure_data;
+                var scenarioName = ad ? (ad.scenario_name || '-') : '-';
+                var mods = ad && ad.modifiers ? ad.modifiers.map(function(id) { return modNames[id] || id; }).join(', ') : '-';
+                var rep = ad ? (ad.rep_earned || 0) : '-';
+                var newBadges = ad && ad.new_badges && ad.new_badges.length > 0 ? ad.new_badges.join(', ') : '-';
+
+                html += '<tr>' +
+                    '<td>' + escapeHtml(s.display_name || s.user_email) + '</td>' +
+                    '<td style="color: #7A6035; font-size: 0.85em;">' + date + '</td>' +
+                    '<td style="font-size: 0.85em;">' + escapeHtml(scenarioName) + '</td>' +
+                    '<td style="font-size: 0.85em;">' + escapeHtml(mods) + '</td>' +
+                    '<td><span class="grade-badge ' + gradeClass(s.grade) + '">' + escapeHtml(s.grade || '-') + '</span></td>' +
+                    '<td>$' + (s.total_revenue || 0).toLocaleString() + '</td>' +
+                    '<td>' + rep + '</td>' +
+                    '<td style="font-size: 0.8em; color: #F5C842;">' + escapeHtml(newBadges) + '</td>' +
+                    '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // ============== INIT ==============
+        init();
+    </script>
+</body>
+</html>

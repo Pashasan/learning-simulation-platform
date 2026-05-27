@@ -1,0 +1,35 @@
+{
+  "id": "discrete-choice",
+  "title": "Discrete Choice Lab",
+  "subtitle": "Scanner Data Analysis Workshop",
+  "tagline": "Modeling Consumer Choice",
+  "description": "Master the multinomial logit model through scanner panel data analysis based on Guadagni & Little (1983)",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#d4a03c",
+    "secondaryColor": "#6c8ebf",
+    "backgroundColor": "#141428"
+  },
+  "supabase": {
+    "table": "choice_quant_mktg_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "\ud83c\udfaf", "name": "First Insight", "description": "First Correct Answer" },
+    "streak": { "icon": "\ud83d\udd25", "name": "On Fire", "description": "3+ Streak" },
+    "perfect": { "icon": "\u2b50", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "logit": { "icon": "\ud83d\udcc8", "name": "Logit Expert", "description": "Mastered the logit model" },
+    "iia": { "icon": "\ud83d\ude8c", "name": "IIA Detective", "description": "Understood IIA property" },
+    "master": { "icon": "\ud83c\udfc6", "name": "Choice Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Professor" },
+    { "minCorrect": 5, "title": "Associate Professor" },
+    { "minCorrect": 3, "title": "Assistant Professor" },
+    { "minCorrect": 0, "title": "PhD Student" }
+  ]
+}

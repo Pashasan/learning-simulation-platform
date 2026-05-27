@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../../favicon.ico">
+<title>Discrete Choice 1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0A0E1A;
+    color: #E0E6F0;
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .card {
+    background: rgba(14, 18, 34, 0.92);
+    border: 1px solid rgba(100, 181, 246, 0.15);
+    border-radius: 12px;
+    padding: 40px 36px 32px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(100, 181, 246, 0.06);
+  }
+
+  .title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #64B5F6;
+    text-align: center;
+    margin-bottom: 4px;
+    text-shadow: 0 0 12px rgba(100, 181, 246, 0.3);
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #6B7A99;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .desc {
+    font-size: 12px;
+    color: #6B7A99;
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .separator {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(100,181,246,0), rgba(100,181,246,0.25), rgba(100,181,246,0));
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    color: #6B7A99;
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(100, 181, 246, 0.15);
+    border-radius: 6px;
+    color: #E0E6F0;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus {
+    border-color: #64B5F6;
+  }
+
+  .form-group input::placeholder {
+    color: rgba(107, 122, 153, 0.5);
+  }
+
+  .hidden { display: none !important; }
+
+  .error-msg {
+    color: #EF5350;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .success-msg {
+    color: #66BB6A;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(180deg, #3A5A8A, #2A4A7A);
+    border: none;
+    border-radius: 6px;
+    color: #E0E6F0;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-submit:hover {
+    background: linear-gradient(180deg, #4A6A9A, #3A5A8A);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .auth-switch {
+    text-align: center;
+    font-size: 12px;
+    color: #6B7A99;
+    margin-top: 16px;
+  }
+
+  .auth-switch a {
+    color: #64B5F6;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .auth-switch a:hover {
+    text-decoration: underline;
+  }
+
+  .legal-links {
+    text-align: center;
+    font-size: 10px;
+    color: rgba(107, 122, 153, 0.6);
+    margin-top: 12px;
+  }
+
+  .legal-links a {
+    color: rgba(107, 122, 153, 0.8);
+    text-decoration: none;
+  }
+
+  .legal-links a:hover {
+    text-decoration: underline;
+  }
+
+  .back-to-hub {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #6B7A99;
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    transition: color 0.2s;
+    z-index: 10;
+  }
+
+  .back-to-hub:hover {
+    color: #64B5F6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="../../index.html" class="back-to-hub">&#8592; Labs Hub</a>
+  <div class="card">
+    <div class="title">Discrete Choice 1</div>
+    <div class="subtitle">Interactive Code Labs</div>
+    <div class="desc">
+      Learn binary choice models through interactive code labs.
+      Explore logistic regression step by step with the BeatBox earbuds case study.
+    </div>
+    <div class="separator"></div>
+
+    <form id="auth-form" onsubmit="handleAuth(event)">
+      <div class="form-group hidden" id="username-group">
+        <label for="auth-username">Username</label>
+        <input type="text" id="auth-username" placeholder="Your display name" minlength="2" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label for="auth-email">Email</label>
+        <input type="email" id="auth-email" required placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label for="auth-password">Password</label>
+        <input type="password" id="auth-password" required minlength="6" placeholder="Min 6 characters">
+      </div>
+      <div id="auth-error" class="error-msg"></div>
+      <div id="auth-success" class="success-msg"></div>
+      <button type="submit" class="btn-submit" id="auth-submit">Login</button>
+    </form>
+
+    <p class="auth-switch">
+      <span id="auth-switch-text">Don't have an account?</span>
+      <a onclick="toggleAuthMode()" id="auth-switch-link">Sign up</a>
+    </p>
+    <p class="legal-links">
+      By signing up, you agree to our <a href="../../terms.html">Terms of Use</a> and <a href="../../privacy.html">Privacy Policy</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+  function __makeDemoSupabaseClient() {
+    const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+    const session = { user: DEMO_USER, access_token: 'demo' };
+    const ok = (data) => Promise.resolve({ data, error: null });
+    const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+    function builder() {
+      const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+      builderMethods.forEach((m) => { b[m] = () => b; });
+      return b;
+    }
+    return {
+      auth: {
+        getSession: () => ok({ session }),
+        getUser: () => ok({ user: DEMO_USER }),
+        signInWithPassword: () => ok({ user: DEMO_USER, session }),
+        signUp: () => ok({ user: DEMO_USER, session }),
+        signOut: () => ok(null),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => builder(),
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    };
+  }
+
+  const { createClient } = supabase;
+  const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let authMode = 'login';
+
+  supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      window.location.href = 'game.html';
+    }
+  });
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      window.location.href = 'game.html';
+    }
+  });
+
+  function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('auth-submit').textContent = authMode === 'login' ? 'Login' : 'Sign Up';
+    document.getElementById('auth-switch-text').textContent = authMode === 'login' ? "Don't have an account?" : 'Already have an account?';
+    document.getElementById('auth-switch-link').textContent = authMode === 'login' ? 'Sign up' : 'Login';
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-success').style.display = 'none';
+
+    const usernameGroup = document.getElementById('username-group');
+    const usernameInput = document.getElementById('auth-username');
+    if (authMode === 'signup') {
+      usernameGroup.classList.remove('hidden');
+      usernameInput.required = true;
+    } else {
+      usernameGroup.classList.add('hidden');
+      usernameInput.required = false;
+    }
+  }
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const username = document.getElementById('auth-username').value;
+    const errorDiv = document.getElementById('auth-error');
+    const successDiv = document.getElementById('auth-success');
+    const submitBtn = document.getElementById('auth-submit');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Please wait...';
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    try {
+      let result;
+      if (authMode === 'signup') {
+        result = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username || email.split('@')[0]
+            }
+          }
+        });
+        if (result.error) throw result.error;
+        if (result.data.user && !result.data.session) {
+          successDiv.style.display = 'block';
+          successDiv.textContent = 'Check your email to confirm your account!';
+          submitBtn.textContent = 'Email Sent!';
+          return;
+        }
+      } else {
+        result = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
+      }
+    } catch (error) {
+      errorDiv.textContent = error.message;
+      errorDiv.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = authMode === 'login' ? 'Login' : 'Sign Up';
+    }
+  }
+</script>
+</body>
+</html>

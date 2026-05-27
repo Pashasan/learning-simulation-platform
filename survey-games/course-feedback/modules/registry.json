@@ -1,0 +1,20 @@
+[
+  {
+    "id": "analytics-midterm",
+    "name": "Analytics Mid-Course Feedback",
+    "icon": "\ud83d\udcdd",
+    "description": "Share your thoughts on the Analytics course so far. Your feedback helps shape lectures, labs, and games.",
+    "questions": 11,
+    "estimatedTime": "3 min",
+    "order": 1
+  },
+  {
+    "id": "general-feedback",
+    "name": "General Feedback",
+    "icon": "\ud83d\udcad",
+    "description": "Thoughts and Ideas \u2014 share anything on your mind. Submit as many times as you'd like!",
+    "questions": 2,
+    "estimatedTime": "1 min",
+    "order": 2
+  }
+]

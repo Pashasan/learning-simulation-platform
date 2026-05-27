@@ -1,0 +1,35 @@
+{
+  "id": "tutorial",
+  "title": "Data Basics Tutorial",
+  "subtitle": "Learn the Fundamentals",
+  "tagline": "Master Descriptive Statistics",
+  "description": "A beginner-friendly introduction to understanding and visualizing data",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 2,
+  "totalQuestions": 4,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Steps", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "3+ Streak" },
+    "mean": { "icon": "📊", "name": "Mean Machine", "description": "Understood averages" },
+    "spread": { "icon": "📏", "name": "Spread Expert", "description": "Understood variability" },
+    "visual": { "icon": "👁️", "name": "Visual Thinker", "description": "Chart interpretation" },
+    "master": { "icon": "🏆", "name": "Data Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 4, "title": "Data Expert" },
+    { "minCorrect": 3, "title": "Data Analyst" },
+    { "minCorrect": 2, "title": "Data Learner" },
+    { "minCorrect": 0, "title": "Data Beginner" }
+  ]
+}

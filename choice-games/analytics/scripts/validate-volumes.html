@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volume Validator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 40px 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #4ecca3; margin-bottom: 10px; }
+        .subtitle { color: #888; margin-bottom: 30px; }
+        .volume-result {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .volume-header {
+            font-size: 1.3em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .check { margin: 6px 0; padding-left: 8px; }
+        .pass { color: #4ecca3; }
+        .fail { color: #e94560; }
+        .warn { color: #ffc107; }
+        .pass::before { content: '\2705 '; }
+        .fail::before { content: '\274c '; }
+        .warn::before { content: '\26a0\fe0f '; }
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .summary.all-pass { background: rgba(78, 204, 163, 0.15); border: 1px solid #4ecca3; color: #4ecca3; }
+        .summary.has-fail { background: rgba(233, 69, 96, 0.15); border: 1px solid #e94560; color: #e94560; }
+        #status { color: #888; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Volume Validator</h1>
+        <p class="subtitle">Validates all volumes in registry.json against their config.json and game.html files.</p>
+        <p id="status">Loading registry...</p>
+        <div id="results"></div>
+    </div>
+    <script>
+        var totalPass = 0;
+        var totalFail = 0;
+
+        function pass(msg) { totalPass++; return '<div class="check pass">' + msg + '</div>'; }
+        function fail(msg) { totalFail++; return '<div class="check fail">' + msg + '</div>'; }
+        function warn(msg) { return '<div class="check warn">' + msg + '</div>'; }
+
+        async function validate() {
+            var statusEl = document.getElementById('status');
+            var resultsEl = document.getElementById('results');
+
+            // Load registry
+            var registryResp = await fetch('../volumes/registry.json');
+            if (!registryResp.ok) {
+                statusEl.textContent = 'Failed to load registry.json';
+                return;
+            }
+            var registry = await registryResp.json();
+            statusEl.textContent = 'Validating ' + registry.length + ' volumes...';
+
+            for (var i = 0; i < registry.length; i++) {
+                var vol = registry[i];
+                var html = '<div class="volume-result">';
+                html += '<div class="volume-header">' + vol.icon + ' ' + vol.name + ' (' + vol.id + ')</div>';
+
+                // Registry field checks
+                var requiredFields = ['id', 'name', 'title', 'icon', 'number', 'description', 'questions', 'time', 'topics', 'leaderboardTab', 'order'];
+                var missingFields = requiredFields.filter(function(f) { return vol[f] === undefined || vol[f] === null; });
+                if (missingFields.length === 0) {
+                    html += pass('All required registry fields present');
+                } else {
+                    html += fail('Missing registry fields: ' + missingFields.join(', '));
+                }
+
+                // Load config.json
+                var configOk = false;
+                var config = null;
+                try {
+                    var configResp = await fetch('../volumes/' + vol.id + '/config.json');
+                    if (!configResp.ok) throw new Error('HTTP ' + configResp.status);
+                    config = await configResp.json();
+                    configOk = true;
+                    html += pass('config.json loaded successfully');
+                } catch (e) {
+                    html += fail('config.json failed to load: ' + e.message);
+                }
+
+                if (configOk) {
+                    // ID match
+                    if (config.id === vol.id) {
+                        html += pass('config.json id matches registry id');
+                    } else {
+                        html += fail('config.json id "' + config.id + '" does not match registry id "' + vol.id + '"');
+                    }
+
+                    // totalQuestions divisible by chapters
+                    if (config.totalQuestions && config.chapters) {
+                        if (config.totalQuestions % config.chapters === 0) {
+                            html += pass('totalQuestions (' + config.totalQuestions + ') divisible by chapters (' + config.chapters + ')');
+                        } else {
+                            html += fail('totalQuestions (' + config.totalQuestions + ') not divisible by chapters (' + config.chapters + ')');
+                        }
+                    }
+
+                    // Questions count matches
+                    if (config.totalQuestions === vol.questions) {
+                        html += pass('Registry questions count matches config totalQuestions');
+                    } else {
+                        html += warn('Registry questions (' + vol.questions + ') differs from config totalQuestions (' + config.totalQuestions + ')');
+                    }
+                }
+
+                // Load game.html
+                var gameHtml = null;
+                try {
+                    var gameResp = await fetch('../volumes/' + vol.id + '/game.html');
+                    if (!gameResp.ok) throw new Error('HTTP ' + gameResp.status);
+                    gameHtml = await gameResp.text();
+                    html += pass('game.html loaded successfully');
+                } catch (e) {
+                    html += fail('game.html failed to load: ' + e.message);
+                }
+
+                if (gameHtml) {
+                    // VOLUME_ID match
+                    var volumeIdMatch = gameHtml.match(/const\s+VOLUME_ID\s*=\s*['"]([^'"]+)['"]/);
+                    if (volumeIdMatch) {
+                        if (volumeIdMatch[1] === vol.id) {
+                            html += pass('VOLUME_ID in game.html matches registry id');
+                        } else {
+                            html += fail('VOLUME_ID "' + volumeIdMatch[1] + '" does not match registry id "' + vol.id + '"');
+                        }
+                    } else {
+                        html += fail('VOLUME_ID not found in game.html');
+                    }
+
+                    // Badge HTML IDs match config keys
+                    if (config && config.badges) {
+                        var configBadgeKeys = Object.keys(config.badges);
+                        var htmlBadgeIds = [];
+                        var badgeRegex = /id="badge-([^"]+)"/g;
+                        var match;
+                        while ((match = badgeRegex.exec(gameHtml)) !== null) {
+                            htmlBadgeIds.push(match[1]);
+                        }
+
+                        var missingInHtml = configBadgeKeys.filter(function(k) { return htmlBadgeIds.indexOf(k) === -1; });
+                        var extraInHtml = htmlBadgeIds.filter(function(k) { return configBadgeKeys.indexOf(k) === -1; });
+
+                        if (missingInHtml.length === 0 && extraInHtml.length === 0) {
+                            html += pass('Badge IDs match between config.json and game.html (' + configBadgeKeys.length + ' badges)');
+                        } else {
+                            if (missingInHtml.length > 0) {
+                                html += fail('Badges in config.json missing from game.html: ' + missingInHtml.join(', '));
+                            }
+                            if (extraInHtml.length > 0) {
+                                html += warn('Badge IDs in game.html not in config.json: ' + extraInHtml.join(', '));
+                            }
+                        }
+                    }
+
+                    // Required element IDs
+                    var requiredIds = ['score', 'streak', 'progress-text', 'progress-percent', 'progress-fill',
+                        'final-score', 'final-correct', 'final-streak', 'results-grade', 'badge-list',
+                        'leaderboard-screen', 'tab-firstrun', 'tab-allruns', 'leaderboard-list'];
+                    var missingIds = requiredIds.filter(function(id) {
+                        return gameHtml.indexOf('id="' + id + '"') === -1;
+                    });
+                    if (missingIds.length === 0) {
+                        html += pass('All required element IDs present');
+                    } else {
+                        html += fail('Missing required element IDs: ' + missingIds.join(', '));
+                    }
+
+                    // Analytics integration
+                    var analyticsChecks = [
+                        { pattern: 'Analytics.init', label: 'Analytics.init()' },
+                        { pattern: 'Analytics.trackVolumeStart', label: 'Analytics.trackVolumeStart()' },
+                        { pattern: 'Analytics.trackAnswer', label: 'Analytics.trackAnswer()' },
+                        { pattern: 'Analytics.trackVolumeComplete', label: 'Analytics.trackVolumeComplete()' }
+                    ];
+                    var missingAnalytics = analyticsChecks.filter(function(c) {
+                        return gameHtml.indexOf(c.pattern) === -1;
+                    });
+                    if (missingAnalytics.length === 0) {
+                        html += pass('All analytics calls present');
+                    } else {
+                        html += warn('Missing analytics calls: ' + missingAnalytics.map(function(c) { return c.label; }).join(', '));
+                    }
+                }
+
+                html += '</div>';
+                resultsEl.innerHTML += html;
+            }
+
+            // Summary
+            var summaryClass = totalFail === 0 ? 'all-pass' : 'has-fail';
+            var summaryText = totalFail === 0
+                ? 'All ' + totalPass + ' checks passed!'
+                : totalFail + ' check(s) failed, ' + totalPass + ' passed';
+            resultsEl.innerHTML += '<div class="summary ' + summaryClass + '">' + summaryText + '</div>';
+            statusEl.textContent = 'Validation complete.';
+        }
+
+        validate();
+    </script>
+</body>
+</html>

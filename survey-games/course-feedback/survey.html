@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Study Lounge | Survey</title>
+<link rel="stylesheet" href="css/survey.css">
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="ambient-bg"></div>
+
+<div class="page-container">
+  <div class="notebook-card" id="survey-card">
+    <div class="progress-container" style="display: none;">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label" id="progress-label"></div>
+    </div>
+    <div id="survey-content">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading survey...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js" } }
+</script>
+<script type="module" src="js/survey-engine.js"></script>
+</body>
+</html>

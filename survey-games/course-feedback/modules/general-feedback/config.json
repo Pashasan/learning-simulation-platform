@@ -1,0 +1,34 @@
+{
+  "id": "general-feedback",
+  "name": "General Feedback",
+  "icon": "\ud83d\udcad",
+  "description": "Thoughts and Ideas \u2014 share anything on your mind about the course. Submit as many times as you'd like!",
+  "estimatedTime": "1 min",
+  "thankYouTitle": "Thanks for sharing!",
+  "thankYouMessage": "Your thoughts help make the course better. Come back anytime you have more to share!",
+  "loungeScene": {
+    "enabled": false
+  },
+  "questions": [
+    {
+      "id": "feedback-text",
+      "type": "text",
+      "text": "What's on your mind?",
+      "subtitle": "Share any feedback, ideas, or thoughts about the course (~300 words max).",
+      "required": true,
+      "placeholder": "Type your feedback here...",
+      "maxLength": 2000
+    },
+    {
+      "id": "feedback-sentiment",
+      "type": "slider",
+      "text": "How would you describe this feedback?",
+      "subtitle": "Slide to indicate the tone \u2014 or leave at center for neutral.",
+      "required": false,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "endpointLabels": ["Negative", "Positive"]
+    }
+  ]
+}

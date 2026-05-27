@@ -1,0 +1,167 @@
+{
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Reading the Data",
+      "description": "Learn to see patterns in data and understand what regression really does"
+    },
+    {
+      "id": 2,
+      "title": "Quantifying Uncertainty",
+      "description": "Learn why point predictions aren't enough and how to communicate uncertainty"
+    },
+    {
+      "id": 3,
+      "title": "Correlation vs Causation",
+      "description": "The most important lesson in data science - why correlation isn't causation"
+    },
+    {
+      "id": 4,
+      "title": "Model Limitations",
+      "description": "Understanding when linear models work and when they fail"
+    }
+  ],
+  "questions": {
+    "q1": {
+      "chapter": 1,
+      "question": "Based on the scatter plot, what type of relationship do you observe between ad spend and website traffic?",
+      "options": [
+        "Negative relationship - higher spend means less traffic",
+        "Positive relationship - higher spend tends to mean more traffic",
+        "No relationship - spend doesn't affect traffic",
+        "It's impossible to tell from this data"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Excellent! You correctly identified the positive correlation. As ad spend increases, traffic tends to increase too. This is the pattern regression will help us quantify.",
+        "incorrect": "Look again at the scatter plot. Notice how points in the upper-right have both higher spend AND higher traffic? That's a positive relationship!"
+      },
+      "badge": null
+    },
+    "q2": {
+      "chapter": 1,
+      "question": "Using the regression equation Traffic = 5,200 + 195 × Spend, what traffic would you predict for a day with £30k ad spend?",
+      "options": [
+        "5,850 visitors (just multiply 195 × 30)",
+        "11,050 visitors (use the full equation)",
+        "5,200 visitors (just use the intercept)",
+        "About 15,000 visitors (estimate from the graph)"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Perfect! You use the full equation: Traffic = 5,200 + (195 × 30) = 5,200 + 5,850 = 11,050. The intercept gives baseline traffic, and the slope adds the effect of spending.",
+        "incorrect": "Remember, the full equation is: Traffic = Intercept + Slope × Spend. You need both parts! Traffic = 5,200 + (195 × 30) = 11,050"
+      },
+      "badge": null
+    },
+    "q3": {
+      "chapter": 2,
+      "question": "The CMO asks for your traffic prediction for a £25k spend day. Which response is most appropriate?",
+      "options": [
+        "Exactly 10,075 visitors",
+        "Around 10,075 visitors, but realistically anywhere between 8,500 and 11,600",
+        "Between 0 and 20,000 visitors",
+        "I can't make any prediction without more data"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Exactly right! Good analysts always communicate uncertainty. A point estimate plus a confidence interval gives stakeholders realistic expectations.",
+        "incorrect": "The point prediction alone is incomplete. Always include confidence intervals to show the realistic range of outcomes. Predictions are uncertain!"
+      },
+      "badge": "uncertainty"
+    },
+    "q4": {
+      "chapter": 2,
+      "question": "If R² = 0.62, what does this tell us about our model?",
+      "options": [
+        "The model is wrong 62% of the time",
+        "Ad spend explains about 62% of the variation in traffic",
+        "We need 62 more data points for a good model",
+        "There's a 62% chance our predictions are correct"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Spot on! R² = 0.62 means ad spend is a useful predictor, but 38% of traffic variation comes from other factors. This is typical in real-world marketing data.",
+        "incorrect": "R² tells us what fraction of the variation in Y is explained by X. An R² of 0.62 means 62% explained, leaving 38% to other factors - that's actually quite good for marketing data!"
+      },
+      "badge": null
+    },
+    "q5": {
+      "chapter": 3,
+      "question": "Sarah shows that the correlation is statistically significant (p < 0.001). What can we conclude?",
+      "options": [
+        "Instagram ads definitely cause more website traffic",
+        "There's strong evidence of a relationship, but we can't prove causation from this data alone",
+        "The relationship is caused by random chance",
+        "We should immediately triple our ad budget"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Exactly! This is the key insight. Statistical significance tells us the correlation is unlikely due to chance, but NOT that it's causal. Confounders or reverse causation could explain the relationship.",
+        "incorrect": "Be careful! Statistical significance means we're confident the correlation exists, but it says nothing about causation. There could be confounding variables or reverse causation at play."
+      },
+      "badge": "skeptic"
+    },
+    "q6": {
+      "chapter": 3,
+      "question": "Given that we can't prove causation, is regression still useful for business decisions?",
+      "options": [
+        "No - without proving causation, regression is useless",
+        "Yes - regression helps us understand patterns and make informed predictions, even without proving causation",
+        "Only if we run an A/B test first",
+        "Only if R² is above 0.90"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Perfect! Despite its limitations, regression helps us identify patterns, make predictions with quantified uncertainty, and inform decisions - all valuable even without proving causation.",
+        "incorrect": "Regression is valuable because it quantifies relationships and uncertainty. We don't need to prove causation to make informed decisions - we just need to understand what we know and what we don't."
+      },
+      "badge": null
+    },
+    "q7": {
+      "chapter": 4,
+      "question": "If the true relationship has diminishing returns (curves), what happens when we fit a straight line?",
+      "options": [
+        "Nothing - linear regression automatically adjusts for curves",
+        "The model will systematically over-predict at high spend levels",
+        "The model becomes more accurate at extreme values",
+        "R² will always be above 0.95"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Exactly! With diminishing returns, a straight line will systematically miss the curve - overpredicting at extremes and underpredicting in the middle. This is why checking residuals is important!",
+        "incorrect": "When the true relationship curves, a linear model will have systematic errors. It will overpredict where the curve flattens and underpredict in the middle. Always check your residuals!"
+      },
+      "badge": null
+    },
+    "q8": {
+      "chapter": 4,
+      "question": "Based on everything you've learned, what's the best recommendation for SportsBrand?",
+      "options": [
+        "Immediately increase spend to £100k/day since more is always better",
+        "Abandon Instagram ads since we can't prove causation",
+        "Use regression insights to guide moderate budget decisions while monitoring results and staying within the data range we've observed",
+        "Wait until we have perfect data before making any decisions"
+      ],
+      "correctIndex": 2,
+      "explanations": {
+        "correct": "Outstanding! This is the mature analyst's answer. Use regression insights to guide decisions while acknowledging uncertainty. Stay within the data range, monitor results, and adjust based on what you learn. You've mastered regression thinking!",
+        "incorrect": "The best approach acknowledges uncertainty: the data suggests a positive relationship, but we should stay within our observed data range and monitor results carefully rather than making extreme changes."
+      },
+      "badge": null
+    }
+  },
+  "dataParams": {
+    "trueIntercept": 5200,
+    "trueSlope": 195,
+    "noise": 800,
+    "spendMin": 5,
+    "spendMax": 50,
+    "dataPoints": 100
+  },
+  "challengeParams": {
+    "intercept": 3000,
+    "slope": 150,
+    "testSpend": 25
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Chapter 1 Title",
+      "description": "Chapter 1 description"
+    },
+    {
+      "id": 2,
+      "title": "Chapter 2 Title",
+      "description": "Chapter 2 description"
+    },
+    {
+      "id": 3,
+      "title": "Chapter 3 Title",
+      "description": "Chapter 3 description"
+    },
+    {
+      "id": 4,
+      "title": "Chapter 4 Title",
+      "description": "Chapter 4 description"
+    }
+  ],
+  "questions": {
+    "q1": {
+      "chapter": 1,
+      "question": "Your question text here?",
+      "options": [
+        "Option A",
+        "Option B (correct)",
+        "Option C",
+        "Option D"
+      ],
+      "correctIndex": 1,
+      "explanations": {
+        "correct": "Explanation when user answers correctly.",
+        "incorrect": "Explanation when user answers incorrectly."
+      },
+      "badge": null
+    },
+    "q2": {
+      "chapter": 1,
+      "question": "Second question?",
+      "options": ["A", "B", "C", "D"],
+      "correctIndex": 0,
+      "explanations": {
+        "correct": "Correct explanation.",
+        "incorrect": "Incorrect explanation."
+      },
+      "badge": null
+    }
+  },
+  "dataParams": {
+    "comment": "Add volume-specific data parameters here"
+  },
+  "challengeParams": {
+    "comment": "Add challenge parameters here"
+  }
+}

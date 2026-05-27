@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="../favicon.ico">
+    <title>Admin Dashboard | Code Labs</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: #0A0E1A;
+            min-height: 100vh;
+            color: #E0E6F0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Loading / Access Denied */
+        .screen-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-center h1 { color: #64B5F6; font-size: 1.4em; margin-bottom: 12px; }
+        .screen-center p { color: #6B7A99; font-size: 0.9em; margin-bottom: 20px; }
+
+        #loading-screen .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(100, 181, 246, 0.2);
+            border-top-color: #64B5F6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Header */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 25px;
+            background: rgba(12, 16, 30, 0.94);
+            border: 1px solid rgba(100, 181, 246, 0.15);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .admin-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #64B5F6;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-controls select {
+            padding: 8px 12px;
+            background: rgba(30, 42, 70, 0.85);
+            border: 1px solid rgba(100, 181, 246, 0.2);
+            border-radius: 6px;
+            color: #E0E6F0;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+
+        .header-controls label {
+            font-size: 0.8em;
+            color: #6B7A99;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-controls input[type="checkbox"] {
+            accent-color: #64B5F6;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8em;
+            font-weight: 700;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary {
+            background: rgba(30, 42, 70, 0.85);
+            color: #E0E6F0;
+            border: 1px solid rgba(100, 181, 246, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(40, 56, 90, 0.9);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(100, 181, 246, 0.1);
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: #6B7A99;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85em;
+            font-weight: 700;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover { color: #E0E6F0; }
+        .tab-btn.active { color: #64B5F6; border-bottom-color: #64B5F6; }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Stat cards */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(12, 16, 30, 0.94);
+            border: 1px solid rgba(100, 181, 246, 0.1);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #64B5F6;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .label {
+            font-size: 0.75em;
+            color: #6B7A99;
+        }
+
+        /* Tables */
+        .data-table-wrap {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8em;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(100, 181, 246, 0.08);
+        }
+
+        th {
+            color: #64B5F6;
+            font-weight: 700;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            background: #0A0E1A;
+        }
+
+        td { color: #C8D0E0; }
+
+        tr:hover td { background: rgba(100, 181, 246, 0.04); }
+
+        .grade-s { color: #FFD54F; font-weight: 700; }
+        .grade-a { color: #66BB6A; font-weight: 700; }
+        .grade-b { color: #64B5F6; font-weight: 700; }
+        .grade-c { color: #E0E6F0; }
+
+        /* Filter row */
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-row select, .filter-row input {
+            padding: 6px 10px;
+            background: rgba(30, 42, 70, 0.85);
+            border: 1px solid rgba(100, 181, 246, 0.15);
+            border-radius: 6px;
+            color: #E0E6F0;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8em;
+        }
+
+        .filter-row label {
+            font-size: 0.8em;
+            color: #6B7A99;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: rgba(12, 16, 30, 0.94);
+            border: 1px solid rgba(100, 181, 246, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container h3 {
+            color: #64B5F6;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        canvas.chart { width: 100%; height: 220px; }
+
+        /* Feedback cards */
+        .feedback-card {
+            background: rgba(12, 16, 30, 0.94);
+            border: 1px solid rgba(100, 181, 246, 0.1);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .feedback-card .fb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .feedback-card .fb-user {
+            font-weight: 700;
+            color: #E0E6F0;
+            font-size: 0.85em;
+        }
+
+        .feedback-card .fb-date {
+            color: #6B7A99;
+            font-size: 0.75em;
+        }
+
+        .feedback-card .fb-stars {
+            color: #FFD54F;
+            font-size: 1.2em;
+            margin-bottom: 6px;
+        }
+
+        .feedback-card .fb-text {
+            color: #C8D0E0;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        .feedback-card .fb-meta {
+            color: #6B7A99;
+            font-size: 0.75em;
+            margin-top: 6px;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #6B7A99;
+            padding: 40px;
+            font-size: 0.9em;
+        }
+
+        /* Date range buttons */
+        .range-btns {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .range-btn {
+            padding: 6px 14px;
+            background: rgba(30, 42, 70, 0.85);
+            border: 1px solid rgba(100, 181, 246, 0.15);
+            border-radius: 6px;
+            color: #6B7A99;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75em;
+            font-weight: 700;
+        }
+
+        .range-btn.active {
+            background: rgba(100, 181, 246, 0.2);
+            color: #64B5F6;
+            border-color: rgba(100, 181, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen" class="screen-center">
+    <div class="spinner"></div>
+    <h1>Loading...</h1>
+</div>
+
+<!-- Access Denied Screen -->
+<div id="denied-screen" class="screen-center" style="display:none;">
+    <h1>Access Denied</h1>
+    <p>This dashboard is restricted to administrators.</p>
+    <a href="../index.html" class="btn btn-secondary">Back to Hub</a>
+</div>
+
+<!-- Admin Dashboard -->
+<div id="admin-dashboard" class="container" style="display:none;">
+
+    <div class="admin-header">
+        <div class="admin-title">Code Labs Admin</div>
+        <div class="header-controls">
+            <select id="lab-select"></select>
+            <label><input type="checkbox" id="exclude-admin"> Exclude Admin</label>
+            <a href="../index.html" class="btn btn-secondary">Hub</a>
+            <button class="btn btn-secondary" id="btn-logout">Logout</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="leaderboard">Leaderboard</button>
+        <button class="tab-btn" data-tab="analytics">Analytics</button>
+        <button class="tab-btn" data-tab="feedback">Feedback</button>
+    </div>
+
+    <!-- Leaderboard Tab -->
+    <div id="tab-leaderboard" class="tab-panel active">
+        <div class="filter-row">
+            <select id="lb-lesson-filter"><option value="">All Lessons</option></select>
+            <label><input type="checkbox" id="lb-first-run"> First Run Only</label>
+        </div>
+        <div class="data-table-wrap">
+            <table id="lb-table">
+                <thead><tr>
+                    <th>#</th><th>Player</th><th>Lesson</th><th>Score</th><th>Grade</th><th>Time</th><th>Streak</th><th>Run</th><th>Date</th>
+                </tr></thead>
+                <tbody id="lb-body"></tbody>
+            </table>
+        </div>
+        <div id="lb-empty" class="no-data" style="display:none;">No score data yet.</div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="tab-analytics" class="tab-panel">
+        <div class="range-btns">
+            <button class="range-btn" data-range="7">7d</button>
+            <button class="range-btn" data-range="30">30d</button>
+            <button class="range-btn" data-range="90">90d</button>
+            <button class="range-btn active" data-range="all">All</button>
+        </div>
+        <div class="stat-row" id="analytics-stats"></div>
+        <div class="chart-container">
+            <h3>Score Distribution</h3>
+            <canvas id="chart-scores" class="chart" height="220"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Completions Over Time</h3>
+            <canvas id="chart-timeline" class="chart" height="220"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3 id="chart-lessons-title">Per-Lesson Breakdown</h3>
+            <canvas id="chart-lessons" class="chart" height="220"></canvas>
+        </div>
+    </div>
+
+    <!-- Feedback Tab -->
+    <div id="tab-feedback" class="tab-panel">
+        <div class="filter-row">
+            <select id="fb-lesson-filter"><option value="">All Lessons</option></select>
+            <label><input type="checkbox" id="fb-comments-only"> With Comments Only</label>
+        </div>
+        <div class="stat-row" id="feedback-stats"></div>
+        <div id="feedback-list"></div>
+        <div id="fb-empty" class="no-data" style="display:none;">No feedback yet.</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // ── Supabase ──
+    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+    function __makeDemoSupabaseClient() {
+      const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+      const session = { user: DEMO_USER, access_token: 'demo' };
+      const ok = (data) => Promise.resolve({ data, error: null });
+      const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+      function builder() {
+        const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+        builderMethods.forEach((m) => { b[m] = () => b; });
+        return b;
+      }
+      return {
+        auth: {
+          getSession: () => ok({ session }),
+          getUser: () => ok({ user: DEMO_USER }),
+          signInWithPassword: () => ok({ user: DEMO_USER, session }),
+          signUp: () => ok({ user: DEMO_USER, session }),
+          signOut: () => ok(null),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        from: () => builder(),
+        rpc: () => Promise.resolve({ data: null, error: null }),
+      };
+    }
+    const ADMIN_EMAIL = '';
+    const ADMIN_PASSWORD = 'CHANGE_ME';
+    async function promptAdminUnlock() {
+        if (sessionStorage.getItem('admin_unlocked') === 'yes') return true;
+        return await new Promise(function(resolve) {
+            var ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,0.96);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
+            ov.innerHTML = '<div style="background:#161b22;padding:32px;border-radius:12px;border:1px solid #30363d;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"><div style="font-size:36px;margin-bottom:12px;">&#x1F512;</div><h2 style="color:#f0f6fc;margin:0 0 8px;font-size:18px;font-weight:600;">Admin access</h2><p style="color:#8b949e;margin:0 0 20px;font-size:13px;">Enter the admin password</p><input id="__pw_in" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;margin-bottom:8px;outline:none;" /><div id="__pw_err" style="color:#f85149;font-size:12px;min-height:16px;margin-bottom:8px;text-align:left;"></div><button id="__pw_btn" style="width:100%;padding:10px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Unlock</button></div>';
+            document.body.appendChild(ov);
+            var inp = ov.querySelector('#__pw_in');
+            var er = ov.querySelector('#__pw_err');
+            var bt = ov.querySelector('#__pw_btn');
+            function go() {
+                if (inp.value === ADMIN_PASSWORD) {
+                    sessionStorage.setItem('admin_unlocked', 'yes');
+                    ov.remove();
+                    resolve(true);
+                } else {
+                    er.textContent = 'Incorrect password';
+                    inp.value = '';
+                    inp.focus();
+                }
+            }
+            bt.addEventListener('click', go);
+            inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+            setTimeout(function() { inp.focus(); }, 50);
+        });
+    }
+
+    const sb = DEMO_MODE ? __makeDemoSupabaseClient() : supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── Lab Config Map ──
+    const LABS = [
+        { id: 'pytorch_trace',   title: 'PyTorch 1' },
+        { id: 'pytorch_trace_2', title: 'PyTorch 2 (NLP)' },
+        { id: 'pytorch_trace_3', title: 'PyTorch 3 (Custom)' },
+        { id: 'gpt_trace_1',    title: 'GPT 1 (Basics)' },
+        { id: 'gpt_trace_2',    title: 'GPT 2 (Training)' },
+        { id: 'linreg_trace_1', title: 'Linear Regression 1' },
+        { id: 'linreg_trace_2', title: 'Linear Regression 2' },
+        { id: 'dchoice_trace_1',title: 'Discrete Choice 1' },
+        { id: 'dchoice_trace_2',title: 'Discrete Choice 2' },
+        { id: 'python_trace',   title: 'Intro to Python' },
+        { id: 'abtest_trace_1', title: 'A/B Testing 1' },
+    ];
+
+    // null = "All Together" mode; otherwise a LABS entry
+    let currentLab = null;
+    let adminEmail = '';
+    let allScores = [];
+    let allEvents = [];
+    let allFeedback = [];
+    let dateRange = 'all';
+
+    /** Map game_id → short display title */
+    const LAB_TITLE_MAP = {};
+    LABS.forEach(l => { LAB_TITLE_MAP[l.id] = l.title; });
+    function labTitle(gameId) { return LAB_TITLE_MAP[gameId] || gameId; }
+
+    // ── Init ──
+    async function init() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            window.location.href = '../index.html';
+            return;
+        }
+
+        adminEmail = session.user.email;
+        document.getElementById('loading-screen').style.display = 'none';
+        await promptAdminUnlock();
+
+        setupUI();
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('admin-dashboard').style.display = 'block';
+        await loadAllData();
+    }
+
+    function setupUI() {
+        // Lab selector (with "All Together" as first option)
+        const sel = document.getElementById('lab-select');
+        const allOpt = document.createElement('option');
+        allOpt.value = 'all';
+        allOpt.textContent = '— All Together —';
+        sel.appendChild(allOpt);
+        LABS.forEach((lab, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = lab.title;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', () => {
+            currentLab = sel.value === 'all' ? null : LABS[parseInt(sel.value)];
+            loadAllData();
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Exclude admin
+        document.getElementById('exclude-admin').addEventListener('change', () => renderAll());
+
+        // Leaderboard filters
+        document.getElementById('lb-lesson-filter').addEventListener('change', () => renderLeaderboard());
+        document.getElementById('lb-first-run').addEventListener('change', () => renderLeaderboard());
+
+        // Date range
+        document.querySelectorAll('.range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                dateRange = btn.dataset.range;
+                renderAnalytics();
+            });
+        });
+
+        // Feedback filters
+        document.getElementById('fb-lesson-filter').addEventListener('change', () => renderFeedback());
+        document.getElementById('fb-comments-only').addEventListener('change', () => renderFeedback());
+
+        // Logout
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            await sb.auth.signOut();
+            window.location.href = '../index.html';
+        });
+    }
+
+    // ── Data Loading ──
+    async function loadAllData() {
+        await Promise.all([loadScores(), loadEvents(), loadFeedback()]);
+        populateLessonFilters();
+        renderAll();
+    }
+
+    async function loadScores() {
+        allScores = [];
+        let from = 0;
+        const PAGE = 1000;
+        while (true) {
+            let q = sb.from('code_lab_scores').select('*');
+            if (currentLab) q = q.eq('game_id', currentLab.id);
+            q = q.order('score', { ascending: false }).range(from, from + PAGE - 1);
+            const { data, error } = await q;
+            if (error || !data || data.length === 0) break;
+            allScores = allScores.concat(data);
+            if (data.length < PAGE) break;
+            from += PAGE;
+        }
+    }
+
+    async function loadEvents() {
+        allEvents = [];
+        let from = 0;
+        const PAGE = 1000;
+        while (true) {
+            let q = sb.from('code_lab_events').select('*');
+            if (currentLab) q = q.eq('game_id', currentLab.id);
+            q = q.order('created_at', { ascending: false }).range(from, from + PAGE - 1);
+            const { data, error } = await q;
+            if (error || !data || data.length === 0) break;
+            allEvents = allEvents.concat(data);
+            if (data.length < PAGE) break;
+            from += PAGE;
+        }
+    }
+
+    async function loadFeedback() {
+        allFeedback = [];
+        let from = 0;
+        const PAGE = 1000;
+        while (true) {
+            let q = sb.from('code_lab_feedback').select('*');
+            if (currentLab) q = q.eq('game_id', currentLab.id);
+            q = q.order('created_at', { ascending: false }).range(from, from + PAGE - 1);
+            const { data, error } = await q;
+            if (error || !data || data.length === 0) break;
+            allFeedback = allFeedback.concat(data);
+            if (data.length < PAGE) break;
+            from += PAGE;
+        }
+    }
+
+    function populateLessonFilters() {
+        const lessons = new Set();
+        allScores.forEach(s => { if (s.level_id) lessons.add(s.level_id); });
+        allFeedback.forEach(f => { if (f.level_id) lessons.add(f.level_id); });
+
+        const sorted = [...lessons].sort();
+
+        [document.getElementById('lb-lesson-filter'), document.getElementById('fb-lesson-filter')].forEach(sel => {
+            const val = sel.value;
+            sel.innerHTML = '<option value="">All Lessons</option>';
+            sorted.forEach(lid => {
+                const opt = document.createElement('option');
+                opt.value = lid;
+                opt.textContent = lid;
+                sel.appendChild(opt);
+            });
+            sel.value = val;
+        });
+    }
+
+    // ── Filters ──
+    function excludeAdmin() {
+        return document.getElementById('exclude-admin').checked;
+    }
+
+    function filterAdmin(rows) {
+        if (!excludeAdmin()) return rows;
+        return rows.filter(r => {
+            const email = r.user_email || r.email || '';
+            return email !== ADMIN_EMAIL;
+        });
+    }
+
+    function filterDateRange(rows) {
+        if (dateRange === 'all') return rows;
+        const days = parseInt(dateRange);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return rows.filter(r => new Date(r.created_at) >= cutoff);
+    }
+
+    // ── Render ──
+    function renderAll() {
+        renderLeaderboard();
+        renderAnalytics();
+        renderFeedback();
+    }
+
+    // ── Leaderboard ──
+    function renderLeaderboard() {
+        let data = filterAdmin(allScores);
+
+        const lessonFilter = document.getElementById('lb-lesson-filter').value;
+        if (lessonFilter) data = data.filter(s => s.level_id === lessonFilter);
+
+        if (document.getElementById('lb-first-run').checked) {
+            data = data.filter(s => s.run_number === 1);
+        }
+
+        data.sort((a, b) => b.score - a.score);
+
+        const tbody = document.getElementById('lb-body');
+        const thead = document.querySelector('#lb-table thead tr');
+        const empty = document.getElementById('lb-empty');
+        const showLab = !currentLab; // "All Together" mode
+
+        // Dynamic header
+        thead.innerHTML = showLab
+            ? '<th>#</th><th>Player</th><th>Lab</th><th>Lesson</th><th>Score</th><th>Grade</th><th>Time</th><th>Streak</th><th>Run</th><th>Date</th>'
+            : '<th>#</th><th>Player</th><th>Lesson</th><th>Score</th><th>Grade</th><th>Time</th><th>Streak</th><th>Run</th><th>Date</th>';
+
+        if (data.length === 0) {
+            tbody.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+
+        tbody.innerHTML = data.slice(0, 200).map((s, i) => {
+            const gradeClass = s.grade === 'S' ? 'grade-s' : s.grade === 'A' ? 'grade-a' : s.grade === 'B' ? 'grade-b' : 'grade-c';
+            const date = new Date(s.created_at).toLocaleDateString();
+            const labCol = showLab ? `<td>${esc(labTitle(s.game_id))}</td>` : '';
+            return `<tr>
+                <td>${i + 1}</td>
+                <td>${esc(s.display_name || '—')}</td>
+                ${labCol}
+                <td>${esc(s.level_id || '—')}</td>
+                <td>${s.score || 0}</td>
+                <td class="${gradeClass}">${esc(s.grade || '—')}</td>
+                <td>${s.time_seconds != null ? s.time_seconds + 's' : '—'}</td>
+                <td>${s.max_streak || 0}</td>
+                <td>${s.run_number || 1}</td>
+                <td>${date}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ── Analytics ──
+    function renderAnalytics() {
+        const scores = filterDateRange(filterAdmin(allScores));
+        const events = filterDateRange(filterAdmin(allEvents));
+
+        // Stats
+        const completions = events.filter(e => e.event_type === 'level_complete');
+        const sessions = events.filter(e => e.event_type === 'session_start');
+        const uniqueUsers = new Set(scores.map(s => s.user_id).filter(Boolean));
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, s) => a + (s.score || 0), 0) / scores.length) : 0;
+        const timesWithData = scores.filter(s => s.time_seconds != null);
+        const avgTime = timesWithData.length > 0 ? Math.round(timesWithData.reduce((a, s) => a + s.time_seconds, 0) / timesWithData.length) : 0;
+
+        document.getElementById('analytics-stats').innerHTML = `
+            <div class="stat-card"><div class="value">${sessions.length}</div><div class="label">Sessions</div></div>
+            <div class="stat-card"><div class="value">${completions.length}</div><div class="label">Completions</div></div>
+            <div class="stat-card"><div class="value">${uniqueUsers.size}</div><div class="label">Unique Users</div></div>
+            <div class="stat-card"><div class="value">${avgScore}</div><div class="label">Avg Score</div></div>
+            <div class="stat-card"><div class="value">${avgTime}s</div><div class="label">Avg Time</div></div>
+        `;
+
+        drawScoreChart(scores);
+        drawTimelineChart(scores);
+        // In "All Together" mode, show per-lab breakdown instead of per-lesson
+        const lessonTitle = document.getElementById('chart-lessons-title');
+        if (!currentLab) {
+            lessonTitle.textContent = 'Per-Lab Breakdown';
+            drawLabChart(scores);
+        } else {
+            lessonTitle.textContent = 'Per-Lesson Breakdown';
+            drawLessonChart(scores);
+        }
+    }
+
+    function drawScoreChart(scores) {
+        const canvas = document.getElementById('chart-scores');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth;
+        const H = 220;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        if (scores.length === 0) { drawNoData(ctx, W, H); return; }
+
+        // Histogram of scores in 100-point buckets
+        const buckets = {};
+        const maxScore = Math.max(...scores.map(s => s.score || 0));
+        const bucketSize = 100;
+        const numBuckets = Math.ceil((maxScore + 1) / bucketSize);
+
+        for (let i = 0; i < numBuckets; i++) buckets[i] = 0;
+        scores.forEach(s => {
+            const b = Math.floor((s.score || 0) / bucketSize);
+            buckets[b] = (buckets[b] || 0) + 1;
+        });
+
+        const keys = Object.keys(buckets).map(Number).sort((a, b) => a - b);
+        const maxCount = Math.max(...keys.map(k => buckets[k]));
+
+        const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+        const chartW = W - pad.left - pad.right;
+        const chartH = H - pad.top - pad.bottom;
+        const barW = Math.max(8, chartW / keys.length - 4);
+
+        // Axes
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top);
+        ctx.lineTo(pad.left, H - pad.bottom);
+        ctx.lineTo(W - pad.right, H - pad.bottom);
+        ctx.stroke();
+
+        // Bars
+        keys.forEach((k, i) => {
+            const x = pad.left + (i + 0.5) * (chartW / keys.length) - barW / 2;
+            const barH = maxCount > 0 ? (buckets[k] / maxCount) * chartH : 0;
+            const y = H - pad.bottom - barH;
+
+            ctx.fillStyle = 'rgba(100, 181, 246, 0.6)';
+            ctx.fillRect(x, y, barW, barH);
+
+            // Label
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.fillStyle = '#6B7A99';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${k * bucketSize}`, x + barW / 2, H - pad.bottom + 16);
+
+            // Count
+            if (buckets[k] > 0) {
+                ctx.fillStyle = '#E0E6F0';
+                ctx.fillText(buckets[k], x + barW / 2, y - 4);
+            }
+        });
+    }
+
+    function drawTimelineChart(scores) {
+        const canvas = document.getElementById('chart-timeline');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth;
+        const H = 220;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        if (scores.length === 0) { drawNoData(ctx, W, H); return; }
+
+        // Group by date
+        const byDate = {};
+        scores.forEach(s => {
+            const d = new Date(s.created_at).toISOString().slice(0, 10);
+            byDate[d] = (byDate[d] || 0) + 1;
+        });
+
+        const dates = Object.keys(byDate).sort();
+        const counts = dates.map(d => byDate[d]);
+        const maxC = Math.max(...counts);
+
+        const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+        const chartW = W - pad.left - pad.right;
+        const chartH = H - pad.top - pad.bottom;
+
+        // Axes
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top);
+        ctx.lineTo(pad.left, H - pad.bottom);
+        ctx.lineTo(W - pad.right, H - pad.bottom);
+        ctx.stroke();
+
+        if (dates.length === 1) {
+            // Single point
+            const x = pad.left + chartW / 2;
+            const y = pad.top + chartH * 0.2;
+            ctx.fillStyle = '#64B5F6';
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '10px "Space Mono", monospace';
+            ctx.fillStyle = '#E0E6F0';
+            ctx.textAlign = 'center';
+            ctx.fillText(counts[0], x, y - 10);
+            ctx.fillStyle = '#6B7A99';
+            ctx.fillText(dates[0], x, H - pad.bottom + 16);
+            return;
+        }
+
+        // Line
+        ctx.strokeStyle = '#64B5F6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        dates.forEach((d, i) => {
+            const x = pad.left + (i / (dates.length - 1)) * chartW;
+            const y = H - pad.bottom - (counts[i] / maxC) * chartH;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Points
+        dates.forEach((d, i) => {
+            const x = pad.left + (i / (dates.length - 1)) * chartW;
+            const y = H - pad.bottom - (counts[i] / maxC) * chartH;
+            ctx.fillStyle = '#64B5F6';
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // X labels (first, mid, last)
+        ctx.font = '10px "Space Mono", monospace';
+        ctx.fillStyle = '#6B7A99';
+        ctx.textAlign = 'center';
+        if (dates.length > 0) ctx.fillText(dates[0], pad.left, H - pad.bottom + 16);
+        if (dates.length > 2) {
+            const mid = Math.floor(dates.length / 2);
+            ctx.fillText(dates[mid], pad.left + (mid / (dates.length - 1)) * chartW, H - pad.bottom + 16);
+        }
+        if (dates.length > 1) ctx.fillText(dates[dates.length - 1], W - pad.right, H - pad.bottom + 16);
+    }
+
+    function drawLessonChart(scores) {
+        const canvas = document.getElementById('chart-lessons');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth;
+        const H = 220;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        if (scores.length === 0) { drawNoData(ctx, W, H); return; }
+
+        // Group by level_id: count and avg score
+        const byLesson = {};
+        scores.forEach(s => {
+            const lid = s.level_id || 'unknown';
+            if (!byLesson[lid]) byLesson[lid] = { count: 0, totalScore: 0 };
+            byLesson[lid].count++;
+            byLesson[lid].totalScore += (s.score || 0);
+        });
+
+        const lessons = Object.keys(byLesson).sort();
+        const maxCount = Math.max(...lessons.map(l => byLesson[l].count));
+
+        const pad = { top: 20, right: 20, bottom: 50, left: 50 };
+        const chartW = W - pad.left - pad.right;
+        const chartH = H - pad.top - pad.bottom;
+        const barW = Math.max(8, Math.min(40, chartW / lessons.length - 4));
+
+        // Axes
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top);
+        ctx.lineTo(pad.left, H - pad.bottom);
+        ctx.lineTo(W - pad.right, H - pad.bottom);
+        ctx.stroke();
+
+        // Bars
+        lessons.forEach((lid, i) => {
+            const d = byLesson[lid];
+            const x = pad.left + (i + 0.5) * (chartW / lessons.length) - barW / 2;
+            const barH = maxCount > 0 ? (d.count / maxCount) * chartH : 0;
+            const y = H - pad.bottom - barH;
+
+            ctx.fillStyle = 'rgba(100, 181, 246, 0.6)';
+            ctx.fillRect(x, y, barW, barH);
+
+            // Count
+            if (d.count > 0) {
+                ctx.font = '10px "Space Mono", monospace';
+                ctx.fillStyle = '#E0E6F0';
+                ctx.textAlign = 'center';
+                ctx.fillText(d.count, x + barW / 2, y - 4);
+            }
+
+            // Label (truncated)
+            ctx.save();
+            ctx.translate(x + barW / 2, H - pad.bottom + 8);
+            ctx.rotate(-Math.PI / 4);
+            ctx.font = '9px "Space Mono", monospace';
+            ctx.fillStyle = '#6B7A99';
+            ctx.textAlign = 'right';
+            const label = lid.length > 14 ? lid.slice(0, 12) + '..' : lid;
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+        });
+    }
+
+    function drawLabChart(scores) {
+        const canvas = document.getElementById('chart-lessons');
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const W = canvas.clientWidth;
+        const H = 220;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        if (scores.length === 0) { drawNoData(ctx, W, H); return; }
+
+        // Group by game_id: count and avg score
+        const byLab = {};
+        scores.forEach(s => {
+            const gid = s.game_id || 'unknown';
+            if (!byLab[gid]) byLab[gid] = { count: 0, totalScore: 0 };
+            byLab[gid].count++;
+            byLab[gid].totalScore += (s.score || 0);
+        });
+
+        // Sort by LABS order
+        const labIds = LABS.map(l => l.id).filter(id => byLab[id]);
+        const unknownIds = Object.keys(byLab).filter(id => !labIds.includes(id));
+        const orderedIds = [...labIds, ...unknownIds];
+        const maxCount = Math.max(...orderedIds.map(id => byLab[id].count));
+
+        const pad = { top: 20, right: 20, bottom: 60, left: 50 };
+        const chartW = W - pad.left - pad.right;
+        const chartH = H - pad.top - pad.bottom;
+        const barW = Math.max(8, Math.min(50, chartW / orderedIds.length - 6));
+
+        // Axes
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top);
+        ctx.lineTo(pad.left, H - pad.bottom);
+        ctx.lineTo(W - pad.right, H - pad.bottom);
+        ctx.stroke();
+
+        // Bars
+        orderedIds.forEach((gid, i) => {
+            const d = byLab[gid];
+            const x = pad.left + (i + 0.5) * (chartW / orderedIds.length) - barW / 2;
+            const barH = maxCount > 0 ? (d.count / maxCount) * chartH : 0;
+            const y = H - pad.bottom - barH;
+
+            ctx.fillStyle = 'rgba(100, 181, 246, 0.6)';
+            ctx.fillRect(x, y, barW, barH);
+
+            // Count + avg
+            if (d.count > 0) {
+                ctx.font = '10px "Space Mono", monospace';
+                ctx.fillStyle = '#E0E6F0';
+                ctx.textAlign = 'center';
+                const avg = Math.round(d.totalScore / d.count);
+                ctx.fillText(`${d.count} (avg ${avg})`, x + barW / 2, y - 4);
+            }
+
+            // Label (rotated)
+            ctx.save();
+            ctx.translate(x + barW / 2, H - pad.bottom + 8);
+            ctx.rotate(-Math.PI / 4);
+            ctx.font = '9px "Space Mono", monospace';
+            ctx.fillStyle = '#6B7A99';
+            ctx.textAlign = 'right';
+            const title = labTitle(gid);
+            const label = title.length > 16 ? title.slice(0, 14) + '..' : title;
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+        });
+    }
+
+    function drawNoData(ctx, W, H) {
+        ctx.font = '13px "Space Mono", monospace';
+        ctx.fillStyle = '#6B7A99';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('No data for this range', W / 2, H / 2);
+    }
+
+    // ── Feedback ──
+    function renderFeedback() {
+        let data = filterAdmin(allFeedback);
+
+        const lessonFilter = document.getElementById('fb-lesson-filter').value;
+        if (lessonFilter) data = data.filter(f => f.level_id === lessonFilter);
+
+        if (document.getElementById('fb-comments-only').checked) {
+            data = data.filter(f => f.feedback_text && f.feedback_text.trim());
+        }
+
+        const empty = document.getElementById('fb-empty');
+        const list = document.getElementById('feedback-list');
+        const statsEl = document.getElementById('feedback-stats');
+
+        if (data.length === 0) {
+            statsEl.innerHTML = '';
+            list.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+
+        // Summary stats
+        const avgRating = (data.reduce((a, f) => a + (f.rating || 0), 0) / data.length).toFixed(1);
+        const dist = [0, 0, 0, 0, 0];
+        data.forEach(f => { if (f.rating >= 1 && f.rating <= 5) dist[f.rating - 1]++; });
+
+        statsEl.innerHTML = `
+            <div class="stat-card"><div class="value">${data.length}</div><div class="label">Total Feedback</div></div>
+            <div class="stat-card"><div class="value">${avgRating}</div><div class="label">Avg Rating</div></div>
+            <div class="stat-card"><div class="value">${dist.map((c, i) => `${i + 1}★:${c}`).join('  ')}</div><div class="label">Distribution</div></div>
+        `;
+
+        // Cards
+        list.innerHTML = data.slice(0, 100).map(f => {
+            const stars = '★'.repeat(f.rating || 0) + '☆'.repeat(5 - (f.rating || 0));
+            const date = new Date(f.created_at).toLocaleString();
+            const text = f.feedback_text ? `<div class="fb-text">${esc(f.feedback_text)}</div>` : '';
+            const labInfo = !currentLab && f.game_id ? `${esc(labTitle(f.game_id))} — ` : '';
+            const meta = f.level_id ? `<div class="fb-meta">${labInfo}Lesson: ${esc(f.level_id)} | Run #${f.run_number || '?'}</div>` : '';
+            return `<div class="feedback-card">
+                <div class="fb-header">
+                    <span class="fb-user">${esc(f.display_name || f.user_email || '—')}</span>
+                    <span class="fb-date">${date}</span>
+                </div>
+                <div class="fb-stars">${stars}</div>
+                ${text}${meta}
+            </div>`;
+        }).join('');
+    }
+
+    // ── Helpers ──
+    function esc(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // ── Start ──
+    init();
+})();
+</script>
+</body>
+</html>

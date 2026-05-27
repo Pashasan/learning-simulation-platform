@@ -1,0 +1,152 @@
+{
+  "id": "analytics-midterm",
+  "name": "Analytics Mid-Course Feedback",
+  "icon": "\ud83d\udcdd",
+  "description": "We're halfway through the Analytics course! Take a few minutes to share how it's going. Your honest feedback helps us improve lectures, labs, and learning games.",
+  "estimatedTime": "3 min",
+  "mode": "one-time",
+  "allowRetake": false,
+  "unlimitedRetakeEmails": [],
+  "thankYouTitle": "Thanks for your feedback!",
+  "thankYouMessage": "Your responses will help shape the rest of the course. Every piece of feedback matters \u2014 enjoy the rest of your study session!",
+  "loungeScene": {
+    "enabled": true
+  },
+  "questions": [
+    {
+      "id": "pace",
+      "type": "likert",
+      "text": "How would you rate the course pace?",
+      "subtitle": "Think about how quickly new topics are introduced.",
+      "required": true,
+      "options": [
+        { "label": "Too Slow" },
+        { "label": "Slightly Slow" },
+        { "label": "Just Right" },
+        { "label": "Slightly Fast" },
+        { "label": "Too Fast" }
+      ],
+      "endpointLabels": ["Too Slow", "Too Fast"]
+    },
+    {
+      "id": "difficulty",
+      "type": "slider",
+      "text": "Overall course difficulty",
+      "subtitle": "Where does the course fall on the difficulty spectrum?",
+      "required": true,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "endpointLabels": ["Too Easy", "Too Hard"]
+    },
+    {
+      "id": "peer-difficulty",
+      "type": "slider",
+      "text": "How difficult do you think your peers find the course?",
+      "subtitle": "Your best guess \u2014 how hard is this course for the average student?",
+      "required": true,
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "endpointLabels": ["Too Easy", "Too Hard"],
+      "pairedWith": "difficulty"
+    },
+    {
+      "id": "useful-topics",
+      "type": "multichoice",
+      "text": "Which topics have been most useful so far?",
+      "subtitle": "Pick your top 2.",
+      "required": true,
+      "multiSelect": true,
+      "maxSelections": 2,
+      "options": [
+        { "id": "regression", "label": "Linear Regression" },
+        { "id": "multiple-regression", "label": "Multiple Regression" },
+        { "id": "visualization", "label": "Data Visualization" },
+        { "id": "python", "label": "Python/Coding Labs" }
+      ]
+    },
+    {
+      "id": "topic-depth",
+      "type": "likert",
+      "text": "How would you rate the depth of topic coverage?",
+      "subtitle": "Are topics covered with enough detail?",
+      "required": true,
+      "options": [
+        { "label": "Too Surface" },
+        { "label": "Slightly Shallow" },
+        { "label": "Just Right" },
+        { "label": "Slightly Deep" },
+        { "label": "Too Deep" }
+      ],
+      "endpointLabels": ["Too Surface-Level", "Too Deep"]
+    },
+    {
+      "id": "method-ranking",
+      "type": "ranking",
+      "text": "Rank these learning activities from most to least effective",
+      "subtitle": "Drag to reorder. #1 = most effective for your learning.",
+      "required": true,
+      "options": [
+        { "id": "lectures", "label": "Lectures" },
+        { "id": "labs", "label": "Hands-on Labs" },
+        { "id": "games", "label": "Learning Games" },
+        { "id": "readings", "label": "Readings/Materials" },
+        { "id": "discussions", "label": "Class Discussions" }
+      ]
+    },
+    {
+      "id": "overall-feeling",
+      "type": "emoji",
+      "text": "How do you feel about the course overall?",
+      "subtitle": "Pick the emoji that best matches your experience.",
+      "required": true,
+      "options": [
+        { "id": "struggling", "emoji": "\ud83d\ude23", "label": "Struggling", "value": 1 },
+        { "id": "confused", "emoji": "\ud83d\ude15", "label": "Confused", "value": 2 },
+        { "id": "neutral", "emoji": "\ud83d\ude10", "label": "Neutral", "value": 3 },
+        { "id": "good", "emoji": "\ud83d\ude0a", "label": "Good", "value": 4 },
+        { "id": "great", "emoji": "\ud83e\udd29", "label": "Great!", "value": 5 }
+      ]
+    },
+    {
+      "id": "ai-exam",
+      "type": "multichoice",
+      "text": "Should AI tools be allowed on the take-home exam?",
+      "subtitle": "e.g. LLM chat assistants, code copilots, etc.",
+      "required": true,
+      "multiSelect": false,
+      "options": [
+        { "id": "yes", "label": "Yes, allow AI" },
+        { "id": "no", "label": "No, don't allow AI" }
+      ]
+    },
+    {
+      "id": "best-thing",
+      "type": "text",
+      "text": "What's the best thing about the course so far?",
+      "subtitle": "What's working well for you?",
+      "required": false,
+      "placeholder": "The thing I enjoy most is...",
+      "maxLength": 500
+    },
+    {
+      "id": "improvement",
+      "type": "text",
+      "text": "What would you most like to see improved?",
+      "subtitle": "Any suggestions are welcome.",
+      "required": false,
+      "placeholder": "I wish the course would...",
+      "maxLength": 500
+    },
+    {
+      "id": "anything-else",
+      "type": "text",
+      "text": "Anything else you'd like to share?",
+      "subtitle": "Final thoughts, questions, or shout-outs.",
+      "required": false,
+      "placeholder": "One more thing...",
+      "maxLength": 500
+    }
+  ]
+}

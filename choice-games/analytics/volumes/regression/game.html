@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>The Analytics Arena | SportsBrand</title>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">SportsBrand Analytics Arena</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Blood">
+                        <span>🎯</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>🔥</span>
+                        <div class="badge-tooltip">5+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>⭐</span>
+                        <div class="badge-tooltip">Perfect Chapter</div>
+                    </div>
+                    <div class="badge" id="badge-skeptic" title="Healthy Skeptic">
+                        <span>🧐</span>
+                        <div class="badge-tooltip">Causation Master</div>
+                    </div>
+                    <div class="badge" id="badge-uncertainty" title="Uncertainty Pro">
+                        <span>📊</span>
+                        <div class="badge-tooltip">Uncertainty Pro</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Analytics Master">
+                        <span>🏆</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Title Screen -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>The Analytics Arena</h1>
+                    <p class="subtitle">SportsBrand Digital Performance Lab</p>
+                    <p class="arena-subtitle">Where Data Drives Decisions</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat">
+                            <div class="value">100</div>
+                            <div class="label">Days of Data</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">&#163;5-50k</div>
+                            <div class="label">Daily Ad Spend Range</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">?</div>
+                            <div class="label">ROI Impact</div>
+                        </div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg" viewBox="0 0 60 60">
+                                <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                                <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                                <circle cx="30" cy="20" r="8" fill="#1a1a2e"/>
+                                <rect x="24" y="28" width="12" height="3" rx="1" fill="#e94560"/>
+                            </svg>
+                            <div>
+                                <strong>Welcome to the Team, Analyst!</strong>
+                                <p style="color: #888; font-size: 0.9em;">SportsBrand UK - Digital Performance Division</p>
+                            </div>
+                        </div>
+                        <p>You've just joined <span class="highlight">SportsBrand's</span> digital analytics team. The leadership wants answers: <em>Is our Instagram ad spend actually driving website traffic?</em></p>
+                        <br>
+                        <p>Over the next <span class="highlight">20 minutes</span>, you'll learn to:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>Build intuition for linear regression</li>
+                            <li>Understand uncertainty and confidence intervals</li>
+                            <li>Know when correlation doesn't mean causation</li>
+                            <li>Recognize the limits of linear models</li>
+                        </ul>
+                        <p style="color: #888; margin-top: 15px;"><em>Analyze data, answer challenges, and prove your insights to earn points!</em></p>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Enter the Arena</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Regression Basics -->
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Reading the Data</h2>
+                    <p class="chapter-desc">Learn to see patterns in data and understand what regression really does</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Sarah <span class="role-badge">Head of Digital</span></div>
+                        <p>"Welcome to the team! I've pulled 100 days of data from our Instagram campaigns and Google Analytics. We need to understand: is there a relationship between what we spend on ads and the traffic we get? Can you find the pattern?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">Linear regression helps us find the <span class="highlight">best-fitting straight line</span> through our data points. This line summarizes the relationship between two variables:</p>
+
+                <ul style="margin: 20px 0 20px 25px; line-height: 2;">
+                    <li><strong>X (Independent variable):</strong> What we control - Ad Spend</li>
+                    <li><strong>Y (Dependent variable):</strong> What we measure - Website Traffic</li>
+                </ul>
+
+                <div class="scenario-card">
+                    <h3>&#128200; Your First Task</h3>
+                    <p>Look at the scatter plot below. Each point represents one day - the x-position shows how much we spent on ads, and the y-position shows how many visitors came to our website.</p>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-scatter')">See the Data</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Scatter Plot -->
+            <div class="screen" id="chapter1-scatter">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Reading a Scatter Plot</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="scatter-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Understanding the Plot</h3>
+                        <div class="metric">
+                            <span class="metric-label">Data Points</span>
+                            <span class="metric-value">100 days</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">X-Axis</span>
+                            <span class="metric-value">Ad Spend (&#163;k)</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Y-Axis</span>
+                            <span class="metric-value">Traffic (visitors)</span>
+                        </div>
+
+                        <div class="narrative narrative-with-avatar" style="margin-top: 20px;">
+                            <svg class="avatar-svg small" viewBox="0 0 60 60">
+                                <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                                <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                                <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                                <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                            </svg>
+                            <div class="narrative-content">
+                                <div class="speaker">Sarah:</div>
+                                <p>"I can see some pattern here... When we spend more, we seem to get more traffic. But can you quantify this relationship?"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What pattern do you observe in this scatter plot?</div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">No clear relationship - points are randomly scattered</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">Positive relationship - higher spend tends to mean higher traffic</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">Negative relationship - higher spend means lower traffic</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('chapter1-fitline')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Fit the Line -->
+            <div class="screen" id="chapter1-fitline">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Finding the Best Fit Line</h2>
+                </div>
+
+                <p style="margin-bottom: 20px;">Regression finds the line that <span class="highlight">minimizes the total squared distance</span> from all points. Try adjusting the slope and intercept to see how well you can fit the data!</p>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="fitline-canvas" width="500" height="400"></canvas>
+                        <div class="drag-hint">Use the sliders to adjust the line</div>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Your Line</h3>
+                        <div class="equation-display" id="equation-display">
+                            Traffic = <span id="eq-intercept">5000</span> + <span id="eq-slope">200</span> &#215; Spend
+                        </div>
+
+                        <div class="slider-container">
+                            <label>Intercept (baseline traffic when spend = 0)</label>
+                            <input type="range" id="intercept-slider" min="0" max="10000" value="3000" oninput="updateLine()">
+                            <div class="slider-value" id="intercept-value">3,000</div>
+                        </div>
+
+                        <div class="slider-container">
+                            <label>Slope (extra visitors per &#163;1k spent)</label>
+                            <input type="range" id="slope-slider" min="0" max="400" value="100" oninput="updateLine()">
+                            <div class="slider-value" id="slope-value">100</div>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Your Error (SSE)</span>
+                            <span class="metric-value" id="your-sse">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Best Possible Error</span>
+                            <span class="metric-value" id="best-sse">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Your R&#178;</span>
+                            <span class="metric-value" id="your-r2">-</span>
+                        </div>
+
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 15px;" onclick="showBestFit()">Show Best Fit</button>
+                    </div>
+                </div>
+
+                <div class="feedback info" id="fitline-feedback" style="display: block;">
+                    <strong>&#128161; Tip:</strong> The "best fit" line minimizes the sum of squared errors (SSE). R&#178; tells you what proportion of the variation in traffic is explained by ad spend - higher is better!
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-scatter')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-interpret')">Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Interpretation -->
+            <div class="screen" id="chapter1-interpret">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Interpreting the Equation</h2>
+                </div>
+
+                <div class="equation-display" style="font-size: 1.3em; padding: 25px;">
+                    Traffic = <span class="highlight">5,200</span> + <span class="highlight-red">195</span> &#215; Ad Spend
+                </div>
+
+                <div class="canvas-container">
+                    <div style="flex: 1;">
+                        <div class="scenario-card">
+                            <h3>&#128206; The Intercept: 5,200</h3>
+                            <p>This is the <strong>baseline traffic</strong> - the number of visitors we'd expect even with &#163;0 ad spend. This comes from organic search, direct visits, and other channels.</p>
+                        </div>
+
+                        <div class="scenario-card">
+                            <h3>&#128200; The Slope: 195</h3>
+                            <p>For every additional <strong>&#163;1,000</strong> we spend on Instagram ads, we expect <strong>195 more visitors</strong> on average. This is the "bang for our buck"!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container" style="margin-top: 20px;">
+                    <div class="question">If we spend &#163;30,000 on Instagram ads, what traffic should we predict?</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">5,200 visitors (just the intercept)</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">5,850 visitors (30 &#215; 195)</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">11,050 visitors (5,200 + 30 &#215; 195)</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">195,000 visitors</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-fitline')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="completeChapter(1)" disabled>Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Uncertainty -->
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Calculating the Odds</h2>
+                    <p class="chapter-desc">Predictions come with uncertainty - learn to communicate it effectively</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#ffc107"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="20" y="38" width="20" height="2" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Marcus <span class="role-badge">Finance Director</span></div>
+                        <p>"Interesting analysis. But I need to know how confident you are in these numbers before I approve any budget changes. What's the margin of error here? I don't sign off on guesswork."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">Every prediction from our regression model has <span class="highlight">uncertainty</span>. This comes from two sources:</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#127922; 1. Natural Variation</h3>
+                        <p>Even with the same ad spend, traffic varies day-to-day due to factors we haven't measured (weather, news events, competitor actions, etc.)</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128202; 2. Estimation Uncertainty</h3>
+                        <p>We only have 100 days of data. With more data, we'd be more confident in our slope and intercept estimates.</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-interpret')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-ci')">Learn About Confidence</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Confidence Intervals -->
+            <div class="screen" id="chapter2-ci">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Confidence Intervals</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="ci-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>The Confidence Band</h3>
+                        <p style="margin: 15px 0; color: #888;">The shaded area shows where we expect 95% of actual values to fall.</p>
+
+                        <div class="metric">
+                            <span class="metric-label">Point Prediction (&#163;30k)</span>
+                            <span class="metric-value">11,050</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">95% CI Lower</span>
+                            <span class="metric-value">9,450</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">95% CI Upper</span>
+                            <span class="metric-value">12,650</span>
+                        </div>
+
+                        <div class="warning-box" style="margin-top: 20px;">
+                            <h4>&#9888;&#65039; Key Insight</h4>
+                            <p style="font-size: 0.9em;">The interval gets wider as we predict further from our data's center. More uncertainty at the edges!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The CFO asks: "If we spend &#163;30k, will we definitely get 11,050 visitors?" What's the best response?</div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">Yes, the model predicts exactly 11,050 visitors</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">We expect about 11,050 visitors, but actual results will likely fall between 9,450 and 12,650 (95% confidence)</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">We have no idea - it could be anything</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">We'll get between 0 and 20,000 visitors</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('chapter2-practice')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Practice -->
+            <div class="screen" id="chapter2-practice">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Communicating Uncertainty</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#1a1a2e"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#e94560"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">You <span class="role-badge">Analyst</span></div>
+                        <p id="cfo-response">"Based on our analysis, if we spend &#163;30k on Instagram ads, we expect approximately 11,050 website visitors. However, due to natural day-to-day variation, actual results will likely fall between 9,450 and 12,650 visitors."</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128218; The R&#178; Statistic</h3>
+                    <p style="margin: 15px 0;">Our model has an R&#178; of <span class="highlight">0.62</span>, meaning ad spend explains about <strong>62%</strong> of the variation in daily traffic.</p>
+                    <p>The remaining 38% comes from factors we haven't measured!</p>
+                </div>
+
+                <div class="quiz-container" style="margin-top: 20px;">
+                    <div class="question">What does an R&#178; of 0.62 mean for a practitioner?</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">The model is useless because it's not 100%</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">Ad spend is a strong predictor, but other unmeasured factors also affect traffic significantly</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">62% of our ad spend is wasted</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">We should only spend 62% of our planned budget</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-ci')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="completeChapter(2)" disabled>Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Causation -->
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Correlation Isn't Causation</h2>
+                    <p class="chapter-desc">The most important lesson in data analysis</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#1e1b4b"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <polygon points="30,8 32,13 28,13" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Victoria <span class="role-badge">Brand Director</span></div>
+                        <p>"Brilliant analysis! The data clearly shows ads drive traffic. I'm taking this to the board - we're doubling our Instagram budget!" <em style="color: #ffc107;">But wait... can you really say the ads <strong>cause</strong> more traffic?</em></p>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>&#9888;&#65039; Critical Warning</h4>
+                    <p>Just because two variables are correlated doesn't mean one causes the other!</p>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">There are several reasons correlation might not imply causation:</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1; text-align: center;">
+                        <div class="concept-icon">
+                            <svg viewBox="0 0 40 40">
+                                <circle cx="10" cy="30" r="6" fill="#4ecca3"/>
+                                <circle cx="30" cy="30" r="6" fill="#4ecca3"/>
+                                <circle cx="20" cy="10" r="6" fill="#e94560" opacity="0.5"/>
+                                <line x1="10" y1="24" x2="18" y2="14" stroke="#888" stroke-width="2" stroke-dasharray="3"/>
+                                <line x1="30" y1="24" x2="22" y2="14" stroke="#888" stroke-width="2" stroke-dasharray="3"/>
+                                <text x="20" y="13" text-anchor="middle" fill="#e94560" font-size="8">?</text>
+                            </svg>
+                        </div>
+                        <h3>Confounding Variables</h3>
+                        <p style="margin-top: 10px;">A third variable might cause both. Example: We spend more on ads during product launches, which also naturally drive more traffic.</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1; text-align: center;">
+                        <div class="concept-icon">
+                            <svg viewBox="0 0 40 40">
+                                <circle cx="12" cy="20" r="6" fill="#4ecca3"/>
+                                <circle cx="28" cy="20" r="6" fill="#e94560"/>
+                                <path d="M18 17 L22 17 L22 15 L26 20 L22 25 L22 23 L18 23 Z" fill="#ffc107"/>
+                                <path d="M22 17 L18 17 L18 15 L14 20 L18 25 L18 23 L22 23 Z" fill="#ffc107" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <h3>Reverse Causation</h3>
+                        <p style="margin-top: 10px;">Maybe we spend more on ads when we see traffic is high (to capitalize on interest), not the other way around!</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1; text-align: center;">
+                        <div class="concept-icon">
+                            <svg viewBox="0 0 40 40">
+                                <line x1="5" y1="35" x2="35" y2="5" stroke="#4ecca3" stroke-width="3"/>
+                                <circle cx="8" cy="32" r="3" fill="#4ecca3"/>
+                                <circle cx="15" cy="25" r="3" fill="#4ecca3"/>
+                                <circle cx="25" cy="15" r="3" fill="#4ecca3"/>
+                                <circle cx="32" cy="8" r="3" fill="#4ecca3"/>
+                                <line x1="5" y1="5" x2="35" y2="35" stroke="#e94560" stroke-width="2" stroke-dasharray="4" opacity="0.5"/>
+                                <text x="30" y="32" fill="#e94560" font-size="10">?</text>
+                            </svg>
+                        </div>
+                        <h3>Coincidence</h3>
+                        <p style="margin-top: 10px;">With enough data, some relationships appear by chance. Ice cream sales correlate with drowning - both happen in summer!</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-practice')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-examples')">See Examples</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Examples -->
+            <div class="screen" id="chapter3-examples">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Spurious Correlations</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="spurious-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Correlation: r = 0.95</h3>
+                        <p style="margin: 15px 0; color: #888;">This shows a strong positive correlation between "Number of Nicolas Cage films" and "Swimming pool drownings"</p>
+
+                        <div class="warning-box">
+                            <h4>Does this mean...</h4>
+                            <p>Nicolas Cage movies cause drownings? Of course not! Both simply trended upward over time.</p>
+                        </div>
+
+                        <p style="margin-top: 15px; font-size: 0.9em; color: #888;">Real example from Tyler Vigen's "Spurious Correlations"</p>
+                    </div>
+                </div>
+
+                <!-- Real-World Mini-Cases -->
+                <div class="mini-case">
+                    <div class="mini-case-header">
+                        <span class="mini-case-icon">🌍</span>
+                        <span class="mini-case-title">Real-World Case: Chocolate & Nobel Prizes</span>
+                    </div>
+                    <div class="mini-case-content">
+                        <p>A study found that countries with higher chocolate consumption per capita have more Nobel Prize winners. Should Switzerland invest in chocolate to win more Nobels?</p>
+                    </div>
+                    <div class="mini-case-reveal">
+                        <strong>The truth:</strong> Wealthier countries can afford more chocolate AND better education systems. Wealth is the confounding variable!
+                    </div>
+                </div>
+
+                <div class="mini-case">
+                    <div class="mini-case-header">
+                        <span class="mini-case-icon">🏥</span>
+                        <span class="mini-case-title">Real-World Case: Hospitals & Death Rates</span>
+                    </div>
+                    <div class="mini-case-content">
+                        <p>Data shows hospitals with more specialists have higher patient death rates. Should we fire the specialists?</p>
+                    </div>
+                    <div class="mini-case-reveal">
+                        <strong>The truth:</strong> The sickest patients are sent to hospitals with more specialists. Patient severity is the confounding variable - this is "selection bias."
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">A colleague says: "Our regression proves that Instagram ads drive traffic. The slope coefficient is significant!" How do you respond?</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">You're right! The significant coefficient proves causation.</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">The regression shows correlation, but correlation alone cannot prove causation - there could be confounding variables or reverse causation at play.</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">We should just ignore the regression results entirely.</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">Statistical significance means we're 95% sure ads cause traffic.</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('chapter3-experiment')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Making Decisions Under Uncertainty -->
+            <div class="screen" id="chapter3-experiment">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Making Decisions Under Uncertainty</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#1a1a2e"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#e94560"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">You <span class="role-badge">Analyst</span></div>
+                        <p>"Our analysis shows a strong correlation between ad spend and traffic. But correlation alone doesn't prove causation. We need to think carefully about what we actually know."</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128736; What Regression CAN Tell Us</h3>
+                    <ul style="margin: 15px 0 0 25px; line-height: 2;">
+                        <li><strong>Pattern identification:</strong> There's a consistent positive relationship in our data</li>
+                        <li><strong>Predictions with uncertainty:</strong> Given X, we expect Y within a range</li>
+                        <li><strong>Quantified relationships:</strong> The slope tells us the average association</li>
+                    </ul>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#10060; What Regression CANNOT Tell Us</h3>
+                    <ul style="margin: 15px 0 0 25px; line-height: 2;">
+                        <li><strong>Causation:</strong> We can't conclude that changing X will change Y</li>
+                        <li><strong>Direction:</strong> Maybe high traffic days prompt us to spend more?</li>
+                        <li><strong>Hidden factors:</strong> A third variable might drive both</li>
+                    </ul>
+                </div>
+
+                <div class="quiz-container" style="margin-top: 20px;">
+                    <div class="question">Given all this uncertainty, why is regression still valuable for business decisions?</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">It isn't valuable - we should only use methods that prove causation</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">Regression helps us identify promising patterns, quantify uncertainty, and make informed predictions - even if we can't prove causation</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">Because a high R&#178; guarantees our predictions will be accurate</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">It eliminates all risk from decision-making</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+
+                <div class="warning-box" style="margin-top: 20px;">
+                    <h4>&#128161; Practical Takeaway</h4>
+                    <p>Regression is a powerful tool for <strong>prediction</strong> and <strong>pattern identification</strong>. When interpreting coefficients, always ask: "Could something else explain this relationship?" Understanding and communicating uncertainty is essential for good decision-making.</p>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-examples')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="completeChapter(3)" disabled>Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Limitations -->
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Staying In Bounds</h2>
+                    <p class="chapter-desc">Understanding when your model breaks down</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#1e1b4b"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <polygon points="30,8 32,13 28,13" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Victoria <span class="role-badge">Brand Director</span></div>
+                        <p>"Your model says we get 195 extra visitors per &#163;1k spent. So if we spend &#163;1 million, we'll get 195,000 extra visitors! Let's go all in!"</p>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>&#128680; Wait! That's Extrapolation!</h4>
+                    <p>Our data only covers &#163;5k to &#163;50k in daily spend. Predicting at &#163;1,000k is far beyond what we've observed!</p>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">Linear regression has two critical limitations:</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128206; 1. Extrapolation Risk</h3>
+                        <p>The relationship we found applies to the range of our data. Outside that range, all bets are off!</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128200; 2. Linear Assumption</h3>
+                        <p>We assumed a straight line. But what if the real relationship curves? Maybe there are diminishing returns at high spend levels.</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-experiment')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-extrap')">See the Danger</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Extrapolation -->
+            <div class="screen" id="chapter4-extrap">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">The Extrapolation Trap</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="extrap-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Prediction Zones</h3>
+
+                        <div style="display: flex; align-items: center; margin: 15px 0;">
+                            <div style="width: 20px; height: 20px; background: #4ecca3; border-radius: 3px; margin-right: 10px;"></div>
+                            <span>Safe zone (&#163;5k-&#163;50k) - our data range</span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 15px 0;">
+                            <div style="width: 20px; height: 20px; background: #ffc107; border-radius: 3px; margin-right: 10px;"></div>
+                            <span>Caution zone - some extrapolation</span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 15px 0;">
+                            <div style="width: 20px; height: 20px; background: #e94560; border-radius: 3px; margin-right: 10px;"></div>
+                            <span>Danger zone - way beyond data</span>
+                        </div>
+
+                        <div class="slider-container" style="margin-top: 20px;">
+                            <label>Try predicting at different spend levels:</label>
+                            <input type="range" id="extrap-slider" min="5" max="150" value="30" oninput="updateExtrap()">
+                            <div class="slider-value" id="extrap-spend">&#163;30k</div>
+                        </div>
+
+                        <div class="equation-display" id="extrap-pred">
+                            Predicted: 11,050 visitors
+                        </div>
+
+                        <div id="extrap-warning" class="warning-box" style="display: none;">
+                            <h4>&#9888;&#65039; Warning</h4>
+                            <p id="extrap-warning-text"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What-If Simulator -->
+                <div class="simulator-container">
+                    <h3 style="text-align: center; margin-bottom: 10px;">🧪 What-If Lab</h3>
+                    <p style="text-align: center; color: #888; margin-bottom: 20px;">Enter any ad spend to see the prediction with uncertainty</p>
+
+                    <div class="simulator-input">
+                        <span style="color: #888;">If we spend £</span>
+                        <input type="number" id="whatif-spend" value="30" min="0" max="500" onchange="updateWhatIf()">
+                        <span style="color: #888;">k on ads...</span>
+                        <button class="btn btn-secondary" onclick="updateWhatIf()" style="padding: 10px 20px;">Calculate</button>
+                    </div>
+
+                    <div class="extrapolation-meter">
+                        <div class="meter-marker" id="whatif-marker" style="left: 30%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #888;">
+                        <span>Safe Zone (£5-50k)</span>
+                        <span>Caution</span>
+                        <span>Danger Zone</span>
+                    </div>
+
+                    <div class="simulator-result" id="whatif-results">
+                        <div class="result-card" id="whatif-prediction">
+                            <div class="result-value">11,050</div>
+                            <div class="result-label">Point Prediction</div>
+                        </div>
+                        <div class="result-card" id="whatif-lower">
+                            <div class="result-value">9,450</div>
+                            <div class="result-label">95% CI Lower</div>
+                        </div>
+                        <div class="result-card" id="whatif-upper">
+                            <div class="result-value">12,650</div>
+                            <div class="result-label">95% CI Upper</div>
+                        </div>
+                        <div class="result-card" id="whatif-reliability">
+                            <div class="result-value">✓ Safe</div>
+                            <div class="result-label">Reliability</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-curve')">See Non-Linearity</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Curved Relationships -->
+            <div class="screen" id="chapter4-curve">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">When Relationships Curve</h2>
+                </div>
+
+                <p style="margin-bottom: 20px;">What if the true relationship has <span class="highlight">diminishing returns</span>? A linear model would miss this pattern!</p>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="curve-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Linear vs Reality</h3>
+
+                        <div class="slider-container">
+                            <label>Adjust diminishing returns effect:</label>
+                            <input type="range" id="curve-slider" min="0" max="100" value="0" oninput="updateCurve()">
+                            <div class="slider-value" id="curve-value">No curvature</div>
+                        </div>
+
+                        <div class="narrative" style="margin-top: 20px;">
+                            <div class="speaker">Reality Check:</div>
+                            <p id="curve-explanation">With no diminishing returns, our linear model fits well.</p>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Linear Model R&#178;</span>
+                            <span class="metric-value" id="curve-r2">0.62</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">If the true relationship has diminishing returns (curves downward), what happens when we use a linear model?</div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">Nothing, linear regression handles all shapes</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">The model will overpredict at high spend levels and underpredict at medium levels</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">R&#178; will always be 1.0</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">The slope becomes negative</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-extrap')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('chapter4-final')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Final -->
+            <div class="screen" id="chapter4-final">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">The Final Call</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#1e1b4b"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <polygon points="30,8 32,13 28,13" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Victoria <span class="role-badge">Brand Director</span></div>
+                        <p>"OK, I understand the limitations now. But I need your recommendation for the board meeting: should we increase our Instagram ad spend?"</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Based on everything you've learned, what's the best recommendation?</div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Double the budget immediately - the regression proves ads work!</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">Stop all ad spend - we can't prove causation without an experiment.</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">The data suggests a positive relationship with meaningful uncertainty. I recommend cautiously increasing spend within our observed data range while monitoring results closely.</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">Spend &#163;1 million to maximize traffic based on our slope coefficient.</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-curve')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="showPredictionChallenge()" disabled>Final Challenge</button>
+                </div>
+            </div>
+
+            <!-- Prediction Challenge Screen -->
+            <div class="screen" id="prediction-challenge">
+                <div class="chapter-header">
+                    <div class="chapter-number">Final Challenge</div>
+                    <h2 class="chapter-title">Apply Your Knowledge</h2>
+                    <p class="chapter-desc">Here's a fresh dataset - can you analyze it correctly?</p>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>🆕 New Campaign Data</h3>
+                    <p style="margin-bottom: 15px;">A different SportsBrand campaign collected these 8 data points. Study them carefully:</p>
+
+                    <div class="challenge-dataset" id="challenge-data">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question" style="margin-top: 20px;">Based on this data, estimate the slope (traffic increase per £1k spent):</div>
+                    <div class="challenge-input">
+                        <input type="number" id="challenge-slope" placeholder="Your estimate..." step="10">
+                        <p style="color: #888; font-size: 0.9em;">Hint: Look at how much traffic changes as spend increases</p>
+                    </div>
+
+                    <div class="question" style="margin-top: 30px;">If they spend £35k, what traffic do you predict? (to nearest 500)</div>
+                    <div class="challenge-input">
+                        <input type="number" id="challenge-prediction" placeholder="Your prediction..." step="500">
+                    </div>
+
+                    <div class="question" style="margin-top: 30px;">Would it be wise to extrapolate to £200k spend?</div>
+                    <div class="options" id="challenge-extrap-options">
+                        <div class="option" onclick="selectChallengeOption(this, 0)">Yes - the linear trend should continue</div>
+                        <div class="option" onclick="selectChallengeOption(this, 1)">No - that's far beyond the observed data range and we can't assume the relationship holds</div>
+                    </div>
+
+                    <div id="challenge-feedback" class="challenge-feedback" style="display: none;"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-final')">Back</button>
+                    <button class="btn btn-primary" id="challenge-submit" onclick="submitChallenge()">Submit & See Results</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Analysis Complete!</h1>
+                    <p style="color: #4ecca3; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've completed the regression analytics training</p>
+
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="grade">-</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="correct-count">0/8</div>
+                            <div class="stat-label">Questions Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="max-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned -->
+                    <div style="max-width: 700px; margin: 20px auto;">
+                        <h3 style="margin-bottom: 15px;">🏅 Badges Earned</h3>
+                        <div class="badges-container" id="results-badges">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Cheat Sheet -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>📋 Regression Cheat Sheet - Save This!</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Linear Regression Equation</div>
+                                <div class="definition">Predicts Y from X using a straight line</div>
+                                <div class="formula">Y = β₀ + β₁ × X</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Intercept (β₀)</div>
+                                <div class="definition">Expected value of Y when X = 0 (baseline)</div>
+                                <div class="formula">In our case: 5,200 visitors</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Slope (β₁)</div>
+                                <div class="definition">Change in Y for each 1-unit increase in X</div>
+                                <div class="formula">In our case: +195 visitors per £1k</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">R² (R-Squared)</div>
+                                <div class="definition">Proportion of variance in Y explained by X (0 to 1)</div>
+                                <div class="formula">0.62 = 62% explained</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Confidence Interval</div>
+                                <div class="definition">Range where the true value likely falls (usually 95%)</div>
+                                <div class="formula">Point estimate ± margin of error</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">⚠️ Correlation ≠ Causation</div>
+                                <div class="definition">A relationship doesn't prove X causes Y. Consider: confounders, reverse causation, coincidence</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">⚠️ Extrapolation Risk</div>
+                                <div class="definition">Predictions outside your data range are unreliable. Our safe range: £5k-£50k</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">⚠️ Linearity Assumption</div>
+                                <div class="definition">Linear regression assumes a straight-line relationship. Check residuals for patterns!</div>
+                            </div>
+                        </div>
+
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="copyCheatSheet()">📋 Copy to Clipboard</button>
+                            <button class="btn-export" onclick="downloadCheatSheet()">💾 Download as Text</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+                        <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Screen -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from the Analytics Arena</p>
+
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume identifier for this game
+        const VOLUME_ID = 'regression';
+
+        // ============== GAME STATE ==============
+        let gameState = null;
+
+        // Challenge dataset
+        let challengeData = [];
+        const challengeIntercept = 3000;
+        const challengeSlope = 150;
+
+        // Nike-style synthetic data
+        let data = [];
+        const trueIntercept = 5200;
+        const trueSlope = 195;
+        const noise = 800;
+
+        // Generate data
+        function generateData() {
+            data = [];
+            for (let i = 0; i < 100; i++) {
+                const spend = 5 + Math.random() * 45; // 5k to 50k
+                const traffic = trueIntercept + trueSlope * spend + (Math.random() - 0.5) * 2 * noise;
+                data.push({ spend, traffic: Math.max(traffic, 1000) });
+            }
+        }
+
+        // Initialize
+        generateData();
+
+        // Question answers (0-indexed correct answer)
+        const correctAnswers = {
+            'q1': 1, // Positive relationship
+            'q2': 2, // 11,050 visitors
+            'q3': 1, // Confidence interval response
+            'q4': 1, // R² interpretation
+            'q5': 1, // Correlation vs causation
+            'q6': 1, // Random assignment
+            'q7': 1, // Linear model limitations
+            'q8': 2  // Final recommendation
+        };
+
+        const explanations = {
+            'q1': {
+                correct: "Excellent! You correctly identified the positive correlation. As ad spend increases, traffic tends to increase too. This is the pattern regression will help us quantify.",
+                incorrect: "Look again at the scatter plot. Notice how points in the upper-right have both higher spend AND higher traffic? That's a positive relationship!"
+            },
+            'q2': {
+                correct: "Perfect! You use the full equation: Traffic = 5,200 + (195 &#215; 30) = 5,200 + 5,850 = 11,050. The intercept gives baseline traffic, and the slope adds the effect of spending.",
+                incorrect: "Remember, the full equation is: Traffic = Intercept + Slope &#215; Spend. You need both parts! Traffic = 5,200 + (195 &#215; 30) = 11,050"
+            },
+            'q3': {
+                correct: "Exactly right! Good analysts always communicate uncertainty. A point estimate plus a confidence interval gives stakeholders realistic expectations.",
+                incorrect: "The point prediction alone is incomplete. Always include confidence intervals to show the realistic range of outcomes. Predictions are uncertain!"
+            },
+            'q4': {
+                correct: "Spot on! R&#178; = 0.62 means ad spend is a useful predictor, but 38% of traffic variation comes from other factors. This is typical in real-world marketing data.",
+                incorrect: "R&#178; tells us what fraction of the variation in Y is explained by X. An R&#178; of 0.62 means 62% explained, leaving 38% to other factors - that's actually quite good for marketing data!"
+            },
+            'q5': {
+                correct: "Exactly! This is the key insight. Statistical significance tells us the correlation is unlikely due to chance, but NOT that it's causal. Confounders or reverse causation could explain the relationship.",
+                incorrect: "Be careful! Statistical significance means we're confident the correlation exists, but it says nothing about causation. There could be confounding variables or reverse causation at play."
+            },
+            'q6': {
+                correct: "Perfect! Despite its limitations, regression helps us identify patterns, make predictions with quantified uncertainty, and inform decisions - all valuable even without proving causation.",
+                incorrect: "Regression is valuable because it quantifies relationships and uncertainty. We don't need to prove causation to make informed decisions - we just need to understand what we know and what we don't."
+            },
+            'q7': {
+                correct: "Exactly! With diminishing returns, a straight line will systematically miss the curve - overpredicting at extremes and underpredicting in the middle. This is why checking residuals is important!",
+                incorrect: "When the true relationship curves, a linear model will have systematic errors. It will overpredict where the curve flattens and underpredict in the middle. Always check your residuals!"
+            },
+            'q8': {
+                correct: "Outstanding! This is the mature analyst's answer. Use regression insights to guide decisions while acknowledging uncertainty. Stay within the data range, monitor results, and adjust based on what you learn. You've mastered regression thinking!",
+                incorrect: "The best approach acknowledges uncertainty: the data suggests a positive relationship, but we should stay within our observed data range and monitor results carefully rather than making extreme changes."
+            }
+        };
+
+        // Screen management hook (called by showScreen in game-utils.js)
+        function onScreenShow(screenId) {
+            // Initialize canvases when screens are shown
+            if (screenId === 'chapter1-scatter') {
+                setTimeout(() => drawScatterPlotAnimated('scatter-canvas'), 100);
+            } else if (screenId === 'chapter1-fitline') {
+                setTimeout(() => {
+                    drawFitLine();
+                    updateLine();
+                }, 100);
+            } else if (screenId === 'chapter2-ci') {
+                setTimeout(() => drawConfidenceInterval(), 100);
+            } else if (screenId === 'chapter3-examples') {
+                setTimeout(() => drawSpurious(), 100);
+            } else if (screenId === 'chapter4-extrap') {
+                setTimeout(() => {
+                    drawExtrapolation();
+                    updateExtrap();
+                    updateWhatIf();
+                }, 100);
+            } else if (screenId === 'chapter4-curve') {
+                setTimeout(() => {
+                    drawCurve();
+                    updateCurve();
+                }, 100);
+            }
+        }
+
+        async function startGame() {
+            // Require login to play
+            if (!currentUser) {
+                window.location.href = '../../index.html';
+                return;
+            }
+            gameState = createGameState(gameConfig);
+            gameState.challengeAnswer = null; // Regression-specific field
+            await Analytics.trackVolumeStart();
+
+            // Reset badge UI
+            document.querySelectorAll('.badge').forEach(b => b.classList.remove('unlocked'));
+
+            // Reset all quiz options (remove selected/correct/incorrect classes)
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            // Reset all feedback divs
+            document.querySelectorAll('.feedback').forEach(fb => {
+                fb.className = 'feedback';
+                fb.innerHTML = '';
+            });
+
+            // Reset all next buttons to disabled
+            for (let i = 1; i <= 8; i++) {
+                const btn = document.getElementById(`q${i}-next`);
+                if (btn) btn.disabled = true;
+            }
+
+            // Reset challenge inputs
+            const challengeSlope = document.getElementById('challenge-slope');
+            const challengePrediction = document.getElementById('challenge-prediction');
+            const challengeFeedback = document.getElementById('challenge-feedback');
+            if (challengeSlope) challengeSlope.value = '';
+            if (challengePrediction) challengePrediction.value = '';
+            if (challengeFeedback) {
+                challengeFeedback.style.display = 'none';
+                challengeFeedback.innerHTML = '';
+            }
+
+            // Reset challenge options
+            document.querySelectorAll('#challenge-extrap-options .option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+
+            // Reset challenge submit button
+            const challengeSubmit = document.getElementById('challenge-submit');
+            if (challengeSubmit) {
+                challengeSubmit.textContent = 'Submit & See Results';
+                challengeSubmit.onclick = submitChallenge;
+            }
+
+            // Reset chapter dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`ch${i}-dot`);
+                if (dot) {
+                    dot.classList.remove('active', 'completed');
+                    if (i === 1) dot.classList.add('active');
+                }
+            }
+
+            updateStats();
+            updateProgress();
+            showScreen('chapter1-intro');
+        }
+
+        function restartGame() {
+            generateData();
+            startGame();
+        }
+
+        // Question handling
+        function selectOption(element, questionId, optionIndex) {
+            const result = processAnswer(gameState, questionId, optionIndex, correctAnswers[questionId], gameConfig);
+            if (result.alreadyAnswered) return;
+
+            // Track the answer
+            Analytics.trackAnswer(questionId, optionIndex, correctAnswers[questionId], result.isCorrect, result.points, result.streak);
+
+            // Clear previous selections
+            const options = document.querySelectorAll(`#${questionId}-options .option`);
+            options.forEach(opt => opt.classList.remove('selected', 'correct', 'incorrect'));
+            element.classList.add('selected');
+
+            // Update UI
+            updateAnswerUI(questionId, optionIndex, correctAnswers[questionId], result.isCorrect);
+
+            // Show feedback with game-specific formatting
+            const feedback = document.getElementById(`${questionId}-feedback`);
+            if (result.isCorrect) {
+                feedback.className = 'feedback success show';
+                feedback.innerHTML = `<strong>&#10004; Correct!</strong> +${Number(result.points)} points<br><br>`;
+                feedback.appendChild(document.createTextNode(explanations[questionId].correct));
+            } else {
+                feedback.className = 'feedback error show';
+                feedback.innerHTML = '<strong>&#10008; Not quite.</strong><br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].incorrect));
+            }
+
+            updateStatsDisplay(gameState);
+
+            // Check badges
+            checkBadges(questionId, result.isCorrect);
+
+            document.getElementById(`${questionId}-next`).disabled = false;
+        }
+
+        function updateStats() {
+            updateStatsDisplay(gameState);
+        }
+
+        function updateProgress() {
+            const chapters = gameConfig.chapters;
+            const progress = ((gameState.currentChapter - 1) / chapters) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            document.getElementById('progress-text').textContent = `Chapter ${gameState.currentChapter} of ${chapters}`;
+            document.getElementById('progress-percent').textContent = `${Math.round(progress)}%`;
+
+            for (let i = 1; i <= chapters; i++) {
+                const dot = document.getElementById(`ch${i}-dot`);
+                if (!dot) continue;
+                dot.classList.remove('active', 'completed');
+                if (i < gameState.currentChapter) {
+                    dot.classList.add('completed');
+                } else if (i === gameState.currentChapter) {
+                    dot.classList.add('active');
+                }
+            }
+        }
+
+        function completeChapter(chapter) {
+            // Track chapter transition
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+
+            // Check for perfect chapter badge
+            checkPerfectChapter(chapter);
+
+            // Update chapter dots
+            document.getElementById(`ch${chapter}-dot`).classList.remove('active');
+            document.getElementById(`ch${chapter}-dot`).classList.add('completed');
+
+            if (chapter < 4) {
+                gameState.currentChapter = chapter + 1;
+                document.getElementById(`ch${chapter + 1}-dot`).classList.add('active');
+                showScreen(`chapter${chapter + 1}-intro`);
+            }
+            // Note: Chapter 4 completion goes to prediction challenge via showPredictionChallenge()
+
+            updateProgress();
+        }
+
+        // Canvas Drawing Functions
+        function drawScatterPlot(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Margins
+            const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            // Scales
+            const xMin = 0, xMax = 55;
+            const yMin = 0, yMax = 20000;
+
+            function scaleX(val) {
+                return margin.left + (val - xMin) / (xMax - xMin) * plotWidth;
+            }
+            function scaleY(val) {
+                return margin.top + plotHeight - (val - yMin) / (yMax - yMin) * plotHeight;
+            }
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 20000; y += 5000) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(y));
+                ctx.lineTo(width - margin.right, scaleY(y));
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+
+            // X-axis labels
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.fillText(`£${x}k`, scaleX(x), height - margin.bottom + 20);
+            }
+            ctx.fillText('Instagram Ad Spend', width / 2, height - 10);
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            for (let y = 0; y <= 20000; y += 5000) {
+                ctx.fillText(y.toLocaleString(), margin.left - 10, scaleY(y) + 4);
+            }
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Daily Website Traffic', 0, 0);
+            ctx.restore();
+
+            // Data points
+            data.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.spend), scaleY(point.traffic), 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.7)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(78, 204, 163, 1)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+        }
+
+        function drawFitLine() {
+            const canvas = document.getElementById('fitline-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            const xMin = 0, xMax = 55;
+            const yMin = 0, yMax = 20000;
+
+            function scaleX(val) {
+                return margin.left + (val - xMin) / (xMax - xMin) * plotWidth;
+            }
+            function scaleY(val) {
+                return margin.top + plotHeight - (val - yMin) / (yMax - yMin) * plotHeight;
+            }
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 20000; y += 5000) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(y));
+                ctx.lineTo(width - margin.right, scaleY(y));
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.fillText(`£${x}k`, scaleX(x), height - margin.bottom + 20);
+            }
+            ctx.fillText('Ad Spend (£k)', width / 2, height - 10);
+
+            ctx.textAlign = 'right';
+            for (let y = 0; y <= 20000; y += 5000) {
+                ctx.fillText(y.toLocaleString(), margin.left - 10, scaleY(y) + 4);
+            }
+
+            // Get current slider values
+            const intercept = parseInt(document.getElementById('intercept-slider').value);
+            const slope = parseInt(document.getElementById('slope-slider').value);
+
+            // Draw residual lines
+            data.forEach(point => {
+                const predicted = intercept + slope * point.spend;
+                ctx.strokeStyle = 'rgba(233, 69, 96, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(point.spend), scaleY(point.traffic));
+                ctx.lineTo(scaleX(point.spend), scaleY(predicted));
+                ctx.stroke();
+            });
+
+            // Draw regression line
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(intercept));
+            ctx.lineTo(scaleX(55), scaleY(intercept + slope * 55));
+            ctx.stroke();
+
+            // Data points
+            data.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.spend), scaleY(point.traffic), 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.7)';
+                ctx.fill();
+            });
+        }
+
+        function updateLine() {
+            const intercept = parseInt(document.getElementById('intercept-slider').value);
+            const slope = parseInt(document.getElementById('slope-slider').value);
+
+            document.getElementById('eq-intercept').textContent = intercept.toLocaleString();
+            document.getElementById('eq-slope').textContent = slope;
+            document.getElementById('intercept-value').textContent = intercept.toLocaleString();
+            document.getElementById('slope-value').textContent = slope;
+
+            // Calculate SSE
+            let sse = 0;
+            let sst = 0;
+            const meanY = data.reduce((s, p) => s + p.traffic, 0) / data.length;
+
+            data.forEach(point => {
+                const predicted = intercept + slope * point.spend;
+                sse += Math.pow(point.traffic - predicted, 2);
+                sst += Math.pow(point.traffic - meanY, 2);
+            });
+
+            const r2 = 1 - sse / sst;
+
+            document.getElementById('your-sse').textContent = Math.round(sse / 1000000).toLocaleString() + 'M';
+            document.getElementById('your-r2').textContent = r2.toFixed(2);
+
+            // Calculate best fit SSE
+            const bestSSE = calculateBestSSE();
+            document.getElementById('best-sse').textContent = Math.round(bestSSE / 1000000).toLocaleString() + 'M';
+
+            drawFitLine();
+        }
+
+        function calculateBestSSE() {
+            // Calculate actual best fit
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            data.forEach(p => {
+                sumX += p.spend;
+                sumY += p.traffic;
+                sumXY += p.spend * p.traffic;
+                sumX2 += p.spend * p.spend;
+            });
+            const n = data.length;
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            let sse = 0;
+            data.forEach(p => {
+                const pred = intercept + slope * p.spend;
+                sse += Math.pow(p.traffic - pred, 2);
+            });
+            return sse;
+        }
+
+        function showBestFit() {
+            // Calculate best fit parameters
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            data.forEach(p => {
+                sumX += p.spend;
+                sumY += p.traffic;
+                sumXY += p.spend * p.traffic;
+                sumX2 += p.spend * p.spend;
+            });
+            const n = data.length;
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            document.getElementById('intercept-slider').value = Math.round(intercept);
+            document.getElementById('slope-slider').value = Math.round(slope);
+            updateLine();
+        }
+
+        function drawConfidenceInterval() {
+            const canvas = document.getElementById('ci-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            const xMin = 0, xMax = 55;
+            const yMin = 0, yMax = 20000;
+
+            function scaleX(val) {
+                return margin.left + (val - xMin) / (xMax - xMin) * plotWidth;
+            }
+            function scaleY(val) {
+                return margin.top + plotHeight - (val - yMin) / (yMax - yMin) * plotHeight;
+            }
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 20000; y += 5000) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(y));
+                ctx.lineTo(width - margin.right, scaleY(y));
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.fillText(`£${x}k`, scaleX(x), height - margin.bottom + 20);
+            }
+
+            // Draw confidence band
+            ctx.fillStyle = 'rgba(233, 69, 96, 0.2)';
+            ctx.beginPath();
+
+            // Upper bound
+            for (let x = 0; x <= 55; x += 1) {
+                const y = trueIntercept + trueSlope * x + 1600;
+                if (x === 0) ctx.moveTo(scaleX(x), scaleY(y));
+                else ctx.lineTo(scaleX(x), scaleY(y));
+            }
+            // Lower bound (reverse)
+            for (let x = 55; x >= 0; x -= 1) {
+                const y = trueIntercept + trueSlope * x - 1600;
+                ctx.lineTo(scaleX(x), scaleY(y));
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw regression line
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(trueIntercept));
+            ctx.lineTo(scaleX(55), scaleY(trueIntercept + trueSlope * 55));
+            ctx.stroke();
+
+            // Data points
+            data.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.spend), scaleY(point.traffic), 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                ctx.fill();
+            });
+
+            // Highlight prediction at 30k
+            const predX = 30;
+            const predY = trueIntercept + trueSlope * predX;
+
+            ctx.strokeStyle = '#ffc107';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(scaleX(predX), scaleY(0));
+            ctx.lineTo(scaleX(predX), scaleY(predY));
+            ctx.stroke();
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(margin.left, scaleY(predY));
+            ctx.lineTo(scaleX(predX), scaleY(predY));
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+
+            // Point
+            ctx.beginPath();
+            ctx.arc(scaleX(predX), scaleY(predY), 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffc107';
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Segoe UI';
+            ctx.textAlign = 'left';
+            ctx.fillText('£30k → ~11,050 visitors', scaleX(predX) + 15, scaleY(predY));
+        }
+
+        function drawSpurious() {
+            const canvas = document.getElementById('spurious-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            const margin = { top: 50, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            // Fake data - Nicolas Cage films vs drownings
+            const years = [1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009];
+            const cageFilms = [2, 2, 2, 3, 1, 1, 2, 3, 4, 1, 4];
+            const drownings = [109, 102, 102, 98, 85, 95, 96, 98, 123, 94, 102];
+
+            function scaleX(idx) {
+                return margin.left + (idx / (years.length - 1)) * plotWidth;
+            }
+            function scaleYFilms(val) {
+                return margin.top + plotHeight - (val / 5) * plotHeight;
+            }
+            function scaleYDrown(val) {
+                return margin.top + plotHeight - ((val - 80) / 50) * plotHeight;
+            }
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < years.length; i++) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(i), margin.top);
+                ctx.lineTo(scaleX(i), height - margin.bottom);
+                ctx.stroke();
+            }
+
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Spurious Correlation Example', width / 2, 25);
+
+            // X-axis labels
+            ctx.font = '10px Segoe UI';
+            years.forEach((year, i) => {
+                ctx.fillText(year.toString(), scaleX(i), height - margin.bottom + 15);
+            });
+
+            // Draw Cage films line
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            cageFilms.forEach((val, i) => {
+                if (i === 0) ctx.moveTo(scaleX(i), scaleYFilms(val));
+                else ctx.lineTo(scaleX(i), scaleYFilms(val));
+            });
+            ctx.stroke();
+
+            // Draw drownings line
+            ctx.strokeStyle = '#4ecca3';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            drownings.forEach((val, i) => {
+                if (i === 0) ctx.moveTo(scaleX(i), scaleYDrown(val));
+                else ctx.lineTo(scaleX(i), scaleYDrown(val));
+            });
+            ctx.stroke();
+
+            // Points
+            cageFilms.forEach((val, i) => {
+                ctx.beginPath();
+                ctx.arc(scaleX(i), scaleYFilms(val), 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#e94560';
+                ctx.fill();
+            });
+            drownings.forEach((val, i) => {
+                ctx.beginPath();
+                ctx.arc(scaleX(i), scaleYDrown(val), 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#4ecca3';
+                ctx.fill();
+            });
+
+            // Legend
+            ctx.fillStyle = '#e94560';
+            ctx.fillRect(width - 180, 45, 15, 15);
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'left';
+            ctx.fillText('Nicolas Cage Films', width - 160, 56);
+
+            ctx.fillStyle = '#4ecca3';
+            ctx.fillRect(width - 180, 65, 15, 15);
+            ctx.fillStyle = '#fff';
+            ctx.fillText('Pool Drownings', width - 160, 76);
+        }
+
+        function drawExtrapolation() {
+            const canvas = document.getElementById('extrap-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            const xMin = 0, xMax = 160;
+            const yMin = 0, yMax = 40000;
+
+            function scaleX(val) {
+                return margin.left + (val - xMin) / (xMax - xMin) * plotWidth;
+            }
+            function scaleY(val) {
+                return margin.top + plotHeight - (val - yMin) / (yMax - yMin) * plotHeight;
+            }
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Danger zones
+            // Safe zone (5-50k)
+            ctx.fillStyle = 'rgba(78, 204, 163, 0.1)';
+            ctx.fillRect(scaleX(5), margin.top, scaleX(50) - scaleX(5), plotHeight);
+
+            // Caution zone (50-80k)
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.1)';
+            ctx.fillRect(scaleX(50), margin.top, scaleX(80) - scaleX(50), plotHeight);
+
+            // Danger zone (80k+)
+            ctx.fillStyle = 'rgba(233, 69, 96, 0.1)';
+            ctx.fillRect(scaleX(80), margin.top, scaleX(160) - scaleX(80), plotHeight);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 150; x += 25) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 150; x += 25) {
+                ctx.fillText(`£${x}k`, scaleX(x), height - margin.bottom + 20);
+            }
+
+            // Zone labels
+            ctx.font = '10px Segoe UI';
+            ctx.fillStyle = '#4ecca3';
+            ctx.fillText('SAFE', scaleX(27.5), margin.top + 20);
+            ctx.fillStyle = '#ffc107';
+            ctx.fillText('CAUTION', scaleX(65), margin.top + 20);
+            ctx.fillStyle = '#e94560';
+            ctx.fillText('DANGER', scaleX(120), margin.top + 20);
+
+            // Draw regression line
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+
+            // Solid in safe zone
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(trueIntercept));
+            ctx.lineTo(scaleX(50), scaleY(trueIntercept + trueSlope * 50));
+            ctx.stroke();
+
+            // Dashed beyond
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(scaleX(50), scaleY(trueIntercept + trueSlope * 50));
+            ctx.lineTo(scaleX(160), scaleY(trueIntercept + trueSlope * 160));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Data points
+            data.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.spend), scaleY(point.traffic), 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                ctx.fill();
+            });
+
+            // Store scale functions for updateExtrap
+            canvas.scaleX = scaleX;
+            canvas.scaleY = scaleY;
+        }
+
+        function updateExtrap() {
+            const spend = parseInt(document.getElementById('extrap-slider').value);
+            document.getElementById('extrap-spend').textContent = `£${spend}k`;
+
+            const predicted = trueIntercept + trueSlope * spend;
+            document.getElementById('extrap-pred').textContent = `Predicted: ${Math.round(predicted).toLocaleString()} visitors`;
+
+            const warningBox = document.getElementById('extrap-warning');
+            const warningText = document.getElementById('extrap-warning-text');
+
+            if (spend > 80) {
+                warningBox.style.display = 'block';
+                warningBox.querySelector('h4').textContent = '🚨 DANGER';
+                warningText.textContent = `You're predicting way beyond our data (£5k-£50k). At £${spend}k, we have NO evidence this linear relationship holds. The prediction of ${Math.round(predicted).toLocaleString()} is unreliable!`;
+            } else if (spend > 50) {
+                warningBox.style.display = 'block';
+                warningBox.querySelector('h4').textContent = '⚠️ CAUTION';
+                warningText.textContent = `You're predicting slightly beyond our data range. Proceed with caution - the further you extrapolate, the less reliable the prediction.`;
+            } else if (spend < 5) {
+                warningBox.style.display = 'block';
+                warningBox.querySelector('h4').textContent = '⚠️ CAUTION';
+                warningText.textContent = `We don't have data below £5k. The intercept represents an extrapolation that may not reflect reality.`;
+            } else {
+                warningBox.style.display = 'none';
+            }
+
+            // Redraw with marker
+            drawExtrapolation();
+
+            const canvas = document.getElementById('extrap-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (canvas.scaleX && canvas.scaleY) {
+                const predY = trueIntercept + trueSlope * spend;
+
+                // Draw prediction marker
+                ctx.beginPath();
+                ctx.arc(canvas.scaleX(spend), canvas.scaleY(predY), 8, 0, Math.PI * 2);
+                ctx.fillStyle = spend > 80 ? '#e94560' : (spend > 50 ? '#ffc107' : '#4ecca3');
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        let curveData = [];
+
+        function drawCurve() {
+            const canvas = document.getElementById('curve-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+            const plotWidth = width - margin.left - margin.right;
+            const plotHeight = height - margin.top - margin.bottom;
+
+            const curvature = parseInt(document.getElementById('curve-slider').value) / 100;
+
+            // Generate curved data
+            curveData = [];
+            for (let i = 0; i < 100; i++) {
+                const spend = 5 + Math.random() * 45;
+                // Diminishing returns: traffic grows slower at higher spend
+                const linear = trueIntercept + trueSlope * spend;
+                const curved = linear - curvature * Math.pow(spend - 27.5, 2) * 3;
+                const traffic = curved + (Math.random() - 0.5) * 1600;
+                curveData.push({ spend, traffic: Math.max(traffic, 1000) });
+            }
+
+            const xMin = 0, xMax = 55;
+            const yMin = 0, yMax = 20000;
+
+            function scaleX(val) {
+                return margin.left + (val - xMin) / (xMax - xMin) * plotWidth;
+            }
+            function scaleY(val) {
+                return margin.top + plotHeight - (val - yMin) / (yMax - yMin) * plotHeight;
+            }
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Calculate linear fit on curved data
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            curveData.forEach(p => {
+                sumX += p.spend;
+                sumY += p.traffic;
+                sumXY += p.spend * p.traffic;
+                sumX2 += p.spend * p.spend;
+            });
+            const n = curveData.length;
+            const fitSlope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const fitIntercept = (sumY - fitSlope * sumX) / n;
+
+            // Draw true curved relationship if curvature > 0
+            if (curvature > 0) {
+                ctx.strokeStyle = 'rgba(78, 204, 163, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                for (let x = 0; x <= 55; x += 0.5) {
+                    const linear = trueIntercept + trueSlope * x;
+                    const y = linear - curvature * Math.pow(x - 27.5, 2) * 3;
+                    if (x === 0) ctx.moveTo(scaleX(x), scaleY(y));
+                    else ctx.lineTo(scaleX(x), scaleY(y));
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw linear fit
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(fitIntercept));
+            ctx.lineTo(scaleX(55), scaleY(fitIntercept + fitSlope * 55));
+            ctx.stroke();
+
+            // Data points
+            curveData.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(scaleX(point.spend), scaleY(point.traffic), 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                ctx.fill();
+            });
+
+            // Calculate R²
+            const meanY = sumY / n;
+            let sst = 0, sse = 0;
+            curveData.forEach(p => {
+                const pred = fitIntercept + fitSlope * p.spend;
+                sst += Math.pow(p.traffic - meanY, 2);
+                sse += Math.pow(p.traffic - pred, 2);
+            });
+            const r2 = 1 - sse / sst;
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 50; x += 10) {
+                ctx.fillText(`£${x}k`, scaleX(x), height - margin.bottom + 20);
+            }
+
+            // Legend
+            if (curvature > 0) {
+                ctx.fillStyle = '#e94560';
+                ctx.fillRect(margin.left + 10, margin.top + 10, 15, 3);
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'left';
+                ctx.fillText('Linear fit (what we estimate)', margin.left + 30, margin.top + 15);
+
+                ctx.strokeStyle = 'rgba(78, 204, 163, 0.8)';
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(margin.left + 10, margin.top + 30);
+                ctx.lineTo(margin.left + 25, margin.top + 30);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillText('True relationship (curved)', margin.left + 30, margin.top + 35);
+            }
+
+            return r2;
+        }
+
+        function updateCurve() {
+            const curvature = parseInt(document.getElementById('curve-slider').value);
+
+            let label = 'No curvature';
+            if (curvature > 75) label = 'Strong diminishing returns';
+            else if (curvature > 50) label = 'Moderate diminishing returns';
+            else if (curvature > 25) label = 'Mild diminishing returns';
+            else if (curvature > 0) label = 'Slight diminishing returns';
+
+            document.getElementById('curve-value').textContent = label;
+
+            const r2 = drawCurve();
+            document.getElementById('curve-r2').textContent = r2.toFixed(2);
+
+            const explanation = document.getElementById('curve-explanation');
+            if (curvature === 0) {
+                explanation.textContent = 'With no diminishing returns, our linear model fits well.';
+            } else if (curvature < 50) {
+                explanation.textContent = 'With mild curvature, the linear model still fits reasonably but misses some patterns.';
+            } else {
+                explanation.textContent = 'With strong curvature, the linear model systematically overpredicts at high spend levels and underpredicts in the middle. Check your residuals!';
+            }
+        }
+
+        // ============== NEW FEATURES ==============
+
+        // Badge System - uses shared unlockBadge from game-utils.js
+        function unlockBadgeFromConfig(badgeId) {
+            if (gameState.badges[badgeId]) return; // Already unlocked
+            gameState.badges[badgeId] = true;
+            const badge = gameConfig.badges[badgeId];
+            unlockBadge(badgeId, badge.icon, badge.name);
+        }
+
+        function checkBadges(questionId, isCorrect) {
+            // Check standard badges (first, streak, master)
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 5 });
+
+            // Regression-specific badges
+            if (questionId === 'q5' && isCorrect && !gameState.badges.skeptic) {
+                gameState.badges.skeptic = true;
+                const badge = gameConfig.badges.skeptic;
+                unlockBadge('skeptic', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('skeptic', badge.name, questionId);
+            }
+            if (questionId === 'q3' && isCorrect && !gameState.badges.uncertainty) {
+                gameState.badges.uncertainty = true;
+                const badge = gameConfig.badges.uncertainty;
+                unlockBadge('uncertainty', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('uncertainty', badge.name, questionId);
+            }
+        }
+
+        function checkPerfectChapter(chapter) {
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                const badge = gameConfig.badges.perfect;
+                unlockBadge('perfect', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('perfect', badge.name);
+            }
+        }
+
+        // What-If Simulator
+        function updateWhatIf() {
+            const spend = parseFloat(document.getElementById('whatif-spend').value) || 30;
+
+            // Calculate prediction
+            const prediction = trueIntercept + trueSlope * spend;
+
+            // Calculate confidence interval (simplified - wider as we move from center)
+            const dataCenter = 27.5; // Center of our data range
+            const distanceFromCenter = Math.abs(spend - dataCenter);
+            const baseWidth = 1600; // Base CI width at center
+            const widthIncrease = distanceFromCenter * 80; // Wider as we extrapolate
+            const ciWidth = baseWidth + widthIncrease;
+
+            const lower = Math.round(prediction - ciWidth / 2);
+            const upper = Math.round(prediction + ciWidth / 2);
+
+            // Update marker position (0-100%)
+            const markerPos = Math.min(100, Math.max(0, (spend / 150) * 100));
+            document.getElementById('whatif-marker').style.left = `${markerPos}%`;
+
+            // Update result cards
+            document.querySelector('#whatif-prediction .result-value').textContent = Math.round(prediction).toLocaleString();
+            document.querySelector('#whatif-lower .result-value').textContent = Math.max(0, lower).toLocaleString();
+            document.querySelector('#whatif-upper .result-value').textContent = upper.toLocaleString();
+
+            // Determine reliability
+            const reliabilityCard = document.getElementById('whatif-reliability');
+            const predictionCard = document.getElementById('whatif-prediction');
+            const lowerCard = document.getElementById('whatif-lower');
+            const upperCard = document.getElementById('whatif-upper');
+
+            // Reset classes
+            [reliabilityCard, predictionCard, lowerCard, upperCard].forEach(card => {
+                card.classList.remove('warning', 'danger');
+            });
+
+            if (spend < 5 || spend > 80) {
+                reliabilityCard.querySelector('.result-value').textContent = '⚠️ Danger';
+                [reliabilityCard, predictionCard, lowerCard, upperCard].forEach(card => {
+                    card.classList.add('danger');
+                });
+            } else if (spend > 50) {
+                reliabilityCard.querySelector('.result-value').textContent = '⚡ Caution';
+                [reliabilityCard, predictionCard, lowerCard, upperCard].forEach(card => {
+                    card.classList.add('warning');
+                });
+            } else {
+                reliabilityCard.querySelector('.result-value').textContent = '✓ Safe';
+            }
+        }
+
+        // Prediction Challenge
+        function generateChallengeData() {
+            challengeData = [];
+            const points = [10, 15, 20, 25, 30, 35, 40, 45];
+            points.forEach(spend => {
+                const traffic = challengeIntercept + challengeSlope * spend + (Math.random() - 0.5) * 600;
+                challengeData.push({ spend, traffic: Math.round(traffic) });
+            });
+        }
+
+        function showPredictionChallenge() {
+            generateChallengeData();
+            completeChapter(4);
+
+            // Populate challenge data display
+            const container = document.getElementById('challenge-data');
+            container.innerHTML = challengeData.map(d => `
+                <div class="data-point-card">
+                    <div class="x-val">£${d.spend}k</div>
+                    <div class="y-val">${d.traffic.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            showScreen('prediction-challenge');
+        }
+
+        function selectChallengeOption(element, value) {
+            const options = document.querySelectorAll('#challenge-extrap-options .option');
+            options.forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+            gameState.challengeAnswer = value;
+        }
+
+        function submitChallenge() {
+            const slopeGuess = parseFloat(document.getElementById('challenge-slope').value);
+            const predictionGuess = parseFloat(document.getElementById('challenge-prediction').value);
+            const extrapAnswer = gameState.challengeAnswer;
+
+            // Calculate actual values
+            const actualPrediction = challengeIntercept + challengeSlope * 35;
+
+            // Score the challenge
+            let challengeScore = 0;
+            let feedback = [];
+
+            // Slope accuracy (within 30%)
+            if (slopeGuess && Math.abs(slopeGuess - challengeSlope) / challengeSlope < 0.3) {
+                challengeScore += 50;
+                feedback.push(`✓ Slope estimate: Good! Actual was ~${challengeSlope}`);
+            } else if (slopeGuess) {
+                feedback.push(`✗ Slope estimate: Actual was ~${challengeSlope}, you guessed ${slopeGuess}`);
+            }
+
+            // Prediction accuracy (within 1000)
+            if (predictionGuess && Math.abs(predictionGuess - actualPrediction) < 1000) {
+                challengeScore += 50;
+                feedback.push(`✓ Prediction: Excellent! Actual was ~${Math.round(actualPrediction).toLocaleString()}`);
+            } else if (predictionGuess) {
+                feedback.push(`✗ Prediction: Actual was ~${Math.round(actualPrediction).toLocaleString()}, you guessed ${predictionGuess.toLocaleString()}`);
+            }
+
+            // Extrapolation question (correct answer is 1 - No)
+            if (extrapAnswer === 1) {
+                challengeScore += 50;
+                feedback.push('✓ Extrapolation: Correct! £200k is way beyond the £10-45k data range');
+            } else if (extrapAnswer === 0) {
+                feedback.push('✗ Extrapolation: £200k is far outside the data range - we cannot assume linearity holds');
+            }
+
+            // Add bonus to score
+            gameState.score += challengeScore;
+            updateStats();
+
+            // Show feedback
+            const feedbackDiv = document.getElementById('challenge-feedback');
+            let feedbackClass = 'learning';
+            if (challengeScore >= 120) feedbackClass = 'excellent';
+            else if (challengeScore >= 50) feedbackClass = 'good';
+
+            feedbackDiv.className = `challenge-feedback ${feedbackClass}`;
+            feedbackDiv.style.display = 'block';
+            feedbackDiv.innerHTML = `
+                <h3>Challenge Score: +${challengeScore} points</h3>
+                <div style="text-align: left; margin-top: 15px;">
+                    ${feedback.map(f => `<p style="margin: 5px 0;">${f}</p>`).join('')}
+                </div>
+            `;
+
+            // Change button to continue
+            document.getElementById('challenge-submit').textContent = 'See Final Results';
+            document.getElementById('challenge-submit').onclick = showResults;
+        }
+
+        // Cheat Sheet Export
+        function copyCheatSheet() {
+            const cheatText = generateCheatSheetText();
+            navigator.clipboard.writeText(cheatText).then(() => {
+                alert('Cheat sheet copied to clipboard!');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = cheatText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Cheat sheet copied to clipboard!');
+            });
+        }
+
+        function downloadCheatSheet() {
+            const cheatText = generateCheatSheetText();
+            const blob = new Blob([cheatText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'regression_cheat_sheet.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateCheatSheetText() {
+            return `
+========================================
+REGRESSION ANALYSIS CHEAT SHEET
+SportsBrand Analytics Training
+========================================
+
+LINEAR REGRESSION EQUATION
+--------------------------
+Y = β₀ + β₁ × X
+
+Where:
+• Y = Predicted outcome (dependent variable)
+• X = Input/predictor (independent variable)
+• β₀ = Intercept (Y when X=0)
+• β₁ = Slope (change in Y per unit X)
+
+Example: Traffic = 5,200 + 195 × Ad Spend
+• Baseline traffic: 5,200 visitors
+• Each £1k spent → +195 visitors
+
+R-SQUARED (R²)
+--------------
+• Measures: % of variance explained by model
+• Range: 0 to 1 (0% to 100%)
+• Our model: R² = 0.62 (62% explained)
+• Interpretation: Higher = better fit
+
+CONFIDENCE INTERVALS
+--------------------
+• Shows range where true value likely falls
+• 95% CI: We're 95% confident truth is in range
+• Always report uncertainty, not just point estimates!
+• CI widens when extrapolating
+
+⚠️ KEY WARNINGS
+---------------
+1. CORRELATION ≠ CAUSATION
+   - Confounding variables may exist
+   - Reverse causation possible
+   - Coincidental relationships happen
+
+2. DON'T EXTRAPOLATE
+   - Stay within your data range
+   - Our safe range: £5k - £50k
+   - Beyond = unreliable predictions
+
+3. CHECK LINEARITY
+   - Relationship may curve
+   - Look for patterns in residuals
+   - Consider diminishing returns
+
+========================================
+Remember: Regression finds patterns.
+Experiments prove causation.
+========================================
+            `.trim();
+        }
+
+        // Animated scatter plot
+        function drawScatterPlotAnimated(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 50;
+
+            // Clear and draw axes first
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Ad Spend (£k)', width / 2, height - 10);
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Website Traffic', 0, 0);
+            ctx.restore();
+
+            // Animate points appearing
+            let pointIndex = 0;
+            const animationInterval = setInterval(() => {
+                if (pointIndex >= data.length) {
+                    clearInterval(animationInterval);
+                    return;
+                }
+
+                const point = data[pointIndex];
+                const x = padding + (point.spend - 5) / 45 * (width - 2 * padding);
+                const y = height - padding - (point.traffic - 3000) / 15000 * (height - 2 * padding);
+
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.7)';
+                ctx.fill();
+
+                pointIndex++;
+            }, 30); // 30ms per point = ~3 seconds total
+        }
+
+
+        // Populate results badges
+        function populateResultsBadges() {
+            const container = document.getElementById('results-badges');
+            const badges = [
+                { id: 'first', icon: '🎯', name: 'First Correct' },
+                { id: 'streak', icon: '🔥', name: '5+ Streak' },
+                { id: 'perfect', icon: '⭐', name: 'Perfect Chapter' },
+                { id: 'skeptic', icon: '🧐', name: 'Causation Master' },
+                { id: 'uncertainty', icon: '📊', name: 'Uncertainty Pro' },
+                { id: 'master', icon: '🏆', name: 'All Correct' }
+            ];
+
+            container.innerHTML = badges.map(badge => `
+                <div class="badge ${gameState.badges[badge.id] ? 'unlocked' : ''}" title="${badge.name}">
+                    <span>${badge.icon}</span>
+                    <div class="badge-tooltip">${badge.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // Update showResults to populate badges
+        async function showResults() {
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('correct-count').textContent = `${gameState.correctAnswers}/8`;
+            document.getElementById('max-streak').textContent = gameState.maxStreak;
+
+            let grade = 'Trainee Analyst';
+            if (gameState.correctAnswers >= 7) grade = '⭐ Lead Analyst';
+            else if (gameState.correctAnswers >= 5) grade = 'Senior Analyst';
+            else if (gameState.correctAnswers >= 3) grade = 'Junior Analyst';
+
+            document.getElementById('grade').innerHTML = grade;
+            document.getElementById('progress-fill').style.width = '100%';
+            document.getElementById('progress-percent').textContent = '100%';
+
+            populateResultsBadges();
+
+            // Track volume completion
+            Analytics.trackVolumeComplete(gameState, grade);
+
+            // Save score if logged in
+            let result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) {
+                    Analytics.setRunNumber(result.runNumber);
+                } else {
+                    alert('Your score could not be saved. Please check your connection and try replaying.');
+                }
+            }
+
+            showScreen('results-screen');
+
+            // Show feedback modal for logged-in users
+            if (currentUser && result && result.runNumber) {
+                setTimeout(() => showFeedbackModal(result.runNumber), 500);
+            }
+        }
+
+        // Initialize on load
+        window.onload = async function() {
+            generateData();
+            generateChallengeData();
+            await loadGameConfig();
+            await initAuth();
+            // Initialize analytics after auth
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        };
+    </script>
+</body>
+</html>

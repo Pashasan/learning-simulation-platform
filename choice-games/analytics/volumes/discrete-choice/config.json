@@ -1,0 +1,35 @@
+{
+  "id": "discrete-choice",
+  "title": "The Choice Lab",
+  "subtitle": "BeatBox Audio",
+  "tagline": "Model What People Pick",
+  "description": "Learn logistic regression by modeling consumer choice for wireless earbuds. Interactive S-curve explorer and prediction calculator.",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Blood", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "3+ Streak" },
+    "perfect": { "icon": "⭐", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "scurve": { "icon": "📈", "name": "S-Curve Savant", "description": "Mastered the Sigmoid" },
+    "predictor": { "icon": "🔮", "name": "Prediction Pro", "description": "Choice Prediction Expert" },
+    "master": { "icon": "🏆", "name": "Choice Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Chief Insights Officer" },
+    { "minCorrect": 5, "title": "Senior Choice Analyst" },
+    { "minCorrect": 3, "title": "Junior Choice Analyst" },
+    { "minCorrect": 0, "title": "Trainee Analyst" }
+  ]
+}

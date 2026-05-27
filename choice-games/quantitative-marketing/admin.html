@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Admin Dashboard | Quantitative Marketing Methods</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/volume-registry.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #141428 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Header */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-title {
+            font-size: 1.5em;
+            color: #d4a03c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .admin-user span {
+            color: #6c8ebf;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #d4a03c, #e6b84d);
+            border-color: transparent;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h3 {
+            color: #6c8ebf;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Volume Controls */
+        .volume-control {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .volume-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .volume-icon {
+            font-size: 1.5em;
+        }
+
+        .volume-name {
+            font-weight: 600;
+        }
+
+        .volume-id {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #6c8ebf, #5a7dae);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(30px);
+        }
+
+        .toggle-label {
+            margin-left: 10px;
+            font-size: 0.85em;
+            color: #888;
+            min-width: 60px;
+        }
+
+        .toggle-label.enabled {
+            color: #6c8ebf;
+        }
+
+        /* Leaderboard Table */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .leaderboard-table th {
+            color: #6c8ebf;
+            font-weight: 600;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-table tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        .rank-cell {
+            font-weight: bold;
+            color: #888;
+        }
+
+        .rank-cell.gold { color: #ffd700; }
+        .rank-cell.silver { color: #c0c0c0; }
+        .rank-cell.bronze { color: #cd7f32; }
+
+        .score-cell {
+            color: #6c8ebf;
+            font-weight: 600;
+        }
+
+        /* Feedback Summary */
+        .feedback-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #6c8ebf;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .star-display {
+            color: #ffc107;
+            font-size: 1.2em;
+        }
+
+        /* Feedback List */
+        .feedback-item {
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .feedback-user {
+            font-weight: 600;
+        }
+
+        .feedback-meta {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .feedback-rating {
+            color: #ffc107;
+        }
+
+        .feedback-text {
+            color: #ccc;
+            font-style: italic;
+            padding: 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 5px;
+            border-left: 3px solid #6c8ebf;
+        }
+
+        .feedback-volume {
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(212, 160, 60, 0.2);
+            border-radius: 15px;
+            font-size: 0.75em;
+            color: #d4a03c;
+            margin-left: 10px;
+        }
+
+        /* Filter controls */
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .filter-btn.active {
+            background: rgba(108, 142, 191, 0.2);
+            border-color: #6c8ebf;
+            color: #6c8ebf;
+        }
+
+        /* Access Denied */
+        .access-denied {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .access-denied h1 {
+            color: #d4a03c;
+            margin-bottom: 20px;
+        }
+
+        .access-denied p {
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* Analytics Dashboard Styles */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .analytics-stat {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .analytics-stat .value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #6c8ebf;
+            margin-bottom: 5px;
+        }
+
+        .analytics-stat .label {
+            font-size: 0.85em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .analytics-stat .sub-value {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container h4 {
+            color: #6c8ebf;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 250px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .analytics-table th {
+            color: #6c8ebf;
+            font-weight: 600;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .analytics-table tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .analytics-table .success-rate {
+            font-weight: 600;
+        }
+
+        .analytics-table .success-rate.high { color: #6c8ebf; }
+        .analytics-table .success-rate.medium { color: #ffc107; }
+        .analytics-table .success-rate.low { color: #d4a03c; }
+
+        .bar-chart-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .bar-chart-label {
+            width: 140px;
+            font-size: 0.85em;
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .bar-chart-bar-container {
+            flex: 1;
+            height: 24px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .bar-chart-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .bar-chart-value {
+            width: 60px;
+            text-align: right;
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .two-column-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mini-table {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .refresh-btn {
+            float: right;
+            padding: 6px 12px;
+            background: rgba(108, 142, 191, 0.2);
+            border: 1px solid #6c8ebf;
+            border-radius: 6px;
+            color: #6c8ebf;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(108, 142, 191, 0.3);
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .date-filter select, .date-filter input {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        /* Dropdown styling */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            padding-right: 32px !important;
+            min-width: 150px;
+        }
+
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        select option {
+            background: #141428;
+            color: white;
+        }
+
+        /* Small toggle switch for filter row */
+        .filter-row .toggle-switch {
+            width: 44px;
+            height: 24px;
+        }
+
+        .filter-row .toggle-slider::before {
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+        }
+
+        .filter-row .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Access Denied Screen -->
+        <div id="access-denied" class="access-denied" style="display: none;">
+            <h1>Access Denied</h1>
+            <p>You don't have permission to access this page.</p>
+            <a href="index.html" class="btn btn-secondary">Back to Home</a>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading">
+            <p>Checking access...</p>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="admin-dashboard" style="display: none;">
+            <div class="admin-header">
+                <div class="admin-title">
+                    Quantitative Marketing Methods Admin
+                </div>
+                <div class="admin-user">
+                    <span id="admin-email"></span>
+                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    <a href="index.html" class="btn btn-secondary">Back to Site</a>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('volumes', this)">Volume Settings</button>
+                <button class="tab-btn" onclick="switchTab('leaderboard', this)">Leaderboards</button>
+                <button class="tab-btn" onclick="switchTab('feedback', this)">Feedback</button>
+                <button class="tab-btn" onclick="switchTab('analytics', this)">Analytics</button>
+            </div>
+
+            <!-- Volume Settings Tab -->
+            <div id="volumes-tab" class="tab-content active">
+                <div class="card">
+                    <h3>Volume Access Control</h3>
+                    <p style="color: #888; margin-bottom: 20px; font-size: 0.9em;">
+                        Enable or disable access to game volumes. Disabled volumes will be grayed out and inaccessible to users.
+                    </p>
+                    <div id="volume-controls">
+                        <div class="loading">Loading volumes...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard-tab" class="tab-content">
+                <div class="card">
+                    <h3>Leaderboards</h3>
+                    <div class="filter-row" style="align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #888; font-size: 0.9em;">View:</label>
+                            <select id="leaderboard-view" onchange="updateLeaderboardView()" style="padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9em; cursor: pointer;">
+                                <option value="individual">Individual Scores</option>
+                                <option value="aggregate">Total Score (All Volumes)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #888; font-size: 0.9em;">Volume:</label>
+                            <select id="volume-filter" onchange="updateLeaderboardView()" style="padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9em; cursor: pointer;">
+                                <option value="all">All Volumes</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="toggle-switch" style="width: 50px; height: 26px;">
+                                <input type="checkbox" id="first-run-filter" onchange="updateLeaderboardView()">
+                                <span class="toggle-slider" style="border-radius: 26px;"></span>
+                            </label>
+                            <span style="color: #888; font-size: 0.9em;">First Run Only</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="toggle-switch" style="width: 50px; height: 26px;">
+                                <input type="checkbox" id="exclude-admin-filter" onchange="updateLeaderboardView()">
+                                <span class="toggle-slider" style="border-radius: 26px;"></span>
+                            </label>
+                            <span style="color: #888; font-size: 0.9em;">Exclude Admin</span>
+                        </div>
+                    </div>
+                    <div id="leaderboard-content">
+                        <div class="loading">Loading leaderboard...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <!-- Overview Stats -->
+                <div class="card">
+                    <h3>Analytics Overview <button class="refresh-btn" onclick="loadAnalytics()">Refresh</button></h3>
+                    <div class="date-filter">
+                        <label style="color: #888; font-size: 0.9em;">Time Range:</label>
+                        <select id="analytics-date-range" onchange="onDateRangeChange()">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="all">All time</option>
+                        </select>
+                        <label style="color: #888; font-size: 0.9em; margin-left: 15px;">Volume:</label>
+                        <select id="analytics-volume-filter" onchange="loadAnalytics()">
+                            <option value="all">All Volumes</option>
+                        </select>
+                    </div>
+                    <div id="analytics-overview" class="analytics-grid">
+                        <div class="loading">Loading analytics...</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Daily Activity</h3>
+                        <div class="chart-container">
+                            <canvas id="daily-activity-chart" class="chart-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Event Types</h3>
+                        <div id="event-types-chart" class="chart-container">
+                            <!-- Bar chart will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume Performance & Conversion -->
+                <div class="card">
+                    <h3>Volume Performance</h3>
+                    <div id="volume-performance">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Question Analysis - All Runs -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Question Difficulty - All Runs (Hardest First)</h3>
+                        <div id="question-difficulty" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Average Time to Answer - All Runs</h3>
+                        <div id="question-timing" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Analysis - Run 1 Only -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Question Difficulty - Run 1 Only (Hardest First)</h3>
+                        <div id="question-difficulty-run1" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Average Time to Answer - Run 1 Only</h3>
+                        <div id="question-timing-run1" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Analysis - Runs 2+ -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Question Difficulty - Runs 2+ (Hardest First)</h3>
+                        <div id="question-difficulty-later" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Average Time to Answer - Runs 2+</h3>
+                        <div id="question-timing-later" class="mini-table">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Badge & Dropoff Analysis -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Badge Unlock Rates</h3>
+                        <div id="badge-rates">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Dropoff Analysis</h3>
+                        <div id="dropoff-analysis">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Analysis -->
+                <div class="two-column-grid">
+                    <div class="card">
+                        <h3>Session Duration Distribution</h3>
+                        <div id="session-duration">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>User Engagement</h3>
+                        <div id="user-engagement">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Events Log -->
+                <div class="card">
+                    <h3>Recent Events (Debug Log)</h3>
+                    <div id="recent-events" class="mini-table" style="max-height: 400px;">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback Tab -->
+            <div id="feedback-tab" class="tab-content">
+                <div class="card">
+                    <h3>Feedback Summary</h3>
+                    <div class="filter-row" style="align-items: center; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="toggle-switch" style="width: 44px; height: 24px;">
+                                <input type="checkbox" id="feedback-first-run-filter" onchange="updateFeedbackView()">
+                                <span class="toggle-slider" style="border-radius: 24px;"></span>
+                            </label>
+                            <span style="color: #888; font-size: 0.9em;">First Run Only</span>
+                        </div>
+                    </div>
+                    <div id="feedback-stats" class="feedback-stats">
+                        <div class="loading">Loading stats...</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Recent Feedback</h3>
+                    <div class="filter-row" style="align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #888; font-size: 0.9em;">Volume:</label>
+                            <select id="feedback-volume-filter" onchange="updateFeedbackView()" style="padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9em; cursor: pointer;">
+                                <option value="all">All Volumes</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="color: #888; font-size: 0.9em;">Filter:</label>
+                            <select id="feedback-comment-filter" onchange="updateFeedbackView()" style="padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9em; cursor: pointer;">
+                                <option value="all">All Feedback</option>
+                                <option value="with-comments">With Comments Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="feedback-list">
+                        <div class="loading">Loading feedback...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_EMAIL = '';
+        const ADMIN_PASSWORD = 'CHANGE_ME';
+        async function promptAdminUnlock() {
+            if (sessionStorage.getItem('admin_unlocked') === 'yes') return true;
+            return await new Promise(function(resolve) {
+                var ov = document.createElement('div');
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,0.96);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
+                ov.innerHTML = '<div style="background:#161b22;padding:32px;border-radius:12px;border:1px solid #30363d;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"><div style="font-size:36px;margin-bottom:12px;">&#x1F512;</div><h2 style="color:#f0f6fc;margin:0 0 8px;font-size:18px;font-weight:600;">Admin access</h2><p style="color:#8b949e;margin:0 0 20px;font-size:13px;">Enter the admin password</p><input id="__pw_in" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;margin-bottom:8px;outline:none;" /><div id="__pw_err" style="color:#f85149;font-size:12px;min-height:16px;margin-bottom:8px;text-align:left;"></div><button id="__pw_btn" style="width:100%;padding:10px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Unlock</button></div>';
+                document.body.appendChild(ov);
+                var inp = ov.querySelector('#__pw_in');
+                var er = ov.querySelector('#__pw_err');
+                var bt = ov.querySelector('#__pw_btn');
+                function go() {
+                    if (inp.value === ADMIN_PASSWORD) {
+                        sessionStorage.setItem('admin_unlocked', 'yes');
+                        ov.remove();
+                        resolve(true);
+                    } else {
+                        er.textContent = 'Incorrect password';
+                        inp.value = '';
+                        inp.focus();
+                    }
+                }
+                bt.addEventListener('click', go);
+                inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+                setTimeout(function() { inp.focus(); }, 50);
+            });
+        }
+        let currentUser = null;
+        let allFeedback = [];
+        let allScores = [];
+
+        // Escape HTML to prevent XSS when rendering user-supplied data
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        let VOLUMES = [];
+
+        // Initialize
+        async function init() {
+            // Load volume registry first
+            try {
+                var registry = await loadVolumeRegistry();
+                VOLUMES = registry.map(function(v) {
+                    return { id: v.id, name: v.name, icon: v.icon };
+                });
+            } catch (err) {
+                console.error('Failed to load volume registry:', err);
+            }
+
+            const { data: { session } } = await supabaseClient.auth.getSession();
+
+            if (!session) {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('access-denied').style.display = 'block';
+                return;
+            }
+            document.getElementById('loading-screen').style.display = 'none';
+            await promptAdminUnlock();
+
+            currentUser = session.user;
+            document.getElementById('admin-email').textContent = currentUser.email;
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+
+            // Load initial data
+            loadVolumeSettings();
+            loadLeaderboard();
+            loadFeedback();
+            // Analytics loaded on demand when tab is clicked
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        // Tab switching
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            btn.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Load analytics on first visit to tab
+            if (tabName === 'analytics' && analyticsData.length === 0) {
+                loadAnalytics();
+            }
+        }
+
+        // Volume Settings
+        async function loadVolumeSettings() {
+            const container = document.getElementById('volume-controls');
+
+            try {
+                const { data: settings, error } = await supabaseClient
+                    .from('choice_quant_mktg_settings')
+                    .select('*');
+
+                console.log('Volume settings response:', { settings, error });
+                if (error) throw error;
+
+                const settingsMap = {};
+                (settings || []).forEach(s => settingsMap[s.volume_id] = s.enabled);
+
+                let html = '';
+                VOLUMES.forEach(volume => {
+                    const isEnabled = settingsMap[volume.id] !== false; // Default to enabled
+                    html += `
+                        <div class="volume-control">
+                            <div class="volume-info">
+                                <span class="volume-icon">${escapeHtml(volume.icon)}</span>
+                                <div>
+                                    <div class="volume-name">${escapeHtml(volume.name)}</div>
+                                    <div class="volume-id">ID: ${escapeHtml(volume.id)}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleVolume('${volume.id}', this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label ${isEnabled ? 'enabled' : ''}" id="label-${volume.id}">
+                                    ${isEnabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading volume settings:', error);
+                container.innerHTML = `<p style="color: #d4a03c;">Error loading settings: ${escapeHtml(error.message || error)}</p>`;
+            }
+        }
+
+        async function toggleVolume(volumeId, enabled) {
+            const label = document.getElementById(`label-${volumeId}`);
+            label.textContent = enabled ? 'Enabled' : 'Disabled';
+            label.classList.toggle('enabled', enabled);
+
+            try {
+                // Upsert the setting
+                const { error } = await supabaseClient
+                    .from('choice_quant_mktg_settings')
+                    .upsert({
+                        volume_id: volumeId,
+                        enabled: enabled,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'volume_id' });
+
+                if (error) throw error;
+            } catch (error) {
+                console.error('Error updating volume setting:', error);
+                // Revert UI on failure
+                const checkbox = label.parentElement.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = !enabled;
+                label.textContent = !enabled ? 'Enabled' : 'Disabled';
+                label.classList.toggle('enabled', !enabled);
+                alert('Failed to update setting. Please try again.');
+            }
+        }
+
+        // Leaderboard
+        async function loadLeaderboard() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('choice_quant_mktg_scores')
+                    .select('*')
+                    .order('score', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+                allScores = data || [];
+
+                // Populate volume dropdown with unique volumes from data
+                populateVolumeDropdown();
+                updateLeaderboardView();
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboard-content').innerHTML =
+                    '<p style="color: #d4a03c;">Error loading leaderboard.</p>';
+            }
+        }
+
+        function populateVolumeDropdown() {
+            const dropdown = document.getElementById('volume-filter');
+            const volumeIds = [...new Set(allScores.map(s => s.volume_id))].sort();
+
+            // Keep "All Volumes" option and add found volumes
+            dropdown.innerHTML = '<option value="all">All Volumes</option>';
+            volumeIds.forEach(volumeId => {
+                const volume = VOLUMES.find(v => v.id === volumeId);
+                const displayName = volume ? volume.name : volumeId;
+                dropdown.innerHTML += `<option value="${escapeHtml(volumeId)}">${escapeHtml(displayName)}</option>`;
+            });
+        }
+
+        function updateLeaderboardView() {
+            const viewMode = document.getElementById('leaderboard-view').value;
+            const volumeFilter = document.getElementById('volume-filter').value;
+            const firstRunOnly = document.getElementById('first-run-filter').checked;
+            const excludeAdmin = document.getElementById('exclude-admin-filter').checked;
+
+            // Disable volume filter when in aggregate mode
+            document.getElementById('volume-filter').disabled = (viewMode === 'aggregate');
+
+            if (viewMode === 'aggregate') {
+                renderAggregateLeaderboard(firstRunOnly, excludeAdmin);
+            } else {
+                renderIndividualLeaderboard(volumeFilter, firstRunOnly, excludeAdmin);
+            }
+        }
+
+        function renderIndividualLeaderboard(volumeFilter, firstRunOnly, excludeAdmin) {
+            const container = document.getElementById('leaderboard-content');
+            let scores = allScores;
+
+            if (excludeAdmin) {
+                scores = scores.filter(s => s.user_email !== ADMIN_EMAIL);
+            }
+
+            if (volumeFilter !== 'all') {
+                scores = scores.filter(s => s.volume_id === volumeFilter);
+            }
+
+            if (firstRunOnly) {
+                scores = scores.filter(s => s.run_number === 1);
+            }
+
+            // Re-sort after filtering
+            scores = scores.sort((a, b) => b.score - a.score);
+
+            if (scores.length === 0) {
+                container.innerHTML = '<div class="empty-state">No scores found.</div>';
+                return;
+            }
+
+            let html = `
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Volume</th>
+                            <th>Run #</th>
+                            <th>Score</th>
+                            <th>Correct</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            scores.slice(0, 100).forEach((score, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const volume = VOLUMES.find(v => v.id === score.volume_id);
+                const volumeDisplay = volume ? volume.name : score.volume_id;
+                html += `
+                    <tr>
+                        <td class="rank-cell ${rankClass}">#${index + 1}</td>
+                        <td>${escapeHtml(score.display_name || score.user_email)}</td>
+                        <td>${escapeHtml(volumeDisplay)}</td>
+                        <td>${score.run_number || 1}</td>
+                        <td class="score-cell">${score.score}</td>
+                        <td>${score.correct_answers || '-'}</td>
+                        <td>${escapeHtml(score.grade || '-')}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderAggregateLeaderboard(firstRunOnly, excludeAdmin) {
+            const container = document.getElementById('leaderboard-content');
+            let scores = allScores;
+
+            if (excludeAdmin) {
+                scores = scores.filter(s => s.user_email !== ADMIN_EMAIL);
+            }
+
+            if (firstRunOnly) {
+                scores = scores.filter(s => s.run_number === 1);
+            }
+
+            // Aggregate by user
+            const userTotals = {};
+            scores.forEach(score => {
+                const key = score.user_id || score.user_email;
+                if (!userTotals[key]) {
+                    userTotals[key] = {
+                        display_name: score.display_name || score.user_email,
+                        user_email: score.user_email,
+                        totalScore: 0,
+                        totalCorrect: 0,
+                        volumeCount: new Set(),
+                        runCount: 0
+                    };
+                }
+                userTotals[key].totalScore += score.score;
+                userTotals[key].totalCorrect += (score.correct_answers || 0);
+                userTotals[key].volumeCount.add(score.volume_id);
+                userTotals[key].runCount++;
+            });
+
+            // Convert to array and sort
+            const aggregated = Object.values(userTotals)
+                .map(u => ({ ...u, volumeCount: u.volumeCount.size }))
+                .sort((a, b) => b.totalScore - a.totalScore);
+
+            if (aggregated.length === 0) {
+                container.innerHTML = '<div class="empty-state">No scores found.</div>';
+                return;
+            }
+
+            let html = `
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Total Score</th>
+                            <th>Total Correct</th>
+                            <th>Volumes Played</th>
+                            <th>Total Runs</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            aggregated.slice(0, 100).forEach((user, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                html += `
+                    <tr>
+                        <td class="rank-cell ${rankClass}">#${index + 1}</td>
+                        <td>${escapeHtml(user.display_name)}</td>
+                        <td class="score-cell">${user.totalScore.toLocaleString()}</td>
+                        <td>${user.totalCorrect}</td>
+                        <td>${user.volumeCount}</td>
+                        <td>${user.runCount}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Feedback
+        async function loadFeedback() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('choice_quant_mktg_feedback')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                allFeedback = data || [];
+                populateFeedbackVolumeDropdown();
+                updateFeedbackView();
+            } catch (error) {
+                console.error('Error loading feedback:', error);
+                document.getElementById('feedback-stats').innerHTML =
+                    '<p style="color: #d4a03c;">Error loading feedback.</p>';
+            }
+        }
+
+        function populateFeedbackVolumeDropdown() {
+            const dropdown = document.getElementById('feedback-volume-filter');
+            const volumeIds = [...new Set(allFeedback.map(f => f.volume_id))].sort();
+
+            dropdown.innerHTML = '<option value="all">All Volumes</option>';
+            volumeIds.forEach(volumeId => {
+                const volume = VOLUMES.find(v => v.id === volumeId);
+                const displayName = volume ? volume.name : volumeId;
+                dropdown.innerHTML += `<option value="${escapeHtml(volumeId)}">${escapeHtml(displayName)}</option>`;
+            });
+        }
+
+        function updateFeedbackView() {
+            const firstRunOnly = document.getElementById('feedback-first-run-filter').checked;
+            const volumeFilter = document.getElementById('feedback-volume-filter').value;
+            const commentFilter = document.getElementById('feedback-comment-filter').value;
+
+            renderFeedbackStats(firstRunOnly);
+            renderFeedbackList(volumeFilter, commentFilter, firstRunOnly);
+        }
+
+        function renderFeedbackStats(firstRunOnly = false) {
+            const container = document.getElementById('feedback-stats');
+            let feedback = allFeedback;
+
+            if (firstRunOnly) {
+                feedback = feedback.filter(f => f.run_number === 1);
+            }
+
+            if (feedback.length === 0) {
+                container.innerHTML = '<div class="empty-state">No feedback yet.</div>';
+                return;
+            }
+
+            const totalCount = feedback.length;
+            const avgRating = (feedback.reduce((sum, f) => sum + (f.rating || 0), 0) / totalCount).toFixed(1);
+            const withComments = feedback.filter(f => f.feedback_text).length;
+
+            // Per-volume stats
+            const volumeStats = {};
+            feedback.forEach(f => {
+                if (!volumeStats[f.volume_id]) {
+                    volumeStats[f.volume_id] = { count: 0, total: 0 };
+                }
+                volumeStats[f.volume_id].count++;
+                volumeStats[f.volume_id].total += f.rating;
+            });
+
+            let html = `
+                <div class="stat-box">
+                    <div class="stat-value">${totalCount}</div>
+                    <div class="stat-label">Total Responses${firstRunOnly ? ' (1st Run)' : ''}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${avgRating}</div>
+                    <div class="stat-label">Average Rating${firstRunOnly ? ' (1st Run)' : ''}</div>
+                    <div class="star-display">${'★'.repeat(Math.max(0, Math.min(5, Math.round(avgRating))))}${'☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(avgRating))))}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${withComments}</div>
+                    <div class="stat-label">With Comments</div>
+                </div>
+            `;
+
+            Object.entries(volumeStats).sort((a, b) => a[0].localeCompare(b[0])).forEach(([volumeId, stats]) => {
+                const avg = (stats.total / stats.count).toFixed(1);
+                const volume = VOLUMES.find(v => v.id === volumeId);
+                const displayName = volume ? volume.name : volumeId;
+                const clampedAvg = Math.max(0, Math.min(5, Math.round(avg)));
+                html += `
+                    <div class="stat-box">
+                        <div class="stat-value">${avg}</div>
+                        <div class="stat-label">${escapeHtml(displayName)}</div>
+                        <div style="font-size: 0.75em; color: #666;">(${stats.count} responses)</div>
+                        <div class="star-display">${'★'.repeat(clampedAvg)}${'☆'.repeat(5 - clampedAvg)}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderFeedbackList(volumeFilter = 'all', commentFilter = 'all', firstRunOnly = false) {
+            const container = document.getElementById('feedback-list');
+            let feedback = allFeedback;
+
+            if (firstRunOnly) {
+                feedback = feedback.filter(f => f.run_number === 1);
+            }
+
+            if (volumeFilter !== 'all') {
+                feedback = feedback.filter(f => f.volume_id === volumeFilter);
+            }
+
+            if (commentFilter === 'with-comments') {
+                feedback = feedback.filter(f => f.feedback_text);
+            }
+
+            if (feedback.length === 0) {
+                container.innerHTML = '<div class="empty-state">No feedback found.</div>';
+                return;
+            }
+
+            let html = '';
+            feedback.forEach(f => {
+                const date = new Date(f.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const volume = VOLUMES.find(v => v.id === f.volume_id);
+                const volumeDisplay = volume ? volume.name : f.volume_id;
+                const clampedRating = Math.max(0, Math.min(5, Math.round(f.rating) || 0));
+                html += `
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <div>
+                                <span class="feedback-user">${escapeHtml(f.display_name || f.user_email)}</span>
+                                <span class="feedback-volume">${escapeHtml(volumeDisplay)}</span>
+                                <span style="color: #666; font-size: 0.85em;"> - Run #${f.run_number}</span>
+                            </div>
+                            <div>
+                                <span class="feedback-rating">${'★'.repeat(clampedRating)}${'☆'.repeat(5 - clampedRating)}</span>
+                            </div>
+                        </div>
+                        <div class="feedback-meta">${date}</div>
+                        ${f.feedback_text ? `<div class="feedback-text">"${escapeHtml(f.feedback_text)}"</div>` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ============== ANALYTICS FUNCTIONS ==============
+        let analyticsData = [];
+        let allAnalyticsData = []; // Unfiltered data for volume dropdown
+        let analyticsVolumeDropdownPopulated = false;
+
+        function onDateRangeChange() {
+            // Reset volume filter to "all" and repopulate dropdown when date range changes
+            document.getElementById('analytics-volume-filter').value = 'all';
+            analyticsVolumeDropdownPopulated = false;
+            loadAnalytics();
+        }
+
+        // Fetch all rows from choice_quant_mktg_events with pagination
+        async function fetchAllAnalyticsEvents(dateFilter, volumeFilter) {
+            const pageSize = 1000;
+            let allData = [];
+            let from = 0;
+
+            while (true) {
+                let query = supabaseClient
+                    .from('choice_quant_mktg_events')
+                    .select('*')
+                    .order('timestamp_client', { ascending: false })
+                    .range(from, from + pageSize - 1);
+
+                if (dateFilter) {
+                    query = query.gte('timestamp_client', dateFilter);
+                }
+                if (volumeFilter && volumeFilter !== 'all') {
+                    query = query.eq('volume_id', volumeFilter);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+
+                allData = allData.concat(data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+            }
+
+            return allData;
+        }
+
+        async function loadAnalytics() {
+            const dateRange = document.getElementById('analytics-date-range').value;
+            const volumeFilter = document.getElementById('analytics-volume-filter').value;
+
+            // Calculate date filter
+            let dateFilter = null;
+            if (dateRange !== 'all') {
+                const days = parseInt(dateRange);
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                dateFilter = cutoff.toISOString();
+            }
+
+            try {
+                // Fetch all data from server when date range changes or on first load
+                // Volume filtering is always done client-side for speed
+                if (!analyticsVolumeDropdownPopulated) {
+                    document.getElementById('analytics-overview').innerHTML =
+                        '<div class="loading">Loading analytics...</div>';
+
+                    allAnalyticsData = await fetchAllAnalyticsEvents(dateFilter, null);
+                    populateAnalyticsVolumeFilter();
+                    analyticsVolumeDropdownPopulated = true;
+                }
+
+                // Apply volume filter client-side
+                if (volumeFilter === 'all') {
+                    analyticsData = allAnalyticsData;
+                } else {
+                    analyticsData = allAnalyticsData.filter(e => e.volume_id === volumeFilter);
+                }
+
+                // Infer run numbers from volume_start event sequence
+                analyticsData = assignInferredRunNumbers(analyticsData);
+
+                // Render all analytics sections
+                renderOverviewStats();
+                renderDailyActivityChart();
+                renderEventTypesChart();
+                renderVolumePerformance();
+                renderQuestionDifficulty();
+                renderQuestionTiming();
+                renderQuestionDifficulty('question-difficulty-run1', 'run1');
+                renderQuestionTiming('question-timing-run1', 'run1');
+                renderQuestionDifficulty('question-difficulty-later', 'later');
+                renderQuestionTiming('question-timing-later', 'later');
+                renderBadgeRates();
+                renderDropoffAnalysis();
+                renderSessionDuration();
+                renderUserEngagement();
+                renderRecentEvents();
+
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.getElementById('analytics-overview').innerHTML =
+                    `<p style="color: #d4a03c;">Error loading analytics: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        function populateAnalyticsVolumeFilter() {
+            const dropdown = document.getElementById('analytics-volume-filter');
+            const currentValue = dropdown.value;
+
+            // Use allAnalyticsData (unfiltered) or VOLUMES constant to get all volume options
+            const volumeIdsFromData = [...new Set(allAnalyticsData.map(e => e.volume_id).filter(Boolean))];
+            const volumeIdsFromConfig = VOLUMES.map(v => v.id);
+            const allVolumeIds = [...new Set([...volumeIdsFromData, ...volumeIdsFromConfig])].sort();
+
+            dropdown.innerHTML = '<option value="all">All Volumes</option>';
+            allVolumeIds.forEach(volumeId => {
+                const volume = VOLUMES.find(v => v.id === volumeId);
+                const displayName = volume ? volume.name : volumeId;
+                dropdown.innerHTML += `<option value="${escapeHtml(volumeId)}">${escapeHtml(displayName)}</option>`;
+            });
+
+            // Restore selection
+            if (currentValue && allVolumeIds.includes(currentValue)) {
+                dropdown.value = currentValue;
+            }
+        }
+
+        function renderOverviewStats() {
+            const container = document.getElementById('analytics-overview');
+
+            const totalEvents = analyticsData.length;
+            const uniqueUsers = new Set(analyticsData.map(e => e.user_id)).size;
+            const uniqueSessions = new Set(analyticsData.map(e => e.session_id)).size;
+            const volumeStarts = analyticsData.filter(e => e.event_type === 'volume_start').length;
+            const volumeCompletes = analyticsData.filter(e => e.event_type === 'volume_complete').length;
+            const completionRate = volumeStarts > 0 ? ((volumeCompletes / volumeStarts) * 100).toFixed(1) : 0;
+
+            const answers = analyticsData.filter(e => e.event_type === 'answer');
+            const correctAnswers = answers.filter(e => e.event_data?.is_correct).length;
+            const answerAccuracy = answers.length > 0 ? ((correctAnswers / answers.length) * 100).toFixed(1) : 0;
+
+            const badgeUnlocks = analyticsData.filter(e => e.event_type === 'badge_unlock').length;
+
+            container.innerHTML = `
+                <div class="analytics-stat">
+                    <div class="value">${totalEvents.toLocaleString()}</div>
+                    <div class="label">Total Events</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${uniqueUsers}</div>
+                    <div class="label">Unique Users</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${uniqueSessions}</div>
+                    <div class="label">Sessions</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${volumeStarts}</div>
+                    <div class="label">Games Started</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${volumeCompletes}</div>
+                    <div class="label">Games Completed</div>
+                    <div class="sub-value">${completionRate}% completion rate</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${answerAccuracy}%</div>
+                    <div class="label">Answer Accuracy</div>
+                    <div class="sub-value">${correctAnswers}/${answers.length} correct</div>
+                </div>
+                <div class="analytics-stat">
+                    <div class="value">${badgeUnlocks}</div>
+                    <div class="label">Badges Unlocked</div>
+                </div>
+            `;
+        }
+
+        function renderDailyActivityChart() {
+            const canvas = document.getElementById('daily-activity-chart');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+
+            // Group events by date
+            const dailyCounts = {};
+            analyticsData.forEach(e => {
+                const date = e.timestamp_client?.split('T')[0];
+                if (date) {
+                    dailyCounts[date] = (dailyCounts[date] || 0) + 1;
+                }
+            });
+
+            // Sort dates and get last 30 days
+            const dates = Object.keys(dailyCounts).sort().slice(-30);
+            const counts = dates.map(d => dailyCounts[d]);
+            const maxCount = Math.max(...counts, 1);
+
+            // Clear canvas
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            if (dates.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available', width / 2, height / 2);
+                return;
+            }
+
+            const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            // Draw axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, height - padding.bottom);
+            ctx.lineTo(width - padding.right, height - padding.bottom);
+            ctx.stroke();
+
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartHeight * i / 4);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                // Y-axis labels
+                ctx.fillStyle = '#666';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(Math.round(maxCount * (4 - i) / 4), padding.left - 5, y + 3);
+            }
+
+            // Draw line chart
+            ctx.strokeStyle = '#6c8ebf';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            dates.forEach((date, i) => {
+                const x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                const y = height - padding.bottom - (chartHeight * counts[i] / maxCount);
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Draw points
+            ctx.fillStyle = '#6c8ebf';
+            dates.forEach((date, i) => {
+                const x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                const y = height - padding.bottom - (chartHeight * counts[i] / maxCount);
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // X-axis labels (show every 5th date)
+            ctx.fillStyle = '#666';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            dates.forEach((date, i) => {
+                if (i % Math.ceil(dates.length / 6) === 0 || i === dates.length - 1) {
+                    const x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
+                    const label = date.slice(5); // MM-DD
+                    ctx.fillText(label, x, height - padding.bottom + 15);
+                }
+            });
+        }
+
+        function renderEventTypesChart() {
+            const container = document.getElementById('event-types-chart');
+
+            // Count event types
+            const typeCounts = {};
+            analyticsData.forEach(e => {
+                typeCounts[e.event_type] = (typeCounts[e.event_type] || 0) + 1;
+            });
+
+            // Sort by count
+            const sorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+            const maxCount = sorted[0]?.[1] || 1;
+
+            const colors = {
+                'answer': '#6c8ebf',
+                'screen_view': '#5a7dae',
+                'volume_start': '#ffc107',
+                'volume_complete': '#6c8ebf',
+                'session_start': '#6c63ff',
+                'session_end': '#888',
+                'badge_unlock': '#d4a03c',
+                'chapter_transition': '#e6b84d',
+                'auth': '#9b59b6'
+            };
+
+            let html = '';
+            sorted.forEach(([type, count]) => {
+                const pct = (count / maxCount) * 100;
+                const color = colors[type] || '#888';
+                html += `
+                    <div class="bar-chart-row">
+                        <div class="bar-chart-label" title="${escapeHtml(type)}">${escapeHtml(type)}</div>
+                        <div class="bar-chart-bar-container">
+                            <div class="bar-chart-bar" style="width: ${pct}%; background: ${color};"></div>
+                        </div>
+                        <div class="bar-chart-value">${count.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html || '<div class="empty-state">No events</div>';
+        }
+
+        function renderVolumePerformance() {
+            const container = document.getElementById('volume-performance');
+
+            // Group by volume
+            const volumeStats = {};
+            analyticsData.forEach(e => {
+                if (!e.volume_id) return;
+                if (!volumeStats[e.volume_id]) {
+                    volumeStats[e.volume_id] = { starts: 0, completes: 0, answers: 0, correct: 0, users: new Set() };
+                }
+                volumeStats[e.volume_id].users.add(e.user_id);
+                if (e.event_type === 'volume_start') volumeStats[e.volume_id].starts++;
+                if (e.event_type === 'volume_complete') volumeStats[e.volume_id].completes++;
+                if (e.event_type === 'answer') {
+                    volumeStats[e.volume_id].answers++;
+                    if (e.event_data?.is_correct) volumeStats[e.volume_id].correct++;
+                }
+            });
+
+            if (Object.keys(volumeStats).length === 0) {
+                container.innerHTML = '<div class="empty-state">No volume data</div>';
+                return;
+            }
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Volume</th>
+                            <th>Users</th>
+                            <th>Started</th>
+                            <th>Completed</th>
+                            <th>Completion Rate</th>
+                            <th>Answer Accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            Object.entries(volumeStats).sort((a, b) => a[0].localeCompare(b[0])).forEach(([volumeId, stats]) => {
+                const volume = VOLUMES.find(v => v.id === volumeId);
+                const displayName = volume ? volume.name : volumeId;
+                const completionRate = stats.starts > 0 ? ((stats.completes / stats.starts) * 100).toFixed(1) : 0;
+                const accuracy = stats.answers > 0 ? ((stats.correct / stats.answers) * 100).toFixed(1) : 0;
+
+                const compClass = completionRate >= 70 ? 'high' : completionRate >= 40 ? 'medium' : 'low';
+                const accClass = accuracy >= 70 ? 'high' : accuracy >= 50 ? 'medium' : 'low';
+
+                html += `
+                    <tr>
+                        <td>${escapeHtml(displayName)}</td>
+                        <td>${stats.users.size}</td>
+                        <td>${stats.starts}</td>
+                        <td>${stats.completes}</td>
+                        <td class="success-rate ${compClass}">${completionRate}%</td>
+                        <td class="success-rate ${accClass}">${accuracy}%</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Infer run numbers for historical events that don't have run_number set.
+        function assignInferredRunNumbers(events) {
+            const startsByKey = {};
+            const completesByKey = {};
+            events.forEach(e => {
+                const key = `${e.user_id}:${e.volume_id}`;
+                if (e.event_type === 'volume_start') {
+                    if (!startsByKey[key]) startsByKey[key] = [];
+                    startsByKey[key].push(e.timestamp_client);
+                }
+                if (e.event_type === 'volume_complete') {
+                    if (!completesByKey[key]) completesByKey[key] = [];
+                    completesByKey[key].push(e.timestamp_client);
+                }
+            });
+
+            Object.values(startsByKey).forEach(arr => arr.sort());
+            Object.values(completesByKey).forEach(arr => arr.sort());
+
+            const completedStartsByKey = {};
+            Object.keys(startsByKey).forEach(key => {
+                const starts = startsByKey[key];
+                const completes = completesByKey[key] || [];
+                completedStartsByKey[key] = [];
+
+                starts.forEach((startTime, i) => {
+                    const nextStart = starts[i + 1] || '9999-12-31';
+                    const hasComplete = completes.some(c => c >= startTime && c < nextStart);
+                    if (hasComplete) {
+                        completedStartsByKey[key].push(startTime);
+                    }
+                });
+            });
+
+            return events.map(e => {
+                if (e.run_number != null) return { ...e, _run: e.run_number };
+
+                const key = `${e.user_id}:${e.volume_id}`;
+                const starts = completedStartsByKey[key];
+                if (!starts || starts.length === 0) return { ...e, _run: null };
+
+                let run = 0;
+                for (let i = 0; i < starts.length; i++) {
+                    if (e.timestamp_client >= starts[i]) run = i + 1;
+                }
+                return { ...e, _run: run || null };
+            });
+        }
+
+        // runFilter: 'all' | 'run1' | 'later'
+        function filterByRun(events, runFilter) {
+            if (runFilter === 'run1') return events.filter(e => e._run === 1);
+            if (runFilter === 'later') return events.filter(e => e._run > 1);
+            return events;
+        }
+
+        function renderQuestionDifficulty(containerId, runFilter) {
+            containerId = containerId || 'question-difficulty';
+            runFilter = runFilter || 'all';
+            const container = document.getElementById(containerId);
+
+            const questionStats = {};
+            filterByRun(analyticsData, runFilter).filter(e => e.event_type === 'answer').forEach(e => {
+                const qId = e.event_data?.question_id;
+                const volumeId = e.volume_id;
+                if (!qId) return;
+
+                const key = `${volumeId}:${qId}`;
+                if (!questionStats[key]) {
+                    questionStats[key] = { volumeId, qId, attempts: 0, correct: 0 };
+                }
+                questionStats[key].attempts++;
+                if (e.event_data?.is_correct) questionStats[key].correct++;
+            });
+
+            const sorted = Object.values(questionStats)
+                .map(q => ({ ...q, rate: q.attempts > 0 ? (q.correct / q.attempts) * 100 : 0 }))
+                .sort((a, b) => a.rate - b.rate);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No question data</div>';
+                return;
+            }
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Volume</th>
+                            <th>Attempts</th>
+                            <th>Correct</th>
+                            <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sorted.slice(0, 20).forEach(q => {
+                const volume = VOLUMES.find(v => v.id === q.volumeId);
+                const volumeName = volume ? volume.name : q.volumeId;
+                const rateClass = q.rate >= 70 ? 'high' : q.rate >= 50 ? 'medium' : 'low';
+
+                html += `
+                    <tr>
+                        <td>${escapeHtml(q.qId)}</td>
+                        <td>${escapeHtml(volumeName)}</td>
+                        <td>${q.attempts}</td>
+                        <td>${q.correct}</td>
+                        <td class="success-rate ${rateClass}">${q.rate.toFixed(1)}%</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderQuestionTiming(containerId, runFilter) {
+            containerId = containerId || 'question-timing';
+            runFilter = runFilter || 'all';
+            const container = document.getElementById(containerId);
+
+            const questionTiming = {};
+            filterByRun(analyticsData, runFilter).filter(e => e.event_type === 'answer' && e.event_data?.time_to_answer_ms).forEach(e => {
+                const qId = e.event_data?.question_id;
+                const volumeId = e.volume_id;
+                const time = e.event_data?.time_to_answer_ms;
+                if (!qId || !time) return;
+
+                const key = `${volumeId}:${qId}`;
+                if (!questionTiming[key]) {
+                    questionTiming[key] = { volumeId, qId, times: [] };
+                }
+                questionTiming[key].times.push(time);
+            });
+
+            const sorted = Object.values(questionTiming)
+                .map(q => ({
+                    ...q,
+                    avgTime: q.times.reduce((a, b) => a + b, 0) / q.times.length,
+                    count: q.times.length
+                }))
+                .sort((a, b) => b.avgTime - a.avgTime);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No timing data</div>';
+                return;
+            }
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Volume</th>
+                            <th>Avg Time</th>
+                            <th>Samples</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sorted.slice(0, 20).forEach(q => {
+                const volume = VOLUMES.find(v => v.id === q.volumeId);
+                const volumeName = volume ? volume.name : q.volumeId;
+                const avgSec = (q.avgTime / 1000).toFixed(1);
+
+                html += `
+                    <tr>
+                        <td>${escapeHtml(q.qId)}</td>
+                        <td>${escapeHtml(volumeName)}</td>
+                        <td>${avgSec}s</td>
+                        <td>${q.count}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderBadgeRates() {
+            const container = document.getElementById('badge-rates');
+
+            const badgeCounts = {};
+            analyticsData.filter(e => e.event_type === 'badge_unlock').forEach(e => {
+                const badgeId = e.event_data?.badge_id;
+                const badgeName = e.event_data?.badge_name || badgeId;
+                if (!badgeId) return;
+                if (!badgeCounts[badgeId]) {
+                    badgeCounts[badgeId] = { name: badgeName, count: 0 };
+                }
+                badgeCounts[badgeId].count++;
+            });
+
+            const completions = analyticsData.filter(e => e.event_type === 'volume_complete').length;
+            const sorted = Object.entries(badgeCounts).sort((a, b) => b[1].count - a[1].count);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No badge data</div>';
+                return;
+            }
+
+            const maxCount = sorted[0][1].count;
+
+            let html = '';
+            sorted.forEach(([badgeId, data]) => {
+                const pct = maxCount > 0 ? (data.count / maxCount) * 100 : 0;
+                const earnRate = completions > 0 ? ((data.count / completions) * 100).toFixed(1) : 0;
+
+                html += `
+                    <div class="bar-chart-row">
+                        <div class="bar-chart-label" title="${escapeHtml(data.name)}">${escapeHtml(data.name)}</div>
+                        <div class="bar-chart-bar-container">
+                            <div class="bar-chart-bar" style="width: ${pct}%; background: linear-gradient(90deg, #d4a03c, #e6b84d);"></div>
+                        </div>
+                        <div class="bar-chart-value">${data.count} (${earnRate}%)</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderDropoffAnalysis() {
+            const container = document.getElementById('dropoff-analysis');
+
+            const sessionEvents = {};
+            analyticsData.forEach(e => {
+                if (!e.volume_id) return;
+                if (!sessionEvents[e.session_id]) sessionEvents[e.session_id] = [];
+                sessionEvents[e.session_id].push(e);
+            });
+
+            const allPlays = [];
+
+            Object.values(sessionEvents).forEach(events => {
+                events.sort((a, b) => {
+                    const dt = new Date(a.timestamp_client) - new Date(b.timestamp_client);
+                    if (dt !== 0) return dt;
+                    const pri = { 'volume_complete': 0, 'volume_start': 1 };
+                    return (pri[a.event_type] ?? 2) - (pri[b.event_type] ?? 2);
+                });
+
+                let currentPlay = null;
+                events.forEach(e => {
+                    if (e.event_type === 'volume_complete' && currentPlay && currentPlay.volumeId === e.volume_id) {
+                        currentPlay.completed = true;
+                        allPlays.push(currentPlay);
+                        currentPlay = null;
+                        return;
+                    }
+                    if (e.event_type === 'volume_start') {
+                        if (currentPlay) allPlays.push(currentPlay);
+                        currentPlay = { volumeId: e.volume_id, completed: false, lastScreen: null };
+                        return;
+                    }
+                    if (currentPlay && e.event_type === 'screen_view' && e.volume_id === currentPlay.volumeId) {
+                        currentPlay.lastScreen = e.event_data?.screen_id;
+                    }
+                });
+                if (currentPlay) allPlays.push(currentPlay);
+            });
+
+            const dropoffs = {};
+            const incompletePlays = allPlays.filter(p => !p.completed);
+            incompletePlays.forEach(p => {
+                const screen = p.lastScreen || '(before first screen)';
+                const label = screen + ' (' + p.volumeId + ')';
+                dropoffs[label] = (dropoffs[label] || 0) + 1;
+            });
+
+            const sorted = Object.entries(dropoffs).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No dropoff data (or all sessions completed!)</div>';
+                return;
+            }
+
+            const maxCount = sorted[0][1];
+
+            let html = `<h4 style="color: #888; font-size: 0.85em; margin-bottom: 15px;">Where users exit without completing (${incompletePlays.length} incomplete of ${allPlays.length} plays):</h4>`;
+            sorted.forEach(([screen, count]) => {
+                const pct = (count / maxCount) * 100;
+                html += `
+                    <div class="bar-chart-row">
+                        <div class="bar-chart-label" title="${escapeHtml(screen)}">${escapeHtml(screen)}</div>
+                        <div class="bar-chart-bar-container">
+                            <div class="bar-chart-bar" style="width: ${pct}%; background: linear-gradient(90deg, #d4a03c, #e6b84d);"></div>
+                        </div>
+                        <div class="bar-chart-value">${count}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderSessionDuration() {
+            const container = document.getElementById('session-duration');
+
+            const durations = analyticsData
+                .filter(e => e.event_type === 'session_end' && e.event_data?.duration_seconds)
+                .map(e => e.event_data.duration_seconds);
+
+            if (durations.length === 0) {
+                container.innerHTML = '<div class="empty-state">No session duration data</div>';
+                return;
+            }
+
+            const buckets = {
+                '< 1 min': 0,
+                '1-5 min': 0,
+                '5-15 min': 0,
+                '15-30 min': 0,
+                '30-60 min': 0,
+                '1-2 hrs': 0,
+                '2+ hrs': 0
+            };
+
+            durations.forEach(d => {
+                if (d < 60) buckets['< 1 min']++;
+                else if (d < 300) buckets['1-5 min']++;
+                else if (d < 900) buckets['5-15 min']++;
+                else if (d < 1800) buckets['15-30 min']++;
+                else if (d < 3600) buckets['30-60 min']++;
+                else if (d < 7200) buckets['1-2 hrs']++;
+                else buckets['2+ hrs']++;
+            });
+
+            const maxCount = Math.max(...Object.values(buckets));
+            const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
+            const sortedDurations = [...durations].sort((a, b) => a - b);
+            const medianDuration = sortedDurations.length % 2 === 0
+                ? (sortedDurations[sortedDurations.length / 2 - 1] + sortedDurations[sortedDurations.length / 2]) / 2
+                : sortedDurations[Math.floor(sortedDurations.length / 2)];
+
+            let html = `<p style="color: #6c8ebf; margin-bottom: 15px;">Median session: ${(medianDuration / 60).toFixed(1)} minutes &nbsp;|&nbsp; Average session: ${(avgDuration / 60).toFixed(1)} minutes</p>`;
+
+            Object.entries(buckets).forEach(([label, count]) => {
+                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                html += `
+                    <div class="bar-chart-row">
+                        <div class="bar-chart-label">${label}</div>
+                        <div class="bar-chart-bar-container">
+                            <div class="bar-chart-bar" style="width: ${pct}%; background: linear-gradient(90deg, #6c63ff, #9b59b6);"></div>
+                        </div>
+                        <div class="bar-chart-value">${count}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderUserEngagement() {
+            const container = document.getElementById('user-engagement');
+
+            const userStats = {};
+            analyticsData.forEach(e => {
+                if (!userStats[e.user_id]) {
+                    userStats[e.user_id] = {
+                        displayName: e.display_name || 'Unknown',
+                        sessions: new Set(),
+                        starts: 0,
+                        completions: 0,
+                        events: 0
+                    };
+                }
+                userStats[e.user_id].events++;
+                userStats[e.user_id].sessions.add(e.session_id);
+                if (e.event_type === 'volume_start') userStats[e.user_id].starts++;
+                if (e.event_type === 'volume_complete') userStats[e.user_id].completions++;
+            });
+
+            const sorted = Object.entries(userStats)
+                .map(([id, data]) => ({
+                    id, ...data,
+                    sessions: data.sessions.size,
+                    completionRate: data.starts > 0 ? ((data.completions / data.starts) * 100).toFixed(0) : 0
+                }))
+                .sort((a, b) => b.events - a.events)
+                .slice(0, 10);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="empty-state">No user data</div>';
+                return;
+            }
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Sessions</th>
+                            <th>Starts</th>
+                            <th>Completions</th>
+                            <th>Completion Rate</th>
+                            <th>Events</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sorted.forEach(user => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(user.displayName)}</td>
+                        <td>${user.sessions}</td>
+                        <td>${user.starts}</td>
+                        <td>${user.completions}</td>
+                        <td>${user.completionRate}%</td>
+                        <td>${user.events}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderRecentEvents() {
+            const container = document.getElementById('recent-events');
+
+            const recent = analyticsData.slice(0, 100);
+
+            if (recent.length === 0) {
+                container.innerHTML = '<div class="empty-state">No events recorded</div>';
+                return;
+            }
+
+            let html = `
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Event</th>
+                            <th>Volume</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            recent.forEach(e => {
+                const time = new Date(e.timestamp_client).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const volume = VOLUMES.find(v => v.id === e.volume_id);
+                const volumeName = volume ? volume.name : (e.volume_id || '-');
+
+                // Format event data as summary
+                let details = '-';
+                if (e.event_data) {
+                    const d = e.event_data;
+                    if (e.event_type === 'answer') {
+                        details = `${escapeHtml(d.question_id)}: ${d.is_correct ? 'correct' : 'incorrect'}`;
+                    } else if (e.event_type === 'screen_view') {
+                        details = escapeHtml(d.screen_id || '-');
+                    } else if (e.event_type === 'badge_unlock') {
+                        details = escapeHtml(d.badge_name || d.badge_id || '-');
+                    } else if (e.event_type === 'volume_complete') {
+                        details = `Score: ${d.score || '-'}`;
+                    } else if (e.event_type === 'session_end') {
+                        details = `${d.duration_seconds ? Math.round(d.duration_seconds/60) + 'min' : '-'}`;
+                    }
+                }
+
+                html += `
+                    <tr>
+                        <td style="white-space: nowrap;">${time}</td>
+                        <td>${escapeHtml(e.display_name || '-')}</td>
+                        <td>${escapeHtml(e.event_type)}</td>
+                        <td>${escapeHtml(volumeName)}</td>
+                        <td>${details}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

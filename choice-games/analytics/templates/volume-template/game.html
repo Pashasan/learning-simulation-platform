@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOUR TITLE | Analytics Learning Games</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/analytics.js"></script>
+</head>
+<body>
+    <!-- Auth Modal (required - do not remove) -->
+    <div class="modal-overlay" id="auth-modal" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="hideAuthModal()">&times;</button>
+            <h2 id="auth-modal-title">Login</h2>
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <div class="form-group" id="username-group" style="display: none;">
+                    <label for="auth-username">Username</label>
+                    <input type="text" id="auth-username" placeholder="Your display name" minlength="2" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="auth-email">Email</label>
+                    <input type="email" id="auth-email" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" required minlength="6" placeholder="Min 6 characters">
+                </div>
+                <div id="auth-error" class="auth-error"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="auth-submit-btn">Login</button>
+            </form>
+            <p class="auth-switch">
+                <span id="auth-switch-text">Don't have an account?</span>
+                <a href="#" onclick="toggleAuthMode(event)" id="auth-switch-link">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">YOUR TITLE</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <!-- Badge IDs must be "badge-{key}" matching config.json badge keys -->
+                    <div class="badge" id="badge-first" title="First Steps">
+                        <span>🎯</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>🔥</span>
+                        <div class="badge-tooltip">Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>⭐</span>
+                        <div class="badge-tooltip">Perfect Chapter</div>
+                    </div>
+                    <div class="badge" id="badge-custom1" title="Custom Badge 1">
+                        <span>🔍</span>
+                        <div class="badge-tooltip">Custom Badge</div>
+                    </div>
+                    <div class="badge" id="badge-custom2" title="Custom Badge 2">
+                        <span>💡</span>
+                        <div class="badge-tooltip">Another Badge</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Master">
+                        <span>🏆</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- Auth Container -->
+                <div class="auth-container" id="auth-container">
+                    <div id="auth-logged-out">
+                        <button class="btn-auth" onclick="showAuthModal('login')">Login</button>
+                        <button class="btn-auth btn-auth-secondary" onclick="showAuthModal('signup')">Sign Up</button>
+                    </div>
+                    <div id="auth-logged-in" style="display: none;">
+                        <span id="user-display-name"></span>
+                        <button class="btn-auth btn-auth-secondary" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <!-- Chapter dots: add/remove to match config.json chapters count -->
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Landing Screen (shown before login) -->
+            <div class="screen active" id="landing-screen">
+                <div class="title-screen" style="text-align: center;">
+                    <h1>YOUR TITLE</h1>
+                    <p class="subtitle">YOUR SUBTITLE</p>
+                    <div style="margin: 50px auto; max-width: 400px;">
+                        <p style="color: #ccc; margin-bottom: 30px;">Sign in to play</p>
+                        <button class="btn btn-primary" onclick="showAuthModal('login')" style="width: 100%; padding: 15px;">Login</button>
+                        <button class="btn btn-secondary" onclick="showAuthModal('signup')" style="width: 100%; padding: 15px; margin-top: 15px;">Sign Up</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Title Screen (shown after login) -->
+            <div class="screen" id="title-screen">
+                <div class="title-screen">
+                    <h1>YOUR TITLE</h1>
+                    <p class="subtitle">YOUR SUBTITLE</p>
+                    <p class="arena-subtitle">YOUR TAGLINE</p>
+                    <!-- Add learning objectives, scenario intro, etc. -->
+                    <button class="btn btn-primary" onclick="startGame()">Start</button>
+                </div>
+            </div>
+
+            <!--
+                CHAPTERS & QUESTIONS
+                Pattern: chapter intro -> questions -> next chapter intro -> questions -> ... -> results
+
+                Chapter 1 Intro: id="chapter1-intro"
+                Question 1:     id="q1-screen"
+                Question 2:     id="q2-screen"
+                Chapter 2 Intro: id="chapter2-intro"
+                Question 3:     id="q3-screen"
+                ...
+            -->
+
+            <!-- Chapter 1 Intro -->
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-intro">
+                    <h2>Chapter 1: YOUR CHAPTER TITLE</h2>
+                    <p>Chapter description and context.</p>
+                    <button class="btn btn-primary" onclick="showScreen('q1-screen')">Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="screen" id="q1-screen">
+                <div class="question-card">
+                    <h3>Question 1</h3>
+                    <p>Your question text here?</p>
+                    <div class="options" id="q1-options">
+                        <button class="option-btn" onclick="selectAnswer('q1', 0)">Option A</button>
+                        <button class="option-btn" onclick="selectAnswer('q1', 1)">Option B</button>
+                        <button class="option-btn" onclick="selectAnswer('q1', 2)">Option C</button>
+                        <button class="option-btn" onclick="selectAnswer('q1', 3)">Option D</button>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                    <button class="btn btn-primary next-btn" id="q1-next" style="display:none;" onclick="goToNext('q1')">Next</button>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="screen" id="q2-screen">
+                <div class="question-card">
+                    <h3>Question 2</h3>
+                    <p>Your question text here?</p>
+                    <div class="options" id="q2-options">
+                        <button class="option-btn" onclick="selectAnswer('q2', 0)">Option A</button>
+                        <button class="option-btn" onclick="selectAnswer('q2', 1)">Option B</button>
+                        <button class="option-btn" onclick="selectAnswer('q2', 2)">Option C</button>
+                        <button class="option-btn" onclick="selectAnswer('q2', 3)">Option D</button>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                    <button class="btn btn-primary next-btn" id="q2-next" style="display:none;" onclick="goToNext('q2')">Next</button>
+                </div>
+            </div>
+
+            <!-- Add more chapters and questions as needed... -->
+            <!-- Remember: totalQuestions must divide evenly by chapters -->
+
+            <!-- Results Screen (required) -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h2>Results</h2>
+                    <div class="results-stats">
+                        <div class="result-stat">
+                            <div class="result-value" id="final-score">0</div>
+                            <div class="result-label">Score</div>
+                        </div>
+                        <div class="result-stat">
+                            <div class="result-value" id="final-correct">0/0</div>
+                            <div class="result-label">Correct</div>
+                        </div>
+                        <div class="result-stat">
+                            <div class="result-value" id="final-streak">0</div>
+                            <div class="result-label">Best Streak</div>
+                        </div>
+                    </div>
+                    <div id="results-grade" class="results-grade"></div>
+                    <div id="badge-list" class="badge-list"></div>
+
+                    <!-- Cheat Sheet (required) -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>📋 YOUR VOLUME Cheat Sheet - Save This!</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Concept 1</div>
+                                <div class="definition">Brief explanation</div>
+                            </div>
+                            <!-- Add 6-8 cheat items -->
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="startGame()">Play Again</button>
+                        <button class="btn btn-secondary" onclick="exitToVolumes()">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Screen (required - exact IDs required) -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <div class="leaderboard-tabs">
+                        <button class="leaderboard-tab active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run</button>
+                        <button class="leaderboard-tab" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared libraries (required) -->
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+
+    <script>
+        // ============== VOLUME CONFIG ==============
+        // MUST match config.json "id" and folder name
+        const VOLUME_ID = 'your-volume-id';
+
+        // ============== GAME STATE ==============
+        let gameConfig = null;
+        let gameState = null;
+
+        // Question definitions: correct answer index for each question
+        const questions = {
+            q1: { correct: 1, explanation: 'Explanation for q1' },
+            q2: { correct: 0, explanation: 'Explanation for q2' }
+            // Add entries for all questions...
+        };
+
+        // Screen flow: maps each question to the next screen
+        const screenFlow = {
+            q1: 'q2-screen',
+            q2: 'results-screen'  // Last question goes to results
+            // For chapter transitions, use completeChapter() instead
+        };
+
+        // ============== CORE FUNCTIONS ==============
+
+        async function startGame() {
+            gameState = createGameState(gameConfig);
+            resetGameUI(gameConfig.chapters);
+            updateStatsDisplay(gameState);
+            await Analytics.trackVolumeStart();
+            showScreen('chapter1-intro');
+        }
+
+        function selectAnswer(questionId, selectedIndex) {
+            var q = questions[questionId];
+            var result = processAnswer(gameState, questionId, selectedIndex, q.correct);
+            updateAnswerUI(questionId, selectedIndex, q.correct);
+            showAnswerFeedback(questionId, result.isCorrect, q.explanation);
+            enableNextButton(questionId);
+            updateStatsDisplay(gameState);
+            checkStandardBadges(gameState, gameConfig);
+
+            // TODO: Add custom badge checks here
+
+            Analytics.trackAnswer(questionId, selectedIndex, q.correct, result.isCorrect, result.points, gameState.streak);
+        }
+
+        function goToNext(questionId) {
+            var qNum = parseInt(questionId.replace('q', ''));
+            var questionsPerChapter = gameConfig.totalQuestions / gameConfig.chapters;
+            var currentChapter = Math.ceil(qNum / questionsPerChapter);
+
+            // Check if this is the last question of a chapter
+            if (qNum % questionsPerChapter === 0 && qNum < gameConfig.totalQuestions) {
+                var nextChapter = currentChapter + 1;
+                if (isChapterPerfect(gameState, currentChapter, questionsPerChapter)) {
+                    unlockBadge('perfect', '⭐', 'Perfect Chapter');
+                }
+                completeChapter(currentChapter, gameConfig.chapters);
+                updateProgressDisplay(nextChapter, gameConfig.chapters, qNum, gameConfig.totalQuestions);
+                Analytics.trackChapterTransition(currentChapter, nextChapter);
+                showScreen('chapter' + nextChapter + '-intro');
+            } else if (qNum >= gameConfig.totalQuestions) {
+                // Last question
+                showResults();
+            } else {
+                var nextScreen = screenFlow[questionId] || ('q' + (qNum + 1) + '-screen');
+                updateProgressDisplay(currentChapter, gameConfig.chapters, qNum, gameConfig.totalQuestions);
+                showScreen(nextScreen);
+            }
+        }
+
+        async function showResults() {
+            var grade = getGrade(gameState.correctAnswers, gameConfig.grades);
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('final-correct').textContent = gameState.correctAnswers + '/' + gameConfig.totalQuestions;
+            document.getElementById('final-streak').textContent = gameState.bestStreak;
+            document.getElementById('results-grade').textContent = grade;
+
+            // Show earned badges
+            var badgeList = document.getElementById('badge-list');
+            badgeList.innerHTML = '';
+            gameState.badges.forEach(function(b) {
+                badgeList.innerHTML += '<span class="badge-earned">' + b.icon + ' ' + b.name + '</span>';
+            });
+
+            showScreen('results-screen');
+
+            if (currentUser) {
+                var result = await saveGameScore(gameState);
+                Analytics.trackVolumeComplete(gameState, grade);
+                if (result && result.runNumber) {
+                    showFeedbackModal(result.runNumber);
+                }
+            }
+        }
+
+        function goToMenu() {
+            if (gameState && gameState.score > 0) {
+                showScreen('results-screen');
+            } else {
+                showScreen('title-screen');
+            }
+        }
+
+        // ============== INITIALIZATION ==============
+        window.onload = async function() {
+            gameConfig = await loadGameConfig();
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        };
+    </script>
+</body>
+</html>

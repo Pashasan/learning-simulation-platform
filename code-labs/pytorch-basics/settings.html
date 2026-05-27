@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../../favicon.ico">
+<title>Settings | PyTorch Trace</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Space Mono', monospace;
+        background: linear-gradient(135deg, #0A0E1A 0%, #0F1528 50%, #141C35 100%);
+        min-height: 100vh;
+        color: #E0E6F0;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #64B5F6;
+        text-decoration: none;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover { color: #90CAF9; }
+
+    h1 {
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, #64B5F6, #90CAF9);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle { color: #6B7A99; font-size: 0.9em; margin-bottom: 30px; }
+
+    .section {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 25px;
+        border: 1px solid rgba(100, 181, 246, 0.1);
+    }
+
+    .section h2 {
+        color: #64B5F6;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(100, 181, 246, 0.15);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 14px;
+    }
+
+    .stat-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid rgba(100, 181, 246, 0.08);
+    }
+
+    .stat-value {
+        font-size: 1.7em;
+        font-weight: bold;
+        color: #64B5F6;
+        margin-bottom: 4px;
+    }
+
+    .stat-label { font-size: 0.8em; color: #6B7A99; }
+
+    .account-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .account-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #64B5F6, #42A5F5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #0A0E1A;
+    }
+
+    .account-details { flex: 1; }
+    .account-name { font-weight: bold; font-size: 1.1em; }
+    .account-email { color: #6B7A99; font-size: 0.85em; margin-top: 4px; }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.9em;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3A5A8A, #2A4A7A);
+        color: #E0E6F0;
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #4A6A9A, #3A5A8A); }
+
+    .btn-danger {
+        background: rgba(239, 83, 80, 0.15);
+        color: #EF5350;
+        border: 1px solid rgba(239, 83, 80, 0.3);
+    }
+    .btn-danger:hover { background: rgba(239, 83, 80, 0.25); }
+
+    .btn-group { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+
+    .badge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+
+    .badge-card {
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        border: 1px solid rgba(100, 181, 246, 0.08);
+        opacity: 0.4;
+    }
+
+    .badge-card.earned { opacity: 1; border-color: rgba(100, 181, 246, 0.25); }
+    .badge-name { font-weight: bold; font-size: 0.9em; }
+    .badge-desc { font-size: 0.75em; color: #6B7A99; margin-top: 4px; }
+
+    .confirm-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .confirm-modal.active { display: flex; }
+
+    .confirm-box {
+        background: #141C35;
+        border: 1px solid rgba(239, 83, 80, 0.3);
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 400px;
+        text-align: center;
+    }
+
+    .confirm-box h3 { color: #EF5350; margin-bottom: 16px; }
+    .confirm-box p { color: #6B7A99; font-size: 0.9em; margin-bottom: 20px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="container">
+    <a href="game.html" class="back-link">&#8592; Back to Game</a>
+    <h1>Settings</h1>
+    <p class="subtitle">PyTorch Trace</p>
+
+    <div class="section">
+        <h2>Account</h2>
+        <div class="account-info">
+            <div class="account-avatar" id="avatar">?</div>
+            <div class="account-details">
+                <div class="account-name" id="display-name">Loading...</div>
+                <div class="account-email" id="email">Loading...</div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="handleLogout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Your Stats</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-stages">0</div>
+                <div class="stat-label">Stages Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-score">0</div>
+                <div class="stat-label">Total Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-accuracy">0%</div>
+                <div class="stat-label">Avg Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-streak">0</div>
+                <div class="stat-label">Best Streak</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Badges</h2>
+        <div class="badge-grid" id="badge-grid"></div>
+    </div>
+
+    <div class="section">
+        <h2>Danger Zone</h2>
+        <p style="color: #6B7A99; font-size: 0.85em; margin-bottom: 16px;">
+            Delete your account and all associated data. This action is permanent.
+        </p>
+        <button class="btn btn-danger" onclick="showDeleteConfirm()">Delete Account</button>
+    </div>
+</div>
+
+<div class="confirm-modal" id="delete-modal">
+    <div class="confirm-box">
+        <h3>Delete Account?</h3>
+        <p>This will permanently delete your account and all associated data across the platform. This cannot be undone.</p>
+        <div class="btn-group" style="justify-content: center;">
+            <button class="btn btn-danger" onclick="confirmDelete()">Delete Everything</button>
+            <button class="btn btn-primary" onclick="hideDeleteConfirm()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+    function __makeDemoSupabaseClient() {
+      const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+      const session = { user: DEMO_USER, access_token: 'demo' };
+      const ok = (data) => Promise.resolve({ data, error: null });
+      const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+      function builder() {
+        const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+        builderMethods.forEach((m) => { b[m] = () => b; });
+        return b;
+      }
+      return {
+        auth: {
+          getSession: () => ok({ session }),
+          getUser: () => ok({ user: DEMO_USER }),
+          signInWithPassword: () => ok({ user: DEMO_USER, session }),
+          signUp: () => ok({ user: DEMO_USER, session }),
+          signOut: () => ok(null),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        from: () => builder(),
+        rpc: () => Promise.resolve({ data: null, error: null }),
+      };
+    }
+
+    const { createClient } = supabase;
+    const sb = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const GAME_ID = 'pytorch_trace';
+
+    const BADGES = {
+        shape_whiz:       { name: 'Shape Whiz',       desc: 'Get 5 shape predictions correct in a row' },
+        gradient_guru:    { name: 'Gradient Guru',     desc: 'Complete Backward Pass with 90%+' },
+        speed_demon:      { name: 'Speed Demon',       desc: 'Answer 10 questions within speed bonus window' },
+        clean_trace:      { name: 'Clean Trace',       desc: 'Get every question right in any stage' },
+        full_pipeline:    { name: 'Full Pipeline',     desc: 'Complete all 7 stages' },
+        streak_master:    { name: 'Streak Master',     desc: 'Reach a 10x streak' },
+        tensor_whisperer: { name: 'Tensor Whisperer',  desc: 'Earn an S grade on any stage' },
+    };
+
+    let currentUser = null;
+
+    async function init() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            window.location.href = 'index.html';
+            return;
+        }
+        currentUser = session.user;
+
+        const meta = currentUser.user_metadata;
+        const name = meta?.username || meta?.display_name || currentUser.email?.split('@')[0] || 'Player';
+        document.getElementById('display-name').textContent = name;
+        document.getElementById('email').textContent = currentUser.email;
+        document.getElementById('avatar').textContent = name.charAt(0).toUpperCase();
+
+        await loadStats();
+        loadBadges();
+    }
+
+    async function loadStats() {
+        const { data } = await sb.from('code_lab_scores')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('game_id', GAME_ID)
+            .order('created_at', { ascending: false });
+
+        if (!data || data.length === 0) return;
+
+        const uniqueStages = new Set(data.map(r => r.level_id));
+        const totalScore = data.reduce((s, r) => s + (r.score || 0), 0);
+        const totalCorrect = data.reduce((s, r) => s + (r.correct_count || 0), 0);
+        const totalSteps = data.reduce((s, r) => s + (r.total_steps || 0), 0);
+        const bestStreak = Math.max(0, ...data.map(r => r.max_streak || 0));
+        const accuracy = totalSteps > 0 ? Math.round((totalCorrect / totalSteps) * 100) : 0;
+
+        document.getElementById('stat-stages').textContent = uniqueStages.size;
+        document.getElementById('stat-score').textContent = totalScore.toLocaleString();
+        document.getElementById('stat-accuracy').textContent = accuracy + '%';
+        document.getElementById('stat-streak').textContent = bestStreak;
+    }
+
+    function loadBadges() {
+        const grid = document.getElementById('badge-grid');
+        grid.innerHTML = '';
+
+        let earned = new Set();
+        try {
+            const saved = localStorage.getItem('pytorch_trace_progress');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.earnedBadges) earned = new Set(data.earnedBadges);
+            }
+        } catch (e) {}
+
+        for (const [key, badge] of Object.entries(BADGES)) {
+            const card = document.createElement('div');
+            card.className = 'badge-card' + (earned.has(key) ? ' earned' : '');
+            card.innerHTML = `
+                <div class="badge-name">${badge.name}</div>
+                <div class="badge-desc">${badge.desc}</div>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
+    async function handleLogout() {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+    }
+
+    function showDeleteConfirm() {
+        document.getElementById('delete-modal').classList.add('active');
+    }
+
+    function hideDeleteConfirm() {
+        document.getElementById('delete-modal').classList.remove('active');
+    }
+
+    async function confirmDelete() {
+        if (!currentUser) return;
+        var deleteBtn = document.querySelector('#delete-modal .btn-danger');
+        if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = 'Deleting...'; }
+
+        try {
+            // Delete scores and events across all code labs
+            await sb.from('code_lab_scores').delete().eq('user_id', currentUser.id);
+            await sb.from('code_lab_events').delete().eq('user_id', currentUser.id);
+
+            // Clear localStorage for all code labs
+            var uid = currentUser.id;
+            var keys = Object.keys(localStorage);
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i].indexOf(uid) !== -1) localStorage.removeItem(keys[i]);
+            }
+            localStorage.removeItem('pytorch_trace_progress');
+
+            // Delete account (anonymizes remaining data, clears feedback text, deletes auth user)
+            var { error } = await sb.rpc('delete_my_account');
+            if (error) throw error;
+
+            await sb.auth.signOut();
+            window.location.href = 'index.html';
+        } catch (err) {
+            if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'Delete Everything'; }
+            alert('Error deleting account: ' + err.message);
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>

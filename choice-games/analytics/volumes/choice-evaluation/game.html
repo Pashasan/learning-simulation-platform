@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>The Choice Lab: Evaluation | BeatBox Audio</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+    <style>
+        .cm-grid {
+            display: inline-grid;
+            grid-template-columns: 90px 130px 130px;
+            gap: 3px;
+        }
+        .cm-header {
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cm-cell {
+            padding: 14px 8px;
+            text-align: center;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .cm-cell:hover { border-color: rgba(255,255,255,0.3); }
+        .cm-cell.active { border-color: #ffc107; transform: scale(1.05); }
+        .cm-count { font-size: 1.7em; font-weight: bold; }
+        .cm-label { font-size: 0.75em; margin-top: 3px; opacity: 0.8; }
+        .cm-tp, .cm-tn { background: rgba(78,204,163,0.15); }
+        .cm-fp, .cm-fn { background: rgba(233,69,96,0.15); }
+        .cm-tp .cm-count, .cm-tn .cm-count { color: #4ecca3; }
+        .cm-fp .cm-count, .cm-fn .cm-count { color: #e94560; }
+        .cm-info {
+            min-height: 50px;
+            background: rgba(255,255,255,0.05);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        .metric-bar-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .metric-bar-label { width: 80px; font-size: 0.85em; color: #ccc; text-align: right; }
+        .metric-bar-track { flex: 1; height: 24px; background: rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; }
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #1a1a2e;
+            min-width: 35px;
+        }
+        .roc-info-row { display: flex; gap: 15px; justify-content: center; margin: 10px 0; }
+        .roc-info-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 8px 16px;
+            text-align: center;
+            min-width: 90px;
+        }
+        .roc-info-value { font-size: 1.4em; font-weight: bold; }
+        .roc-info-label { font-size: 0.75em; color: #888; }
+        .util-slider-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+        .util-slider-label { width: 90px; font-size: 0.9em; color: #ccc; text-align: right; }
+        .util-slider-row input[type="range"] { flex: 1; }
+        .util-slider-val { width: 45px; text-align: center; font-weight: bold; color: #4ecca3; }
+        .product-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+        .product-name { width: 90px; font-weight: bold; font-size: 0.9em; text-align: right; }
+        .product-bar-track { flex: 1; height: 30px; background: rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; }
+        .product-bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.4s;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-weight: bold;
+            font-size: 0.85em;
+            min-width: 40px;
+        }
+        .compact-scenario {
+            background: rgba(78, 204, 163, 0.08);
+            border-left: 3px solid #4ecca3;
+            padding: 12px 16px;
+            margin: 10px 0 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .live-cm {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-top: 12px;
+            font-size: 0.8em;
+            text-align: center;
+        }
+        .live-cm div {
+            padding: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">BeatBox Evaluation Lab</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Blood"><span>🎯</span><div class="badge-tooltip">First Correct</div></div>
+                    <div class="badge" id="badge-streak" title="On Fire"><span>🔥</span><div class="badge-tooltip">3+ Streak</div></div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter"><span>⭐</span><div class="badge-tooltip">Perfect Chapter</div></div>
+                    <div class="badge" id="badge-detective" title="Error Detective"><span>🔍</span><div class="badge-tooltip">Error Detective</div></div>
+                    <div class="badge" id="badge-strategist" title="Market Strategist"><span>🧠</span><div class="badge-tooltip">Market Strategist</div></div>
+                    <div class="badge" id="badge-master" title="Evaluation Master"><span>🏆</span><div class="badge-tooltip">All Correct</div></div>
+                </div>
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- ==================== TITLE SCREEN ==================== -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>The Choice Lab: Evaluation</h1>
+                    <p class="subtitle">BeatBox Audio &mdash; Part 2</p>
+                    <p class="arena-subtitle">Judge and Extend the Model</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat"><div class="value">87%</div><div class="label">AUC Score</div></div>
+                        <div class="dashboard-stat"><div class="value">200</div><div class="label">Test Cases</div></div>
+                        <div class="dashboard-stat"><div class="value">3</div><div class="label">Product Lines</div></div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg" viewBox="0 0 60 60">
+                                <circle cx="30" cy="18" r="11" fill="#06b6d4"/>
+                                <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#06b6d4"/>
+                                <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                                <path d="M22 14 Q30 8 38 14" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                            </svg>
+                            <div>
+                                <strong>Lena Park</strong>
+                                <p style="color: #888; font-size: 0.9em;">Product Manager, BeatBox Audio</p>
+                            </div>
+                        </div>
+                        <p>"We built the model in Part 1. Now the big question: <em>is it any good?</em> And can we handle <span class="highlight">three product lines</span> instead of just two?"</p>
+                        <br>
+                        <p>In <span class="highlight">~10 minutes</span>, you'll learn to:</p>
+                        <ul style="margin: 10px 0 10px 25px; line-height: 1.9;">
+                            <li>Read a confusion matrix</li>
+                            <li>Navigate the precision&ndash;recall trade-off</li>
+                            <li>Interpret ROC curves and AUC</li>
+                            <li>Extend to multinomial choice</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Start Evaluation</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 1: THE CONFUSION MATRIX ==================== -->
+
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Confusion Matrix</h2>
+                    <p class="chapter-desc">Classifying the model's hits and misses</p>
+                </div>
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#06b6d4"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#06b6d4"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 14 Q30 8 38 14" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Lena <span class="role-badge">Product Manager</span></div>
+                        <p>"We tested our model on 200 held-out consumers. Let's see where it got things right &mdash; and where it got things wrong."</p>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    At threshold = 0.50, anyone with predicted probability &ge; 50% is classified as <strong>"Buy"</strong>, otherwise <strong>"Skip"</strong>. How did the model do?
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch1-matrix')">See the Matrix</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Interactive Confusion Matrix + Q1 -->
+            <div class="screen" id="ch1-matrix">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Click Each Cell</h2>
+                </div>
+                <div style="text-align: center; margin: 10px 0;">
+                    <div class="cm-grid">
+                        <div class="cm-header"></div>
+                        <div class="cm-header">Predicted:<br>Buy</div>
+                        <div class="cm-header">Predicted:<br>Skip</div>
+                        <div class="cm-header" style="text-align: right; padding-right: 8px;">Actual:<br>Buy</div>
+                        <div class="cm-cell cm-tp" id="cm-tp" onclick="selectCMCell('tp')">
+                            <div class="cm-count" id="cm-tp-count">&mdash;</div>
+                            <div class="cm-label">True Positive</div>
+                        </div>
+                        <div class="cm-cell cm-fn" id="cm-fn" onclick="selectCMCell('fn')">
+                            <div class="cm-count" id="cm-fn-count">&mdash;</div>
+                            <div class="cm-label">False Negative</div>
+                        </div>
+                        <div class="cm-header" style="text-align: right; padding-right: 8px;">Actual:<br>Skip</div>
+                        <div class="cm-cell cm-fp" id="cm-fp" onclick="selectCMCell('fp')">
+                            <div class="cm-count" id="cm-fp-count">&mdash;</div>
+                            <div class="cm-label">False Positive</div>
+                        </div>
+                        <div class="cm-cell cm-tn" id="cm-tn" onclick="selectCMCell('tn')">
+                            <div class="cm-count" id="cm-tn-count">&mdash;</div>
+                            <div class="cm-label">True Negative</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cm-info" id="cm-info">Click any cell above to learn what it means</div>
+                <div class="quiz-container">
+                    <div class="question">Which cell represents consumers the model predicted would buy &mdash; but actually didn't?</div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">True Positive (top-left) &mdash; model got it right</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">False Negative (top-right) &mdash; model said skip, they bought</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">False Positive (bottom-left) &mdash; model said buy, they didn't</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 3)">True Negative (bottom-right) &mdash; model got it right</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('ch1-precision')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Precision + Q2 -->
+            <div class="screen" id="ch1-precision">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Precision vs. Recall</h2>
+                </div>
+                <div class="compact-scenario">
+                    Two key metrics built from the confusion matrix:<br><br>
+                    <strong>Precision</strong> = TP / (TP + FP) &mdash; <em>"When we predict Buy, how often are we right?"</em><br>
+                    <strong>Recall</strong> = TP / (TP + FN) &mdash; <em>"Of actual buyers, how many did we catch?"</em>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">Precision answers which business question?</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">What percentage of all 200 test consumers did we classify correctly?</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">Of the consumers we targeted as buyers, what fraction actually bought?</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">Of the actual buyers, what fraction did the model identify?</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">How many false positives does the model produce overall?</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch1-matrix')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="completeChapter(1)" disabled>Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 2: THRESHOLD DECISIONS ==================== -->
+
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Threshold Decisions</h2>
+                    <p class="chapter-desc">Drag the threshold and watch precision &amp; recall shift</p>
+                </div>
+                <div class="compact-scenario">
+                    The default threshold is 0.50, but we can change it. Raising the threshold means we only predict "Buy" for <em>very confident</em> cases. What trade-off does that create?
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch1-precision')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch2-threshold')">Open Explorer</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Threshold Explorer + Q3 -->
+            <div class="screen" id="ch2-threshold">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Threshold Explorer</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="dist-canvas" width="460" height="280"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Adjust Threshold</h3>
+                        <div style="text-align: center; margin: 8px 0;">
+                            <div style="font-size: 2em; font-weight: bold; color: #ffc107;" id="threshold-value">0.50</div>
+                            <div style="font-size: 0.8em; color: #888;">Threshold</div>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" id="threshold-slider" min="0.10" max="0.90" step="0.01" value="0.50" oninput="updateThreshold()">
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <div class="metric-bar-row">
+                                <div class="metric-bar-label">Precision</div>
+                                <div class="metric-bar-track"><div class="metric-bar-fill" id="bar-precision" style="background: #4ecca3; width: 50%;">—</div></div>
+                            </div>
+                            <div class="metric-bar-row">
+                                <div class="metric-bar-label">Recall</div>
+                                <div class="metric-bar-track"><div class="metric-bar-fill" id="bar-recall" style="background: #06b6d4; width: 50%;">—</div></div>
+                            </div>
+                            <div class="metric-bar-row">
+                                <div class="metric-bar-label">Accuracy</div>
+                                <div class="metric-bar-track"><div class="metric-bar-fill" id="bar-accuracy" style="background: #ffc107; width: 50%;">—</div></div>
+                            </div>
+                        </div>
+                        <div class="live-cm">
+                            <div style="background: rgba(78,204,163,0.15);">TP: <strong id="live-tp">&mdash;</strong></div>
+                            <div style="background: rgba(233,69,96,0.15);">FP: <strong id="live-fp">&mdash;</strong></div>
+                            <div style="background: rgba(233,69,96,0.15);">FN: <strong id="live-fn">&mdash;</strong></div>
+                            <div style="background: rgba(78,204,163,0.15);">TN: <strong id="live-tn">&mdash;</strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">If BeatBox raises the threshold from 0.50 to 0.70, what happens?</div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">Both precision and recall increase &mdash; higher threshold = better overall</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">Precision increases, recall decreases &mdash; fewer but more confident predictions</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">Precision decreases, recall increases &mdash; broader targeting</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">Both stay the same &mdash; threshold doesn't affect these metrics</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('ch2-business')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Business Scenario + Q4 -->
+            <div class="screen" id="ch2-business">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Business Trade-off</h2>
+                </div>
+                <div class="scenario-card">
+                    <h3>BeatBox's Dilemma</h3>
+                    <p style="margin-top: 10px; line-height: 1.7;">BeatBox is planning production quantities. Each unit costs &pound;35 to make. Overproduction (making units nobody buys) is their <strong>biggest risk</strong>.</p>
+                    <ul style="margin: 12px 0 0 20px; line-height: 1.8;">
+                        <li><strong>False Positive</strong> = predict "Buy" but they don't &rarr; <span style="color: #e94560;">wasted production</span></li>
+                        <li><strong>False Negative</strong> = predict "Skip" but they would buy &rarr; <span style="color: #ffc107;">missed sale</span></li>
+                    </ul>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">To minimize overproduction, which metric should BeatBox prioritize?</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">Precision &mdash; when we predict "Buy," we want to be right</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">Recall &mdash; make sure we catch every potential buyer</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">Accuracy &mdash; maximize overall correctness</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">F1 Score &mdash; balance everything equally</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch2-threshold')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="completeChapter(2)" disabled>Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 3: ROC & AUC ==================== -->
+
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">ROC Curves &amp; AUC</h2>
+                    <p class="chapter-desc">One picture to evaluate the whole model</p>
+                </div>
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#06b6d4"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#06b6d4"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 14 Q30 8 38 14" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Lena <span class="role-badge">Product Manager</span></div>
+                        <p>"Picking one threshold feels arbitrary. Can we see how the model does at <em>all</em> thresholds at once?"</p>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    The <strong>ROC curve</strong> plots model performance across every possible threshold, giving a complete picture of discriminative ability.
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch2-business')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch3-roc')">See the Curve</button>
+                </div>
+            </div>
+
+            <!-- Ch3: ROC Curve + Q5 -->
+            <div class="screen" id="ch3-roc">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Interactive ROC</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="roc-canvas" width="400" height="340"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Move the Threshold</h3>
+                        <div class="slider-container">
+                            <input type="range" id="roc-threshold-slider" min="0.05" max="0.95" step="0.01" value="0.50" oninput="updateROCExplorer()">
+                        </div>
+                        <div class="roc-info-row">
+                            <div class="roc-info-box">
+                                <div class="roc-info-value" id="roc-tpr" style="color: #4ecca3;">&mdash;</div>
+                                <div class="roc-info-label">True Positive Rate</div>
+                            </div>
+                            <div class="roc-info-box">
+                                <div class="roc-info-value" id="roc-fpr" style="color: #e94560;">&mdash;</div>
+                                <div class="roc-info-label">False Positive Rate</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 10px;">
+                            <div style="font-size: 0.8em; color: #888;">Threshold</div>
+                            <div style="font-size: 1.4em; font-weight: bold; color: #ffc107;" id="roc-threshold-display">0.50</div>
+                        </div>
+                        <p style="color: #888; font-size: 0.82em; margin-top: 10px;">The <span style="color: #4ecca3;">green area</span> under the curve = AUC. Closer to 1.0 = better model.</p>
+                    </div>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">The ROC curve plots:</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">Precision vs. Recall at every threshold</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">True Positive Rate vs. False Positive Rate at every threshold</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">Accuracy vs. Threshold on a single axis</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">Error Rate vs. Sample Size</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('ch3-auc')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch3: AUC Interpretation + Q6 -->
+            <div class="screen" id="ch3-auc">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">What AUC Means</h2>
+                </div>
+                <div class="compact-scenario">
+                    BeatBox's model achieves <strong>AUC = 0.87</strong>. The diagonal line (AUC = 0.50) represents a model that guesses randomly. A perfect model would have AUC = 1.0.
+                </div>
+                <div style="text-align: center; margin: 15px 0;">
+                    <div style="display: inline-flex; gap: 30px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #888;">0.50</div>
+                            <div style="font-size: 0.85em; color: #888;">Random Guess</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #4ecca3;">0.87</div>
+                            <div style="font-size: 0.85em; color: #4ecca3;">BeatBox Model</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5em; font-weight: bold; color: #ffc107;">1.00</div>
+                            <div style="font-size: 0.85em; color: #ffc107;">Perfect Model</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">AUC = 0.87 means:</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">The model achieves 87% accuracy at the default threshold</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">87% of all predictions are true positives</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">A random buyer scores higher than a random non-buyer 87% of the time</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">The model correctly classifies 87 out of every 100 consumers</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch3-roc')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="completeChapter(3)" disabled>Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 4: BEYOND BINARY ==================== -->
+
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Beyond Binary</h2>
+                    <p class="chapter-desc">What if consumers choose from three or more products?</p>
+                </div>
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#06b6d4"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#06b6d4"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 14 Q30 8 38 14" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Lena <span class="role-badge">Product Manager</span></div>
+                        <p>"We're expanding the lineup to three tiers: <strong>Budget</strong>, <strong>Mid-Range</strong>, and <strong>Premium</strong>. The binary model won't cut it."</p>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    The <strong>multinomial logit</strong> extends binary choice to <em>N</em> alternatives using the <strong>softmax</strong> function. Each product gets a utility, and probabilities are computed as:<br>
+                    <div style="text-align: center; margin: 8px 0; font-size: 1.1em;">P(i) = exp(V<sub>i</sub>) / &Sigma; exp(V<sub>j</sub>)</div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch3-auc')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch4-multinomial')">Open Calculator</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Multinomial Explorer + Q7 -->
+            <div class="screen" id="ch4-multinomial">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Multinomial Calculator</h2>
+                </div>
+                <div style="max-width: 520px; margin: 0 auto;">
+                    <div style="margin: 15px 0;">
+                        <div class="util-slider-row">
+                            <div class="util-slider-label">Budget</div>
+                            <input type="range" id="util-budget" min="0" max="5" step="0.1" value="1.5" oninput="updateMultinomial()">
+                            <div class="util-slider-val" id="util-budget-val">1.5</div>
+                        </div>
+                        <div class="util-slider-row">
+                            <div class="util-slider-label">Mid-Range</div>
+                            <input type="range" id="util-midrange" min="0" max="5" step="0.1" value="2.8" oninput="updateMultinomial()">
+                            <div class="util-slider-val" id="util-midrange-val">2.8</div>
+                        </div>
+                        <div class="util-slider-row">
+                            <div class="util-slider-label">Premium</div>
+                            <input type="range" id="util-premium" min="0" max="5" step="0.1" value="2.5" oninput="updateMultinomial()">
+                            <div class="util-slider-val" id="util-premium-val">2.5</div>
+                        </div>
+                    </div>
+                    <div style="margin: 15px 0;">
+                        <div class="product-row">
+                            <div class="product-name" style="color: #e94560;">Budget</div>
+                            <div class="product-bar-track"><div class="product-bar-fill" id="bar-budget" style="background: #e94560;">—</div></div>
+                        </div>
+                        <div class="product-row">
+                            <div class="product-name" style="color: #4ecca3;">Mid-Range</div>
+                            <div class="product-bar-track"><div class="product-bar-fill" id="bar-midrange" style="background: #4ecca3;">—</div></div>
+                        </div>
+                        <div class="product-row">
+                            <div class="product-name" style="color: #06b6d4;">Premium</div>
+                            <div class="product-bar-track"><div class="product-bar-fill" id="bar-premium" style="background: #06b6d4;">—</div></div>
+                        </div>
+                    </div>
+                    <p style="color: #888; font-size: 0.82em; text-align: center;">Drag the sliders and watch probabilities redistribute. They always sum to 100%.</p>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">In the multinomial logit, what must be true about the probabilities across all products?</div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">They must sum to exactly 1 (100%)</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">Each product must get an equal share (1/N)</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">The top product must always have P &gt; 50%</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">Probabilities can be negative for disliked products</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('ch4-predict')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Prediction + Q8 -->
+            <div class="screen" id="ch4-predict">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Market Prediction</h2>
+                </div>
+                <div class="scenario-card">
+                    <h3>Three-Tier Launch</h3>
+                    <p style="margin-top: 10px; line-height: 1.7;">BeatBox models three earbud tiers. The estimated utilities are:</p>
+                    <table style="width: 100%; margin: 12px 0; border-collapse: collapse; font-size: 0.95em;">
+                        <thead><tr>
+                            <th style="text-align: left; padding: 6px; border-bottom: 2px solid #4ecca3; color: #4ecca3;">Product</th>
+                            <th style="text-align: center; padding: 6px; border-bottom: 2px solid #4ecca3; color: #4ecca3;">Utility (V)</th>
+                        </tr></thead>
+                        <tbody>
+                            <tr><td style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">Budget Buds</td><td style="text-align: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">1.2</td></tr>
+                            <tr><td style="padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">Mid-Range Max</td><td style="text-align: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">3.1</td></tr>
+                            <tr><td style="padding: 6px;">Premium Pro</td><td style="text-align: center; padding: 6px;">2.4</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="quiz-container">
+                    <div class="question">Which product has the highest choice probability?</div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Budget Buds &mdash; lowest price appeals to most consumers</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">Premium Pro &mdash; brand prestige drives choice</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">Mid-Range Max &mdash; highest utility means highest probability</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">All equal &mdash; they're in the same market so shares balance out</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch4-multinomial')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="completeChapter(4)" disabled>Complete Chapter 4</button>
+                </div>
+            </div>
+
+            <!-- ==================== RESULTS SCREEN ==================== -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Evaluation Complete!</h1>
+                    <p style="color: #4ecca3; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've mastered model evaluation and multinomial choice</p>
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="results-grade">-</div>
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card"><div class="stat-value" id="final-correct">0/8</div><div class="stat-label">Questions Correct</div></div>
+                        <div class="summary-card"><div class="stat-value" id="final-streak">0</div><div class="stat-label">Best Streak</div></div>
+                    </div>
+                    <div class="badges-earned" id="badges-earned" style="margin: 20px 0;">
+                        <h3 style="margin-bottom: 15px;">Badges Earned</h3>
+                        <div class="badge-list" id="badge-list"></div>
+                    </div>
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>Evaluation Cheat Sheet - Save This!</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item"><div class="term">Confusion Matrix</div><div class="definition">2&times;2 table: TP, FP, FN, TN for evaluating classifications</div><div class="formula">Rows = Actual, Cols = Predicted</div></div>
+                            <div class="cheat-item"><div class="term">Precision</div><div class="definition">Of predicted positives, how many are correct?</div><div class="formula">TP / (TP + FP)</div></div>
+                            <div class="cheat-item"><div class="term">Recall</div><div class="definition">Of actual positives, how many did we find?</div><div class="formula">TP / (TP + FN)</div></div>
+                            <div class="cheat-item"><div class="term">Threshold Trade-off</div><div class="definition">Higher threshold &rarr; more precision, less recall</div><div class="formula">Business context determines the right balance</div></div>
+                            <div class="cheat-item"><div class="term">ROC / AUC</div><div class="definition">ROC plots TPR vs FPR; AUC = overall ranking ability</div><div class="formula">AUC = 0.87 &rarr; ranks correctly 87% of the time</div></div>
+                            <div class="cheat-item"><div class="term">Multinomial Logit</div><div class="definition">Extends binary to N alternatives via softmax</div><div class="formula">P(i) = exp(V<sub>i</sub>) / &Sigma; exp(V<sub>j</sub>)</div></div>
+                        </div>
+                    </div>
+                    <div class="nav-buttons" style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('allRuns');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="exitToVolumes()">Return to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LEADERBOARD ==================== -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from The Choice Lab: Evaluation</p>
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+                    <div class="leaderboard-list" id="leaderboard-list"><div class="leaderboard-loading">Loading...</div></div>
+                    <div class="nav-buttons" style="margin-top: 30px;">
+                        <button class="btn btn-secondary" onclick="showScreen(gameState && gameState.correctAnswers > 0 ? 'results-screen' : 'title-screen')">Back</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        var VOLUME_ID = 'choice-evaluation';
+        var gameState = null;
+
+        var questions = {
+            q1: { correct: 2, explanation: 'False Positives are in the bottom-left cell \u2014 the model predicted "Buy" but the consumer didn\'t. These are costly: you\'d waste marketing dollars and overproduce inventory for people who won\'t convert.', badge: 'detective' },
+            q2: { correct: 1, explanation: 'Precision = TP / (TP + FP). Of everyone the model flagged as a buyer, what percentage actually bought? It answers: "When we target someone, how often is that money well spent?"' },
+            q3: { correct: 1, explanation: 'Higher threshold = pickier model. It only predicts "Buy" for very confident cases, so fewer false positives (precision up) but more actual buyers get missed (recall down). Try dragging the slider to verify!' },
+            q4: { correct: 0, explanation: 'Overproduction = making units that don\'t sell = False Positives. Precision minimizes FPs: when the model says "produce," you want it to be right. Raise the threshold to boost precision at the cost of some missed sales.' },
+            q5: { correct: 1, explanation: 'ROC plots True Positive Rate (sensitivity) vs False Positive Rate at every possible threshold. Each point on the curve is a different threshold setting. The diagonal represents random guessing (AUC = 0.5).' },
+            q6: { correct: 2, explanation: 'AUC is the probability that a randomly chosen buyer scores higher than a randomly chosen non-buyer. AUC = 0.87 means 87% of the time, the model correctly ranks a buyer above a non-buyer \u2014 strong discriminative power.' },
+            q7: { correct: 0, explanation: 'The softmax function ensures all probabilities are positive and sum to exactly 1 \u2014 just like real market shares. Try the sliders: no matter what utilities you set, the bars always total 100%.' },
+            q8: { correct: 2, explanation: 'Softmax always assigns the highest probability to the alternative with the highest utility. V = 3.1 is the largest, so Mid-Range Max wins with about 61% share. Try entering these values in the calculator above!', badge: 'strategist' }
+        };
+
+        // === Generate synthetic score distributions for confusion matrix / ROC ===
+        var scoreData = { positive: [], negative: [] };
+        var computedAUC = 0;
+        (function() {
+            var s = 314;
+            function rng() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }
+            function normalRandom(mean, std) {
+                var u1 = rng(), u2 = rng();
+                var z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+                return mean + z * std;
+            }
+            for (var i = 0; i < 100; i++) {
+                scoreData.positive.push(Math.max(0, Math.min(1, normalRandom(0.65, 0.18))));
+                scoreData.negative.push(Math.max(0, Math.min(1, normalRandom(0.38, 0.18))));
+            }
+            // Pre-compute AUC
+            var rocPts = [];
+            for (var t = 1.01; t >= -0.01; t -= 0.01) {
+                var m = computeMetricsRaw(t);
+                rocPts.push({ fpr: m.fpr, tpr: m.tpr });
+            }
+            for (var i = 1; i < rocPts.length; i++) {
+                computedAUC += (rocPts[i].fpr - rocPts[i - 1].fpr) * (rocPts[i].tpr + rocPts[i - 1].tpr) / 2;
+            }
+            computedAUC = Math.abs(computedAUC);
+        })();
+
+        function computeMetricsRaw(threshold) {
+            var tp = 0, fp = 0, fn = 0, tn = 0;
+            scoreData.positive.forEach(function(s) { if (s >= threshold) tp++; else fn++; });
+            scoreData.negative.forEach(function(s) { if (s >= threshold) fp++; else tn++; });
+            var precision = (tp + fp > 0) ? tp / (tp + fp) : 1;
+            var recall = (tp + fn > 0) ? tp / (tp + fn) : 0;
+            var accuracy = (tp + tn) / (tp + fp + fn + tn);
+            var fpr = (fp + tn > 0) ? fp / (fp + tn) : 0;
+            var tpr = recall;
+            return { tp: tp, fp: fp, fn: fn, tn: tn, precision: precision, recall: recall, accuracy: accuracy, fpr: fpr, tpr: tpr };
+        }
+
+        // === INIT ===
+        async function loadGameConfig() {
+            try {
+                var response = await fetch('config.json');
+                gameConfig = await response.json();
+            } catch (e) { console.error('Config load failed:', e); }
+        }
+
+        async function init() {
+            await loadGameConfig();
+            await initAuth();
+            if (gameConfig) gameState = createGameState(gameConfig);
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById(screenId).classList.add('active');
+            if (typeof Analytics !== 'undefined') Analytics.trackScreenView(screenId);
+            if (typeof onScreenShow === 'function') onScreenShow(screenId);
+        }
+
+        function onScreenShow(screenId) {
+            switch (screenId) {
+                case 'ch1-matrix': setTimeout(initConfusionMatrix, 50); break;
+                case 'ch2-threshold': setTimeout(function() { updateThreshold(); }, 50); break;
+                case 'ch3-roc': setTimeout(function() { updateROCExplorer(); }, 50); break;
+                case 'ch4-multinomial': setTimeout(function() { updateMultinomial(); }, 50); break;
+            }
+        }
+
+        async function startGame() {
+            if (gameConfig) gameState = createGameState(gameConfig);
+            await Analytics.trackVolumeStart();
+            updateStatsDisplay(gameState);
+            showScreen('chapter1-intro');
+        }
+
+        function selectOption(element, questionId, optionIndex) {
+            if (gameState.answeredQuestions[questionId] !== undefined) return;
+            var q = questions[questionId];
+            var result = processAnswer(gameState, questionId, optionIndex, q.correct, gameConfig);
+            if (result.alreadyAnswered) return;
+            Analytics.trackAnswer(questionId, optionIndex, q.correct, result.isCorrect, result.points, result.streak);
+            updateAnswerUI(questionId, optionIndex, q.correct, result.isCorrect);
+            showAnswerFeedback(questionId, result.isCorrect, result.points, q.explanation);
+            enableNextButton(questionId);
+            updateStatsDisplay(gameState);
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 3 });
+            if (q.badge && result.isCorrect && !gameState.badges[q.badge]) {
+                gameState.badges[q.badge] = true;
+                var badge = gameConfig.badges[q.badge];
+                unlockBadge(q.badge, badge.icon, badge.name);
+                Analytics.trackBadgeUnlock(q.badge, badge.name, questionId);
+            }
+            var answered = Object.keys(gameState.answeredQuestions).length;
+            var pct = Math.round((answered / gameConfig.totalQuestions) * 100);
+            document.getElementById('progress-percent').textContent = pct + '%';
+            document.getElementById('progress-fill').style.width = pct + '%';
+        }
+
+        function completeChapter(chapter) {
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                var b = gameConfig.badges.perfect;
+                unlockBadge('perfect', b.icon, b.name);
+                Analytics.trackBadgeUnlock('perfect', b.name);
+            }
+            document.getElementById('ch' + chapter + '-dot').classList.add('completed');
+            if (chapter < 4) document.getElementById('ch' + (chapter + 1) + '-dot').classList.add('active');
+            gameState.currentChapter = chapter + 1;
+            document.getElementById('progress-text').textContent = 'Chapter ' + Math.min(chapter + 1, 4) + ' of 4';
+            if (chapter < 4) showScreen('chapter' + (chapter + 1) + '-intro');
+            else showResults();
+        }
+
+        async function showResults() {
+            if (gameState.correctAnswers === gameConfig.totalQuestions && !gameState.badges.master) {
+                gameState.badges.master = true;
+                var b = gameConfig.badges.master;
+                unlockBadge('master', b.icon, b.name);
+                Analytics.trackBadgeUnlock('master', b.name);
+            }
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('final-correct').textContent = gameState.correctAnswers + '/' + gameConfig.totalQuestions;
+            document.getElementById('final-streak').textContent = gameState.maxStreak;
+            var grade = gameConfig.grades.find(function(g) { return gameState.correctAnswers >= g.minCorrect; });
+            if (grade) document.getElementById('results-grade').textContent = grade.title;
+            var badgeList = document.getElementById('badge-list');
+            badgeList.innerHTML = '';
+            Object.entries(gameState.badges).forEach(function(e) {
+                if (e[1] && gameConfig.badges[e[0]]) {
+                    var info = gameConfig.badges[e[0]];
+                    var d = document.createElement('div'); d.className = 'badge-item earned';
+                    var icon = document.createElement('span'); icon.className = 'badge-icon'; icon.textContent = info.icon;
+                    var n = document.createElement('span'); n.className = 'badge-name'; n.textContent = info.name;
+                    d.appendChild(icon); d.appendChild(n); badgeList.appendChild(d);
+                }
+            });
+            Analytics.trackVolumeComplete(gameState, grade ? grade.title : 'Unknown');
+            var result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) Analytics.setRunNumber(result.runNumber);
+                else alert('Score could not be saved.');
+            }
+            showScreen('results-screen');
+            if (currentUser && result && result.runNumber) setTimeout(function() { showFeedbackModal(result.runNumber); }, 500);
+        }
+
+        // =======================
+        // CONFUSION MATRIX
+        // =======================
+
+        function initConfusionMatrix() {
+            var m = computeMetricsRaw(0.5);
+            document.getElementById('cm-tp-count').textContent = m.tp;
+            document.getElementById('cm-fp-count').textContent = m.fp;
+            document.getElementById('cm-fn-count').textContent = m.fn;
+            document.getElementById('cm-tn-count').textContent = m.tn;
+        }
+
+        function selectCMCell(type) {
+            document.querySelectorAll('.cm-cell').forEach(function(c) { c.classList.remove('active'); });
+            document.getElementById('cm-' + type).classList.add('active');
+            var info = {
+                tp: '<strong>True Positive</strong> \u2014 Model said "Buy" and they DID buy. Perfect targeting! These are your hits.',
+                fp: '<strong>False Positive</strong> \u2014 Model said "Buy" but they DIDN\'T. Wasted marketing &amp; overproduction!',
+                fn: '<strong>False Negative</strong> \u2014 Model said "Skip" but they WOULD\'VE bought. Missed opportunity!',
+                tn: '<strong>True Negative</strong> \u2014 Model said "Skip" and they didn\'t buy. Correctly saved resources.'
+            };
+            document.getElementById('cm-info').innerHTML = info[type];
+        }
+
+        // =======================
+        // THRESHOLD EXPLORER
+        // =======================
+
+        function updateThreshold() {
+            var threshold = parseFloat(document.getElementById('threshold-slider').value);
+            document.getElementById('threshold-value').textContent = threshold.toFixed(2);
+            var m = computeMetricsRaw(threshold);
+
+            setMetricBar('precision', m.precision, '#4ecca3');
+            setMetricBar('recall', m.recall, '#06b6d4');
+            setMetricBar('accuracy', m.accuracy, '#ffc107');
+
+            document.getElementById('live-tp').textContent = m.tp;
+            document.getElementById('live-fp').textContent = m.fp;
+            document.getElementById('live-fn').textContent = m.fn;
+            document.getElementById('live-tn').textContent = m.tn;
+
+            drawDistributionCanvas(threshold);
+        }
+
+        function setMetricBar(id, value, color) {
+            var bar = document.getElementById('bar-' + id);
+            var pct = Math.round(value * 100);
+            bar.style.width = pct + '%';
+            bar.style.background = color;
+            bar.textContent = pct + '%';
+        }
+
+        function drawDistributionCanvas(threshold) {
+            var canvas = document.getElementById('dist-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+            var m = { top: 20, right: 15, bottom: 35, left: 15 };
+            var pw = w - m.left - m.right, ph = h - m.top - m.bottom;
+
+            function sx(v) { return m.left + v * pw; }
+            function sy(v) { return h - m.bottom - v * ph; }
+            function gaussPDF(x, mean, std) {
+                return Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
+            }
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            var maxPDF = gaussPDF(0.38, 0.38, 0.18);
+
+            // Negative class fill (red)
+            ctx.fillStyle = 'rgba(233,69,96,0.2)';
+            ctx.beginPath();
+            ctx.moveTo(sx(0), sy(0));
+            for (var i = 0; i <= 100; i++) {
+                var x = i / 100;
+                ctx.lineTo(sx(x), sy(gaussPDF(x, 0.38, 0.18) / maxPDF * 0.82));
+            }
+            ctx.lineTo(sx(1), sy(0));
+            ctx.closePath();
+            ctx.fill();
+
+            // Positive class fill (green)
+            ctx.fillStyle = 'rgba(78,204,163,0.2)';
+            ctx.beginPath();
+            ctx.moveTo(sx(0), sy(0));
+            for (var i = 0; i <= 100; i++) {
+                var x = i / 100;
+                ctx.lineTo(sx(x), sy(gaussPDF(x, 0.65, 0.18) / maxPDF * 0.82));
+            }
+            ctx.lineTo(sx(1), sy(0));
+            ctx.closePath();
+            ctx.fill();
+
+            // Negative class line
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (var i = 0; i <= 100; i++) {
+                var x = i / 100;
+                var y = gaussPDF(x, 0.38, 0.18) / maxPDF * 0.82;
+                if (i === 0) ctx.moveTo(sx(x), sy(y)); else ctx.lineTo(sx(x), sy(y));
+            }
+            ctx.stroke();
+
+            // Positive class line
+            ctx.strokeStyle = '#4ecca3';
+            ctx.beginPath();
+            for (var i = 0; i <= 100; i++) {
+                var x = i / 100;
+                var y = gaussPDF(x, 0.65, 0.18) / maxPDF * 0.82;
+                if (i === 0) ctx.moveTo(sx(x), sy(y)); else ctx.lineTo(sx(x), sy(y));
+            }
+            ctx.stroke();
+
+            // Threshold line
+            ctx.strokeStyle = '#ffc107';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(sx(threshold), sy(0));
+            ctx.lineTo(sx(threshold), sy(0.92));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Labels
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#e94560';
+            ctx.fillText('Didn\'t Buy', sx(0.25), sy(0.88));
+            ctx.fillStyle = '#4ecca3';
+            ctx.fillText('Bought', sx(0.75), sy(0.88));
+            ctx.fillStyle = '#ffc107';
+            ctx.fillText('Threshold', sx(threshold), m.top - 4);
+
+            // Axis
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Segoe UI';
+            ctx.fillText('0', sx(0), h - 5);
+            ctx.fillText('0.5', sx(0.5), h - 5);
+            ctx.fillText('1.0', sx(1), h - 5);
+            ctx.fillText('Model Score', sx(0.5), h - m.bottom + 20);
+
+            // Baseline axis
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sx(0), sy(0));
+            ctx.lineTo(sx(1), sy(0));
+            ctx.stroke();
+        }
+
+        // =======================
+        // ROC CURVE
+        // =======================
+
+        function updateROCExplorer() {
+            var threshold = parseFloat(document.getElementById('roc-threshold-slider').value);
+            var m = computeMetricsRaw(threshold);
+            document.getElementById('roc-tpr').textContent = Math.round(m.tpr * 100) + '%';
+            document.getElementById('roc-fpr').textContent = Math.round(m.fpr * 100) + '%';
+            document.getElementById('roc-threshold-display').textContent = threshold.toFixed(2);
+            drawROCCanvas(threshold);
+        }
+
+        function drawROCCanvas(currentThreshold) {
+            var canvas = document.getElementById('roc-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+            var mg = { top: 20, right: 15, bottom: 45, left: 50 };
+            var pw = w - mg.left - mg.right, ph = h - mg.top - mg.bottom;
+
+            function sx(v) { return mg.left + v * pw; }
+            function sy(v) { return h - mg.bottom - v * ph; }
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            [0, 0.25, 0.5, 0.75, 1].forEach(function(v) {
+                ctx.beginPath(); ctx.moveTo(mg.left, sy(v)); ctx.lineTo(w - mg.right, sy(v)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx(v), mg.top); ctx.lineTo(sx(v), h - mg.bottom); ctx.stroke();
+            });
+
+            // Diagonal (random)
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(1), sy(1)); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Compute ROC points
+            var rocPoints = [];
+            for (var t = 1.01; t >= -0.01; t -= 0.01) {
+                var mt = computeMetricsRaw(t);
+                rocPoints.push({ fpr: mt.fpr, tpr: mt.tpr });
+            }
+
+            // AUC shading
+            ctx.fillStyle = 'rgba(78,204,163,0.12)';
+            ctx.beginPath();
+            ctx.moveTo(sx(0), sy(0));
+            rocPoints.forEach(function(p) { ctx.lineTo(sx(p.fpr), sy(p.tpr)); });
+            ctx.lineTo(sx(1), sy(0));
+            ctx.closePath();
+            ctx.fill();
+
+            // ROC curve
+            ctx.strokeStyle = '#4ecca3';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            rocPoints.forEach(function(p, i) {
+                if (i === 0) ctx.moveTo(sx(p.fpr), sy(p.tpr));
+                else ctx.lineTo(sx(p.fpr), sy(p.tpr));
+            });
+            ctx.stroke();
+
+            // Current threshold dot
+            var cm = computeMetricsRaw(currentThreshold);
+            ctx.beginPath();
+            ctx.arc(sx(cm.fpr), sy(cm.tpr), 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#e94560';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(mg.left, mg.top);
+            ctx.lineTo(mg.left, h - mg.bottom);
+            ctx.lineTo(w - mg.right, h - mg.bottom);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'right';
+            [0, 0.5, 1].forEach(function(v) { ctx.fillText(v.toFixed(1), mg.left - 6, sy(v) + 3); });
+            ctx.textAlign = 'center';
+            [0, 0.5, 1].forEach(function(v) { ctx.fillText(v.toFixed(1), sx(v), h - mg.bottom + 14); });
+            ctx.fillText('False Positive Rate', w / 2, h - 3);
+            ctx.save();
+            ctx.translate(14, h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('True Positive Rate', 0, 0);
+            ctx.restore();
+
+            // AUC label
+            ctx.fillStyle = '#4ecca3';
+            ctx.font = 'bold 13px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('AUC = ' + computedAUC.toFixed(2), sx(0.65), sy(0.25));
+        }
+
+        // =======================
+        // MULTINOMIAL
+        // =======================
+
+        function updateMultinomial() {
+            var v1 = parseFloat(document.getElementById('util-budget').value);
+            var v2 = parseFloat(document.getElementById('util-midrange').value);
+            var v3 = parseFloat(document.getElementById('util-premium').value);
+
+            document.getElementById('util-budget-val').textContent = v1.toFixed(1);
+            document.getElementById('util-midrange-val').textContent = v2.toFixed(1);
+            document.getElementById('util-premium-val').textContent = v3.toFixed(1);
+
+            var e1 = Math.exp(v1), e2 = Math.exp(v2), e3 = Math.exp(v3);
+            var sum = e1 + e2 + e3;
+
+            setProductBar('budget', e1 / sum);
+            setProductBar('midrange', e2 / sum);
+            setProductBar('premium', e3 / sum);
+        }
+
+        function setProductBar(id, p) {
+            var bar = document.getElementById('bar-' + id);
+            var pct = Math.round(p * 100);
+            bar.style.width = pct + '%';
+            bar.textContent = pct + '%';
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

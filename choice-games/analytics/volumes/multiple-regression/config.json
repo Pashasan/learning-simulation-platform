@@ -1,0 +1,36 @@
+{
+  "id": "multiple-regression",
+  "title": "The Budget Lab",
+  "subtitle": "CloudTech Marketing Analytics",
+  "tagline": "Where Multiple Channels Meet",
+  "description": "Learn multiple regression by optimizing marketing budget allocation across channels",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 5,
+  "totalQuestions": 10,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Steps", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "3+ Streak" },
+    "perfect": { "icon": "⭐", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "coefficient": { "icon": "📐", "name": "Coefficient Expert", "description": "Mastered 'holding constant'" },
+    "collinearity": { "icon": "🔍", "name": "Collinearity Detective", "description": "VIF Master" },
+    "master": { "icon": "🏆", "name": "Marketing Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 9, "title": "Chief Marketing Officer" },
+    { "minCorrect": 7, "title": "Marketing Director" },
+    { "minCorrect": 5, "title": "Marketing Manager" },
+    { "minCorrect": 3, "title": "Marketing Analyst" },
+    { "minCorrect": 0, "title": "Marketing Intern" }
+  ]
+}

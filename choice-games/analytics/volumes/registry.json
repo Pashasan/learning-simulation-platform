@@ -1,0 +1,80 @@
+[
+  {
+    "id": "tutorial",
+    "name": "Data Basics Tutorial",
+    "title": "Data Basics",
+    "icon": "📈",
+    "number": "Tutorial",
+    "description": "A beginner-friendly introduction to understanding and visualizing data. Perfect for getting started!",
+    "questions": 4,
+    "time": "~5 min",
+    "topics": ["Mean & Median", "Variability", "Histograms"],
+    "leaderboardTab": "Tutorial",
+    "order": 1
+  },
+  {
+    "id": "regression",
+    "name": "Linear Regression",
+    "title": "Regression Analysis",
+    "icon": "🎯",
+    "number": "Volume 1",
+    "description": "Join SportsBrand's analytics team and discover if Instagram ads really drive website traffic.",
+    "questions": 8,
+    "time": "~15 min",
+    "topics": ["Linear Regression", "Correlation", "Confidence Intervals"],
+    "leaderboardTab": "Linear Reg.",
+    "order": 2
+  },
+  {
+    "id": "multiple-regression",
+    "name": "Multiple Regression",
+    "title": "Multiple Regression",
+    "icon": "📊",
+    "number": "Volume 2",
+    "description": "Help Maya optimize CloudTech's marketing budget across 5 channels. Learn how multiple predictors work together and how to interpret their effects.",
+    "questions": 10,
+    "time": "~20 min",
+    "topics": ["Multiple Predictors", "P-values & CIs", "Multicollinearity"],
+    "leaderboardTab": "Multiple Reg.",
+    "order": 3
+  },
+  {
+    "id": "discrete-choice",
+    "name": "The Choice Lab",
+    "title": "Binary Choice",
+    "icon": "🎧",
+    "number": "Volume 3",
+    "description": "Help BeatBox Audio launch earbuds by modeling what drives consumer choice. Interactive S-curve explorer and live prediction calculator.",
+    "questions": 8,
+    "time": "~10 min",
+    "topics": ["Logistic Regression", "S-Curve", "Coefficients", "Prediction"],
+    "leaderboardTab": "Choice Lab",
+    "order": 4
+  },
+  {
+    "id": "choice-evaluation",
+    "name": "The Choice Lab: Evaluation",
+    "title": "Choice Evaluation",
+    "icon": "🔍",
+    "number": "Volume 4",
+    "description": "Evaluate BeatBox's model with confusion matrices, ROC curves, and extend to multinomial choice with interactive tools.",
+    "questions": 8,
+    "time": "~10 min",
+    "topics": ["Confusion Matrix", "Precision & Recall", "AUC & ROC", "Multinomial Logit"],
+    "leaderboardTab": "Evaluation",
+    "order": 5
+  },
+  {
+    "id": "ab-testing",
+    "name": "The StreamVerse Lab",
+    "title": "A/B Testing",
+    "icon": "🧪",
+    "number": "Volume 5",
+    "description": "Join StreamVerse's product team and test whether new thumbnails increase click-through rates. Learn experiment design, chi-square tests, and data-driven decisions.",
+    "questions": 8,
+    "time": "~15 min",
+    "topics": ["Randomization", "Chi-Square Test", "P-values", "Bonferroni Correction"],
+    "leaderboardTab": "A/B Testing",
+    "order": 6
+  }
+]

@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>The Budget Lab | CloudTech Analytics</title>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+    <style>
+        /* Additional styles for interactive charts */
+        .chart-area {
+            position: relative;
+        }
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(26, 26, 46, 0.95);
+            border: 1px solid #4ecca3;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #fff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            white-space: nowrap;
+        }
+        .chart-tooltip.visible {
+            opacity: 1;
+        }
+        canvas {
+            cursor: crosshair;
+        }
+        .results-summary ul {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+        .results-summary ul li {
+            padding: 8px 0;
+            padding-left: 28px;
+            position: relative;
+            line-height: 1.5;
+        }
+        .results-summary ul li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4ecca3;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">CloudTech Budget Lab</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Steps">
+                        <span>🎯</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>🔥</span>
+                        <div class="badge-tooltip">3+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>⭐</span>
+                        <div class="badge-tooltip">Perfect Chapter</div>
+                    </div>
+                    <div class="badge" id="badge-coefficient" title="Coefficient Expert">
+                        <span>📐</span>
+                        <div class="badge-tooltip">Holding Constant Master</div>
+                    </div>
+                    <div class="badge" id="badge-collinearity" title="Collinearity Detective">
+                        <span>🔍</span>
+                        <div class="badge-tooltip">VIF Master</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Marketing Master">
+                        <span>🏆</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 5</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+                <div class="chapter-dot" id="ch5-dot">5</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Title Screen -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>The Budget Lab</h1>
+                    <p class="subtitle">CloudTech Marketing Analytics</p>
+                    <p class="arena-subtitle">Where Multiple Channels Meet</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat">
+                            <div class="value">$500K</div>
+                            <div class="label">Monthly Budget</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">5</div>
+                            <div class="label">Ad Channels</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">?</div>
+                            <div class="label">Optimal Mix</div>
+                        </div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg" viewBox="0 0 60 60">
+                                <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                                <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#9333ea"/>
+                                <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                                <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                            </svg>
+                            <div>
+                                <strong>Meet Maya</strong>
+                                <p style="color: #888; font-size: 0.9em;">CMO at CloudTech SaaS</p>
+                            </div>
+                        </div>
+                        <p>Maya runs marketing for <span class="highlight">CloudTech</span>, a B2B software company. She has a $500K monthly budget spread across <em>Google Ads, Facebook, LinkedIn, Content Marketing, and Email</em>.</p>
+                        <br>
+                        <p>The CEO wants to know: <strong>Which channels actually drive conversions?</strong> In the next <span class="highlight">20 minutes</span>, you'll help Maya by learning:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>How multiple marketing channels work together</li>
+                            <li>Interpreting coefficients ("holding constant")</li>
+                            <li>Statistical significance and confidence intervals</li>
+                            <li>Handling multicollinearity in marketing data</li>
+                        </ul>
+                        <p style="color: #888; margin-top: 15px;"><em>Help Maya make data-driven budget decisions!</em></p>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Start Analysis</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: The Budget Puzzle -->
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Budget Puzzle</h2>
+                    <p class="chapter-desc">Why one channel isn't enough</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#9333ea"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">CMO</span></div>
+                        <p>"I've collected 12 months of data across all our marketing channels. Some months we spent heavily on Google, others on LinkedIn. But when I look at conversions, the patterns are confusing! What actually drives results?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">In <span class="highlight">simple regression</span>, we use one variable to predict another. But in marketing, <strong>multiple channels</strong> work together:</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>💰 Paid Channels</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Google Ads (Search & Display)</li>
+                            <li>Facebook/Instagram Ads</li>
+                            <li>LinkedIn Ads</li>
+                        </ul>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>📈 Organic Channels</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Content Marketing (Blog, SEO)</li>
+                            <li>Email Campaigns</li>
+                            <li>Product-led Growth</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-simple')">See the Problem</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Simple vs Multiple -->
+            <div class="screen" id="chapter1-simple">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Limits of Simple Regression</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="simple-scatter-canvas" width="500" height="400"></canvas>
+                        <div class="chart-tooltip" id="scatter-tooltip"></div>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Google Ads vs Conversions</h3>
+                        <div class="metric">
+                            <span class="metric-label">Correlation</span>
+                            <span class="metric-value">0.62</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">R² (Google only)</span>
+                            <span class="metric-value">0.38</span>
+                        </div>
+                        <p style="margin-top: 15px; color: #888;">Using Google Ads spend alone explains only 38% of conversion variation. We're missing something!</p>
+
+                        <div class="warning-box" style="margin-top: 20px;">
+                            <h4>🤔 Notice the Spread</h4>
+                            <p style="font-size: 0.9em;">Months with similar Google spend have very different conversions. Other channels must matter!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Looking at this pattern, what should Maya include in her analysis to better explain conversion variation?</div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">Nothing more - Google Ads alone should be sufficient to predict conversions</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">Other marketing channels like Facebook, LinkedIn, and Email that also drive conversions</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">She should remove the outlier months that don't fit the expected pattern</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 3)">More years of historical data before drawing any conclusions about Google Ads</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('chapter1-multiple')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Multiple Factors -->
+            <div class="screen" id="chapter1-multiple">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Seeing All Channels at Once</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="multi-factor-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Multiple Channels</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Each channel shows a relationship with conversions!</p>
+
+                        <div class="metric">
+                            <span class="metric-label">Google Ads</span>
+                            <span class="metric-value">+2.8/1K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn Ads</span>
+                            <span class="metric-value">+4.2/1K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content Marketing</span>
+                            <span class="metric-value">+3.5/1K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Email</span>
+                            <span class="metric-value">+2.1/1K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Combined R²</span>
+                            <span class="metric-value highlight">0.82</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>💡 Key Insight</h3>
+                    <p>Multiple regression lets us measure each channel's impact <strong>while accounting for the others</strong>. The combined model explains 82% of conversion variation - much better than 38%!</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What is the main advantage of multiple regression over simple regression for marketing analysis?</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">It's faster to compute and easier to explain to stakeholders in the organization</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">It isolates each channel's effect while controlling for others</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">It eliminates all uncertainty and randomness from the marketing budget decisions</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">It requires less data and works better with limited historical campaign information</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-simple')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="completeChapter(1)" disabled>Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: The Equation -->
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Building the Model</h2>
+                    <p class="chapter-desc">Understanding the multiple regression equation</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#4ecca3"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="22" y="14" width="16" height="6" rx="1" fill="rgba(255,255,255,0.3)"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Jordan <span class="role-badge">Data Analyst</span></div>
+                        <p>"Let me help you build a conversion model, Maya! We'll use multiple regression to see how each channel affects conversions. The equation looks like this..."</p>
+                    </div>
+                </div>
+
+                <div class="equation-display" style="font-size: 1.0em; padding: 25px; margin: 20px 0;">
+                    Conversions = β₀ + β₁(Google) + β₂(Facebook) + β₃(LinkedIn) + β₄(Content) + β₅(Email) + ε
+                </div>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>📊 What Each Part Means</h3>
+                        <ul style="margin-top: 10px; line-height: 2;">
+                            <li><strong>β₀</strong> = Baseline conversions (intercept)</li>
+                            <li><strong>β₁, β₂...</strong> = Effect of each $1K spend</li>
+                            <li><strong>ε</strong> = Random variation we can't explain</li>
+                        </ul>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>🎯 Maya's Model Results</h3>
+                        <ul style="margin-top: 10px; line-height: 2;">
+                            <li>Intercept: 120 conversions</li>
+                            <li>Per $1K Google: +2.8</li>
+                            <li>Per $1K LinkedIn: +4.2</li>
+                            <li>Per $1K Content: +3.5</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-multiple')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-coefficients')">Learn Coefficients</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Coefficient Interpretation -->
+            <div class="screen" id="chapter2-coefficients">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Key Insight: "Holding Constant"</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="coefficient-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Coefficient Values</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Conversions per $1K spend</p>
+
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn Ads</span>
+                            <span class="metric-value highlight">+4.2</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content Marketing</span>
+                            <span class="metric-value">+3.5</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Google Ads</span>
+                            <span class="metric-value">+2.8</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Email</span>
+                            <span class="metric-value">+2.1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>🔑 Critical Interpretation</h4>
+                    <p>When we say "each $1K on LinkedIn adds 4.2 conversions," we mean: <em>"Holding Google, Facebook, Content, and Email spend constant, each additional $1K on LinkedIn is associated with 4.2 more conversions."</em></p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The LinkedIn coefficient is 4.2. What's the correct interpretation?</div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">Spending $1K on LinkedIn always gives exactly 4.2 conversions regardless of other factors</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">Holding other channels constant, each $1K on LinkedIn is associated with 4.2 more conversions</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">LinkedIn is 4.2 times more effective than all the other marketing channels combined</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">Approximately 4.2% of total conversions are directly attributable to LinkedIn campaigns</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('chapter2-prediction')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Making Predictions -->
+            <div class="screen" id="chapter2-prediction">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Maya's Conversion Prediction</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#9333ea"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">CMO</span></div>
+                        <p>"Let me apply this to next month's budget! I'm planning: $150K Google, $80K Facebook, $100K LinkedIn, $120K Content, and $50K Email. How many conversions should I expect?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>📝 Next Month's Budget ($500K Total)</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                        <div class="metric">
+                            <span class="metric-label">Google Ads</span>
+                            <span class="metric-value">$150K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Facebook Ads</span>
+                            <span class="metric-value">$80K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn Ads</span>
+                            <span class="metric-value">$100K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content</span>
+                            <span class="metric-value">$120K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Email</span>
+                            <span class="metric-value">$50K</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Baseline</span>
+                            <span class="metric-value">120</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scenario-card" style="margin-top: 20px;">
+                    <h3>🤔 Testing Understanding</h3>
+                    <p>Maya is considering a change: What if she moved $50K from Content Marketing to LinkedIn?</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">If Maya shifts $50K from Content (coefficient: 3.5) to LinkedIn (coefficient: 4.2), what happens to predicted conversions?</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">Conversions decrease because Content Marketing has more long-term brand value</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">Conversions increase by 35 because LinkedIn's coefficient is 0.7 higher per $1K</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">Conversions stay the same because the total budget is unchanged</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">Cannot determine without knowing the baseline conversion rate</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-coefficients')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="completeChapter(2)" disabled>Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Statistical Significance -->
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Which Channels Really Matter?</h2>
+                    <p class="chapter-desc">P-values and statistical significance</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#ffc107"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="20" y="38" width="20" height="2" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Alex <span class="role-badge">CEO</span></div>
+                        <p>"Nice model, Maya. But how do we know these effects are real and not just noise in the data? I need statistical proof before I approve this budget allocation."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">Every coefficient has a <span class="highlight">p-value</span> that tells us the probability of seeing that result by chance if the channel had no real effect.</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>✅ p < 0.05 (Significant)</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Less than 5% chance of fluke</li>
+                            <li>The effect is probably real</li>
+                            <li>Safe to include in budget decisions</li>
+                        </ul>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>⚠️ p ≥ 0.05 (Not Significant)</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Could be random noise</li>
+                            <li>Can't confidently claim an effect</li>
+                            <li>Need more data or reconsider</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-prediction')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-pvalues')">See P-Values</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: P-Values -->
+            <div class="screen" id="chapter3-pvalues">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Channel Significance</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="pvalue-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>P-Value Results</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Green = Significant (p < 0.05)</p>
+
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn</span>
+                            <span class="metric-value highlight">p = 0.002 ✓</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content</span>
+                            <span class="metric-value highlight">p = 0.008 ✓</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Google</span>
+                            <span class="metric-value highlight">p = 0.024 ✓</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Facebook</span>
+                            <span class="metric-value" style="color: #888;">p = 0.078</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Facebook Ads has p = 0.078. What should Maya conclude?</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">Facebook definitely doesn't work for B2B - recommend stopping all spend immediately</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">Can't be confident the effect is real at 5% level, but it's close - need more data</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">Facebook is clearly the most effective channel and should receive increased budget</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">The model is broken and should be rebuilt using different statistical methods</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('chapter3-ci')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Confidence Intervals -->
+            <div class="screen" id="chapter3-ci">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Confidence Intervals</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="ci-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>95% Confidence Intervals</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Range of plausible true values</p>
+
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn</span>
+                            <span class="metric-value">[3.1, 5.3]</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content</span>
+                            <span class="metric-value">[2.2, 4.8]</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Facebook</span>
+                            <span class="metric-value">[-0.2, 3.2]</span>
+                        </div>
+
+                        <div class="warning-box" style="margin-top: 15px;">
+                            <h4>⚠️ Watch for Zero</h4>
+                            <p style="font-size: 0.85em;">If the CI includes zero, we can't be sure the channel has any effect!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Facebook's 95% CI is [-0.2, 3.2]. Why is this concerning?</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">The upper bound of 3.2 is lower than LinkedIn's coefficient of 4.2, proving Facebook is inferior</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">The interval includes zero, meaning the true effect could be negative, zero, or positive</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">The numbers are too small to justify the current level of investment in Facebook ads</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">Confidence intervals should always be symmetric around zero for unbiased estimates</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-pvalues')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="completeChapter(3)" disabled>Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Multicollinearity -->
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">The Collinearity Problem</h2>
+                    <p class="chapter-desc">When channels are correlated</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#4ecca3"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="22" y="14" width="16" height="6" rx="1" fill="rgba(255,255,255,0.3)"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Jordan <span class="role-badge">Data Analyst</span></div>
+                        <p>"Maya, I found a problem! Google and Facebook spend are highly correlated - when you increase one, you usually increase the other. This makes it hard to separate their individual effects."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;"><span class="highlight">Multicollinearity</span> occurs when predictor variables are correlated with each other. This inflates standard errors and makes individual coefficients unreliable.</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>🤔 The Problem</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Hard to isolate each channel's effect</li>
+                            <li>Coefficients become unstable</li>
+                            <li>Wide confidence intervals</li>
+                        </ul>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>📊 VIF (Variance Inflation Factor)</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>VIF = 1: No correlation</li>
+                            <li>VIF > 5: Moderate concern</li>
+                            <li>VIF > 10: Serious problem</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-ci')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-vif-intuition')">Understanding VIF</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: VIF Intuition -->
+            <div class="screen" id="chapter4-vif-intuition">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Building VIF Intuition</h2>
+                    <p class="chapter-desc">What VIF really measures and why it matters</p>
+                </div>
+
+                <div class="scenario-card" style="margin-bottom: 20px;">
+                    <h3>🎯 The Core Idea</h3>
+                    <p style="line-height: 1.8; margin-top: 10px;">VIF answers: <em>"How much harder is it to estimate this channel's effect because it moves together with other channels?"</em></p>
+                </div>
+
+                <!-- Interactive VIF Demo -->
+                <div class="canvas-container" style="margin-bottom: 20px;">
+                    <div class="chart-area">
+                        <canvas id="vif-demo-canvas" width="450" height="300"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>🎮 Try It!</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Adjust correlation between Google & Facebook spend:</p>
+                        <div style="margin: 15px 0;">
+                            <input type="range" id="correlation-slider" min="0" max="95" value="0"
+                                   style="width: 100%; cursor: pointer;"
+                                   oninput="updateVIFDemo()">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #888;">
+                                <span>Independent</span>
+                                <span>Highly Correlated</span>
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Correlation (r)</span>
+                            <span class="metric-value" id="correlation-value">0.00</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">VIF
+                                <span class="info-icon">?
+                                    <span class="info-tooltip">
+                                        <strong>VIF = 1 / (1 - R²)</strong><br><br>
+                                        R² is from regressing this variable on all others. If perfectly predicted by others (R²=1), VIF→∞. If independent (R²=0), VIF=1.<br><br>
+                                        <em>Why "Variance Inflation"?</em> VIF shows how much the standard error is inflated. VIF=5 means SE is √5 ≈ 2.2x larger than with no collinearity.
+                                    </span>
+                                </span>
+                            </span>
+                            <span class="metric-value" id="vif-value" style="color: #4ecca3;">1.00</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Confidence Interval Width</span>
+                            <span class="metric-value" id="ci-width">±0.8</span>
+                        </div>
+                        <p id="vif-interpretation" style="margin-top: 15px; font-size: 0.85em; color: #4ecca3;">
+                            ✓ Variables are independent - coefficient estimates are precise!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="scenario-card" style="margin-top: 20px;">
+                    <h3>💡 What You Just Saw</h3>
+                    <p style="line-height: 1.8; margin-top: 10px;">As correlation increases, the scatter plot becomes more "line-like" - the two channels move together. This makes it impossible to tell which one is driving results.</p>
+                    <p style="line-height: 1.8; margin-top: 10px; color: #ffc107;">⚠️ High VIF doesn't mean your model is wrong - it means you're less certain about <em>individual</em> channel effects. The <em>combined prediction</em> can still be excellent!</p>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-vif')">See Maya's VIF Analysis</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: VIF Analysis -->
+            <div class="screen" id="chapter4-vif">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">VIF Analysis</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="vif-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Variance Inflation Factors</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Higher = more correlation issues</p>
+
+                        <div class="metric">
+                            <span class="metric-label">Google Ads</span>
+                            <span class="metric-value" style="color: #e94560;">VIF = 6.2</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Facebook Ads</span>
+                            <span class="metric-value" style="color: #e94560;">VIF = 5.8</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">LinkedIn</span>
+                            <span class="metric-value">VIF = 2.1</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Content</span>
+                            <span class="metric-value">VIF = 1.4</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ Google & Facebook Issue</h4>
+                    <p>Both have VIF > 5, meaning they're correlated. Maya tends to increase both together during campaigns. For budget prediction, this is okay. For determining which channel is "better," it's problematic.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Google and Facebook both have VIF > 5. What should Maya do?</div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">Remove both Google and Facebook channels from the model to eliminate the problem</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">For prediction it's fine; for interpreting individual effects, be cautious or combine them</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">Ignore the VIF values since they don't really matter for marketing budget decisions</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">Start over with new data collected using a completely different experimental design</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('chapter4-dummy')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 4: Dummy Variables -->
+            <div class="screen" id="chapter4-dummy">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Categorical Variables</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#9333ea"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">CMO</span></div>
+                        <p>"We also track whether it's a product launch month or not. How do we include yes/no variables in the model?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;">Categorical variables use <span class="highlight">dummy coding</span>: 0 or 1 values. The coefficient shows the effect compared to the <strong>reference category</strong>.</p>
+
+                <div class="scenario-card">
+                    <h3>📊 Launch Month Effect</h3>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 15px;">
+                        <div class="metric">
+                            <span class="metric-label">Reference: Normal Month</span>
+                            <span class="metric-value">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Launch Month Coefficient</span>
+                            <span class="metric-value highlight">+45</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 15px; color: #888;">Interpretation: Launch months get 45 more conversions than normal months, holding marketing spend constant.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The "Launch Month" coefficient is +45. What's the correct interpretation?</div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Launch months always have exactly 45 conversions regardless of marketing spend levels</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">Holding marketing spend constant, launch months have 45 more conversions than normal months</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">Approximately 45% of all conversions happen during product launch periods</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">We should only invest in marketing during launches since they drive all the results</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-vif')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="completeChapter(4)" disabled>Complete Chapter 4</button>
+                </div>
+            </div>
+
+            <!-- Chapter 5: Model Quality -->
+            <div class="screen" id="chapter5-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 5</div>
+                    <h2 class="chapter-title">How Good is Our Model?</h2>
+                    <p class="chapter-desc">R² and model assumptions</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#ffc107"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="20" y="38" width="20" height="2" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Alex <span class="role-badge">CEO</span></div>
+                        <p>"Maya, before I approve this budget, how confident are you in the model? What are its limitations?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 20px 0; line-height: 1.8;"><span class="highlight">R² (R-squared)</span> tells us what percentage of variation in conversions our model explains. But even a good R² doesn't guarantee a perfect model.</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>✅ Our Model: R² = 0.82</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Explains 82% of conversion variance</li>
+                            <li>18% comes from unmeasured factors</li>
+                            <li>Strong predictive power!</li>
+                        </ul>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>⚠️ What's Missing?</h3>
+                        <ul style="margin-top: 10px; line-height: 1.8;">
+                            <li>Competitor actions</li>
+                            <li>Seasonality effects</li>
+                            <li>Product changes</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-dummy')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter5-assumptions')">Check Assumptions</button>
+                </div>
+            </div>
+
+            <!-- Chapter 5: Assumptions -->
+            <div class="screen" id="chapter5-assumptions">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 5</div>
+                    <h2 class="chapter-title">Model Diagnostics</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="residual-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Actual vs Predicted</h3>
+                        <p style="color: #888; margin-bottom: 15px;">Points near the line = good predictions</p>
+
+                        <div class="metric">
+                            <span class="metric-label">R²</span>
+                            <span class="metric-value highlight">0.82</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">RMSE</span>
+                            <span class="metric-value">45 conversions</span>
+                        </div>
+
+                        <div class="warning-box" style="margin-top: 15px;">
+                            <h4>💡 Key Check</h4>
+                            <p style="font-size: 0.85em;">Random scatter around the line is good. Patterns would indicate model problems.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">R² = 0.82. What does this mean for Maya's budget decisions?</div>
+                    <div class="options" id="q9-options">
+                        <div class="option" onclick="selectOption(this, 'q9', 0)">82% of conversion variation is explained by our marketing channels - strong model!</div>
+                        <div class="option" onclick="selectOption(this, 'q9', 1)">The model correctly predicts conversions 82% of the time with high confidence</div>
+                        <div class="option" onclick="selectOption(this, 'q9', 2)">82% of the marketing budget is being spent effectively on converting customers</div>
+                        <div class="option" onclick="selectOption(this, 'q9', 3)">We need at least 82 data points before this model becomes statistically reliable</div>
+                    </div>
+                    <div class="feedback" id="q9-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter5-intro')">Back</button>
+                    <button class="btn btn-primary" id="q9-next" onclick="showScreen('chapter5-final')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Chapter 5: Final Recommendation -->
+            <div class="screen" id="chapter5-final">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 5</div>
+                    <h2 class="chapter-title">Maya's Budget Recommendation</h2>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="prediction-canvas" width="500" height="400"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Predicted Conversions</h3>
+                        <div class="metric">
+                            <span class="metric-label">Point Estimate</span>
+                            <span class="metric-value highlight">1,775</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">95% CI Lower</span>
+                            <span class="metric-value">1,620</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">95% CI Upper</span>
+                            <span class="metric-value">1,930</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Summary Table for Decision Making -->
+                <div class="scenario-card" style="margin: 20px 0;">
+                    <h3>📋 Channel Summary for Reallocation Decision</h3>
+                    <table style="width: 100%; margin-top: 15px; border-collapse: collapse; font-size: 0.9em;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #4ecca3;">
+                                <th style="text-align: left; padding: 8px;">Channel</th>
+                                <th style="text-align: center; padding: 8px;">Coefficient</th>
+                                <th style="text-align: center; padding: 8px;">P-value</th>
+                                <th style="text-align: center; padding: 8px;">VIF</th>
+                                <th style="text-align: center; padding: 8px;">Reliable?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <td style="padding: 8px;">Google Ads</td>
+                                <td style="text-align: center; padding: 8px;">+2.8</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">0.003</td>
+                                <td style="text-align: center; padding: 8px; color: #e94560;">6.2</td>
+                                <td style="text-align: center; padding: 8px; color: #ffc107;">⚠️ High VIF</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <td style="padding: 8px;">Facebook Ads</td>
+                                <td style="text-align: center; padding: 8px;">+1.5</td>
+                                <td style="text-align: center; padding: 8px; color: #ffc107;">0.078</td>
+                                <td style="text-align: center; padding: 8px; color: #e94560;">5.8</td>
+                                <td style="text-align: center; padding: 8px; color: #e94560;">❌ Not significant + High VIF</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <td style="padding: 8px;">LinkedIn Ads</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3; font-weight: bold;">+4.2</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">0.001</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">2.1</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">✓ Reliable</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <td style="padding: 8px;">Content Marketing</td>
+                                <td style="text-align: center; padding: 8px;">+3.5</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">0.008</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">1.4</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">✓ Reliable</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;">Email</td>
+                                <td style="text-align: center; padding: 8px;">+2.1</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">0.015</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">1.2</td>
+                                <td style="text-align: center; padding: 8px; color: #4ecca3;">✓ Reliable</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="margin-top: 12px; font-size: 0.85em; color: #888;"><strong>Key:</strong> VIF > 5 = high collinearity (less reliable). P-value > 0.05 = not statistically significant.</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#9333ea"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="2" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">CMO</span></div>
+                        <p>"Based on the analysis, I'm presenting this budget to the board with an expected 1,775 conversions. Now the CEO is asking: can we reallocate to improve results? I need to consider what we learned about coefficients, significance, and collinearity..."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Maya wants to reallocate budget. Given what you've learned about coefficients, statistical significance, and collinearity, which reallocation makes the most sense?</div>
+                    <div class="options" id="q10-options">
+                        <div class="option" onclick="selectOption(this, 'q10', 0)">Shift $50K from Email to LinkedIn - both have reliable coefficients (low VIF) and LinkedIn's is higher</div>
+                        <div class="option" onclick="selectOption(this, 'q10', 1)">Shift $50K from Facebook to Google - Google has the largest market reach potential</div>
+                        <div class="option" onclick="selectOption(this, 'q10', 2)">Shift $50K from Google to Facebook - Facebook's p-value of 0.078 suggests untapped potential</div>
+                        <div class="option" onclick="selectOption(this, 'q10', 3)">Eliminate Email entirely and split it between Google and Facebook for synergy effects</div>
+                    </div>
+                    <div class="feedback" id="q10-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter5-assumptions')">Back</button>
+                    <button class="btn btn-primary" id="q10-next" onclick="completeChapter(5)" disabled>Complete Chapter 5</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Analysis Complete!</h1>
+                    <p style="color: #4ecca3; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've completed the multiple regression training</p>
+
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="results-grade">-</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="final-correct">0/10</div>
+                            <div class="stat-label">Questions Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="final-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned -->
+                    <div class="badges-earned" id="badges-earned" style="margin: 20px 0;">
+                        <h3 style="margin-bottom: 15px;">Badges Earned</h3>
+                        <div class="badge-list" id="badge-list"></div>
+                    </div>
+
+                    <!-- Cheat Sheet -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>📋 Multiple Regression Cheat Sheet - Save This!</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Multiple Regression Equation</div>
+                                <div class="definition">Predicts Y from multiple X variables simultaneously</div>
+                                <div class="formula">Y = β₀ + β₁X₁ + β₂X₂ + ... + ε</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Coefficient Interpretation</div>
+                                <div class="definition">Effect of Xⱼ on Y, holding all other variables constant</div>
+                                <div class="formula">"Each $1K on LinkedIn → +4.2 conversions"</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">P-value</div>
+                                <div class="definition">Probability of seeing this result if there's no real effect</div>
+                                <div class="formula">p < 0.05 = statistically significant</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Confidence Interval</div>
+                                <div class="definition">Range where the true coefficient likely falls (95% confidence)</div>
+                                <div class="formula">CI includes 0 → effect might not exist</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">VIF (Variance Inflation Factor)</div>
+                                <div class="definition">Measures how much collinearity inflates coefficient uncertainty</div>
+                                <div class="formula">VIF = 1/(1-R²) | VIF > 5 = concern</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">R² (R-Squared)</div>
+                                <div class="definition">Proportion of variance in Y explained by all X variables together</div>
+                                <div class="formula">0.82 = 82% of variation explained</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">⚠️ Multicollinearity</div>
+                                <div class="definition">When predictors are correlated with each other. Makes individual effects hard to estimate, but predictions can still be good.</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">⚠️ Dummy Variables</div>
+                                <div class="definition">Categorical variables (0/1) like "Launch Month". Coefficient = difference from reference category, holding other vars constant.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-buttons" style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('allRuns');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="exitToVolumes()">Return to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Screen -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>🏆 Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from The Budget Lab</p>
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+                    <div class="nav-buttons" style="margin-top: 30px;">
+                        <button class="btn btn-secondary" onclick="showScreen(gameState.correctAnswers > 0 ? 'results-screen' : 'title-screen')">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume ID for feedback tracking
+        const VOLUME_ID = 'multiple-regression';
+
+        // Game state
+        let gameState = null;
+
+        // Marketing data for visualizations (scaled for chart display)
+        const marketingData = [];
+        for (let i = 0; i < 50; i++) {
+            const google = 80 + Math.random() * 120;   // 80-200
+            const facebook = 40 + Math.random() * 80;  // 40-120
+            const linkedin = 50 + Math.random() * 90;  // 50-140
+            const content = 60 + Math.random() * 100;  // 60-160
+            const email = 20 + Math.random() * 60;     // 20-80
+            const isLaunch = Math.random() > 0.8 ? 1 : 0;
+            const noise = (Math.random() - 0.5) * 60;
+            // Scaled coefficients for visualization
+            const conversions = 150 + google * 1.8 + facebook * 0.9 + linkedin * 2.5 + content * 2.0 + email * 1.2 + isLaunch * 30 + noise;
+            marketingData.push({ google, facebook, linkedin, content, email, isLaunch, conversions });
+        }
+
+        // Question answers and explanations
+        const questions = {
+            q1: {
+                correct: 1,
+                explanation: "Marketing works as a system! A month with high Google spend might have low conversions if other channels were cut. To explain more of the variation, Maya needs to include all marketing channels in her model - that's the power of multiple regression."
+            },
+            q2: {
+                correct: 1,
+                explanation: "Multiple regression isolates each channel's unique contribution while controlling for others. This lets us say 'each $1K on LinkedIn adds 4.2 conversions, holding other channel spend constant.'"
+            },
+            q3: {
+                correct: 1,
+                explanation: "The 'holding constant' interpretation is crucial! It means comparing months with identical spend on all other channels. This isolates LinkedIn's true effect.",
+                badge: 'coefficient'
+            },
+            q4: {
+                correct: 1,
+                explanation: "The difference in coefficients (4.2 - 3.5 = 0.7) tells us how much more effective LinkedIn is per $1K. Moving $50K means: 50 × 0.7 = 35 more conversions. This is the power of regression - comparing channel effectiveness directly!"
+            },
+            q5: {
+                correct: 1,
+                explanation: "p = 0.078 is above 0.05, so we can't be confident at the 5% level. However, it's close - the effect might be real but we need more data to be sure. Maya shouldn't abandon Facebook entirely."
+            },
+            q6: {
+                correct: 1,
+                explanation: "When a 95% CI includes zero, we can't be confident the effect is different from zero. Facebook's true effect could be positive, negative, or zero - we need more data or should be cautious."
+            },
+            q7: {
+                correct: 1,
+                explanation: "For prediction, multicollinearity isn't a problem - the model still predicts well! It only matters when interpreting individual channel effects. Maya could combine Google+Facebook as 'Paid Social' if needed.",
+                badge: 'collinearity'
+            },
+            q8: {
+                correct: 1,
+                explanation: "Dummy variable coefficients are always relative to the reference category. +45 means launch months get 45 more conversions than normal months, holding all marketing spend constant."
+            },
+            q9: {
+                correct: 0,
+                explanation: "R² = 0.82 means our marketing channels explain 82% of the variance in conversions. The remaining 18% comes from factors we didn't measure (competitor actions, seasonality, product changes, etc.)."
+            },
+            q10: {
+                correct: 0,
+                explanation: "Email and LinkedIn both have low VIF, so their coefficients are reliable. LinkedIn (4.2) vs Email (2.1) means 50 × 2.1 = ~105 more conversions. Shifting between Google/Facebook is risky since their high VIF makes individual effects uncertain. Facebook's high p-value means its effect might not be real!"
+            }
+        };
+
+        // Load game config
+        async function loadGameConfig() {
+            try {
+                const response = await fetch('config.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load config.json (HTTP ${response.status})`);
+                }
+                gameConfig = await response.json();
+            } catch (error) {
+                console.error('Failed to load game config:', error);
+            }
+        }
+
+        // Initialize
+        async function init() {
+            await loadGameConfig();
+            await initAuth();
+            if (gameConfig) {
+                gameState = createGameState(gameConfig);
+            }
+            // Initialize analytics after auth
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        }
+
+        // Screen navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+
+            // Track screen view for analytics
+            if (typeof Analytics !== 'undefined') {
+                Analytics.trackScreenView(screenId);
+            }
+
+            if (typeof onScreenShow === 'function') {
+                onScreenShow(screenId);
+            }
+        }
+
+        // Screen-specific initialization
+        function onScreenShow(screenId) {
+            switch(screenId) {
+                case 'chapter1-simple':
+                    setTimeout(() => drawSimpleScatter(), 50);
+                    break;
+                case 'chapter1-multiple':
+                    setTimeout(() => drawMultiFactorChart(), 50);
+                    break;
+                case 'chapter2-coefficients':
+                    setTimeout(() => drawCoefficientChart(), 50);
+                    break;
+                case 'chapter3-pvalues':
+                    setTimeout(() => drawPValueChart(), 50);
+                    break;
+                case 'chapter3-ci':
+                    setTimeout(() => drawCIChart(), 50);
+                    break;
+                case 'chapter4-vif':
+                    setTimeout(() => drawVIFChart(), 50);
+                    break;
+                case 'chapter4-vif-intuition':
+                    setTimeout(() => updateVIFDemo(), 50);
+                    break;
+                case 'chapter5-assumptions':
+                    setTimeout(() => drawResidualPlot(), 50);
+                    break;
+                case 'chapter5-final':
+                    setTimeout(() => drawPredictionChart(), 50);
+                    break;
+            }
+        }
+
+        // Start game
+        async function startGame() {
+            if (gameConfig) {
+                gameState = createGameState(gameConfig);
+            }
+            await Analytics.trackVolumeStart();
+            updateStatsDisplay(gameState);
+            showScreen('chapter1-intro');
+        }
+
+        // Handle answer selection
+        function selectOption(element, questionId, optionIndex) {
+            if (gameState.answeredQuestions[questionId] !== undefined) return;
+
+            const q = questions[questionId];
+            const result = processAnswer(gameState, questionId, optionIndex, q.correct, gameConfig);
+
+            if (result.alreadyAnswered) return;
+
+            // Track the answer
+            Analytics.trackAnswer(questionId, optionIndex, q.correct, result.isCorrect, result.points, result.streak);
+
+            updateAnswerUI(questionId, optionIndex, q.correct, result.isCorrect);
+            showAnswerFeedback(questionId, result.isCorrect, result.points, q.explanation);
+            enableNextButton(questionId);
+            updateStatsDisplay(gameState);
+
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 3 });
+
+            if (q.badge && result.isCorrect && !gameState.badges[q.badge]) {
+                gameState.badges[q.badge] = true;
+                const badge = gameConfig.badges[q.badge];
+                unlockBadge(q.badge, badge.icon, badge.name);
+                Analytics.trackBadgeUnlock(q.badge, badge.name, questionId);
+            }
+
+            updateProgress();
+        }
+
+        // Update progress display
+        function updateProgress() {
+            const totalQuestions = gameConfig.totalQuestions;
+            const answeredCount = Object.keys(gameState.answeredQuestions).length;
+            const percent = Math.round((answeredCount / totalQuestions) * 100);
+
+            document.getElementById('progress-percent').textContent = `${percent}%`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+        }
+
+        // Complete a chapter
+        function completeChapter(chapter) {
+            // Track chapter transition
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                const badge = gameConfig.badges.perfect;
+                unlockBadge('perfect', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('perfect', badge.name);
+            }
+
+            document.getElementById(`ch${chapter}-dot`).classList.add('completed');
+            if (chapter < 5) {
+                document.getElementById(`ch${chapter + 1}-dot`).classList.add('active');
+            }
+
+            gameState.currentChapter = chapter + 1;
+            document.getElementById('progress-text').textContent = `Chapter ${Math.min(chapter + 1, 5)} of 5`;
+
+            if (chapter < 5) {
+                showScreen(`chapter${chapter + 1}-intro`);
+            } else {
+                showResults();
+            }
+        }
+
+        // Show results
+        async function showResults() {
+            if (gameState.correctAnswers === gameConfig.totalQuestions && !gameState.badges.master) {
+                gameState.badges.master = true;
+                const badge = gameConfig.badges.master;
+                unlockBadge('master', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('master', badge.name);
+            }
+
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('final-correct').textContent = `${gameState.correctAnswers}/${gameConfig.totalQuestions}`;
+            document.getElementById('final-streak').textContent = gameState.maxStreak;
+
+            const grade = gameConfig.grades.find(g => gameState.correctAnswers >= g.minCorrect);
+            if (grade) {
+                document.getElementById('results-grade').textContent = grade.title;
+            }
+
+            const badgeList = document.getElementById('badge-list');
+            badgeList.innerHTML = '';
+            Object.entries(gameState.badges).forEach(([id, earned]) => {
+                if (earned && gameConfig.badges[id]) {
+                    const badge = gameConfig.badges[id];
+                    const badgeDiv = document.createElement('div');
+                    badgeDiv.className = 'badge-item earned';
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'badge-icon';
+                    iconSpan.textContent = badge.icon;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'badge-name';
+                    nameSpan.textContent = badge.name;
+                    badgeDiv.appendChild(iconSpan);
+                    badgeDiv.appendChild(nameSpan);
+                    badgeList.appendChild(badgeDiv);
+                }
+            });
+
+            // Track volume completion
+            Analytics.trackVolumeComplete(gameState, grade?.title || 'Unknown');
+
+            // Save score if logged in
+            let result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) {
+                    Analytics.setRunNumber(result.runNumber);
+                } else {
+                    alert('Your score could not be saved. Please check your connection and try replaying.');
+                }
+            }
+
+            showScreen('results-screen');
+
+            // Show feedback modal for logged-in users
+            if (currentUser && result && result.runNumber) {
+                setTimeout(() => showFeedbackModal(result.runNumber), 500);
+            }
+        }
+
+        // =====================
+        // VISUALIZATION FUNCTIONS
+        // =====================
+
+        function drawSimpleScatter() {
+            const canvas = document.getElementById('simple-scatter-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const margin = { top: 30, right: 30, bottom: 60, left: 70 };
+            const plotW = width - margin.left - margin.right;
+            const plotH = height - margin.top - margin.bottom;
+
+            // Data ranges
+            const xMin = 80, xMax = 220;
+            const yMin = 200, yMax = 1200;
+
+            const scaleX = v => margin.left + ((v - xMin) / (xMax - xMin)) * plotW;
+            const scaleY = v => height - margin.bottom - ((v - yMin) / (yMax - yMin)) * plotH;
+
+            // Clear
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 100; x <= 200; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+            for (let y = 400; y <= 1000; y += 200) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(y));
+                ctx.lineTo(width - margin.right, scaleY(y));
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let x = 100; x <= 200; x += 50) {
+                ctx.fillText(`$${x}K`, scaleX(x), height - margin.bottom + 20);
+            }
+            ctx.fillText('Google Ads Spend ($K)', width / 2, height - 15);
+
+            ctx.textAlign = 'right';
+            for (let y = 400; y <= 1000; y += 200) {
+                ctx.fillText(y.toString(), margin.left - 10, scaleY(y) + 4);
+            }
+            ctx.save();
+            ctx.translate(18, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Conversions', 0, 0);
+            ctx.restore();
+
+            // Data points
+            const data = marketingData.map(d => ({ x: d.google, y: d.conversions }));
+            data.forEach(d => {
+                if (d.x >= xMin && d.x <= xMax && d.y >= yMin && d.y <= yMax) {
+                    ctx.beginPath();
+                    ctx.arc(scaleX(d.x), scaleY(d.y), 6, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(78, 204, 163, 0.7)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(78, 204, 163, 1)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+
+            // Regression line (clipped to plot area)
+            const reg = calculateRegression(data);
+            const lineY1 = reg.intercept + reg.slope * xMin;
+            const lineY2 = reg.intercept + reg.slope * xMax;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margin.left, margin.top, plotW, plotH);
+            ctx.clip();
+
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMin), scaleY(lineY1));
+            ctx.lineTo(scaleX(xMax), scaleY(lineY2));
+            ctx.stroke();
+            ctx.restore();
+
+            // Interactive hover
+            setupCanvasHover(canvas, data, scaleX, scaleY, xMin, yMin, 'scatter-tooltip');
+        }
+
+        function setupCanvasHover(canvas, data, scaleX, scaleY, xMin, yMin, tooltipId) {
+            const tooltip = document.getElementById(tooltipId);
+            if (!tooltip) return;
+
+            canvas.onmousemove = function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+
+                let closest = null;
+                let minDist = 20;
+
+                data.forEach(d => {
+                    const px = scaleX(d.x);
+                    const py = scaleY(d.y);
+                    const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closest = { d, px, py };
+                    }
+                });
+
+                if (closest) {
+                    tooltip.innerHTML = `Spend: $${closest.d.x.toFixed(0)}K<br>Conversions: ${closest.d.y.toFixed(0)}`;
+                    tooltip.style.left = (closest.px + 15) + 'px';
+                    tooltip.style.top = (closest.py - 30) + 'px';
+                    tooltip.classList.add('visible');
+                } else {
+                    tooltip.classList.remove('visible');
+                }
+            };
+
+            canvas.onmouseleave = function() {
+                tooltip.classList.remove('visible');
+            };
+        }
+
+        function drawMultiFactorChart() {
+            const canvas = document.getElementById('multi-factor-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const factors = [
+                { data: marketingData.map(d => ({x: d.google, y: d.conversions})), label: 'Google ($K)', xRange: [80, 220] },
+                { data: marketingData.map(d => ({x: d.linkedin, y: d.conversions})), label: 'LinkedIn ($K)', xRange: [50, 160] },
+                { data: marketingData.map(d => ({x: d.content, y: d.conversions})), label: 'Content ($K)', xRange: [70, 180] },
+                { data: marketingData.map(d => ({x: d.email, y: d.conversions})), label: 'Email ($K)', xRange: [20, 100] }
+            ];
+
+            const yRange = [200, 1200];
+            const cols = 2, rows = 2;
+            const cellW = canvas.width / cols;
+            const cellH = canvas.height / rows;
+            const padding = 35;
+
+            factors.forEach((f, i) => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const ox = col * cellW + padding;
+                const oy = row * cellH + padding;
+                const w = cellW - padding * 1.8;
+                const h = cellH - padding * 1.8;
+
+                const scaleX = v => ox + ((v - f.xRange[0]) / (f.xRange[1] - f.xRange[0])) * w;
+                const scaleY = v => oy + h - ((v - yRange[0]) / (yRange[1] - yRange[0])) * h;
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(f.label, ox + w/2, oy - 10);
+
+                // Axes
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ox, oy);
+                ctx.lineTo(ox, oy + h);
+                ctx.lineTo(ox + w, oy + h);
+                ctx.stroke();
+
+                // Points (clipped)
+                f.data.forEach(d => {
+                    const px = scaleX(d.x);
+                    const py = scaleY(d.y);
+                    if (px >= ox && px <= ox + w && py >= oy && py <= oy + h) {
+                        ctx.beginPath();
+                        ctx.arc(px, py, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                        ctx.fill();
+                    }
+                });
+
+                // Regression line (clipped)
+                const reg = calculateRegression(f.data);
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(ox, oy, w, h);
+                ctx.clip();
+
+                ctx.strokeStyle = '#e94560';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(f.xRange[0]), scaleY(reg.intercept + reg.slope * f.xRange[0]));
+                ctx.lineTo(scaleX(f.xRange[1]), scaleY(reg.intercept + reg.slope * f.xRange[1]));
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        function drawCoefficientChart() {
+            const canvas = document.getElementById('coefficient-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const coefficients = [
+                { name: 'LinkedIn Ads', value: 4.2, color: '#9333ea' },
+                { name: 'Content Marketing', value: 3.5, color: '#4ecca3' },
+                { name: 'Google Ads', value: 2.8, color: '#3b82f6' },
+                { name: 'Email', value: 2.1, color: '#ffc107' },
+                { name: 'Facebook Ads', value: 1.5, color: '#6366f1' }
+            ];
+
+            const margin = { top: 50, right: 50, bottom: 40, left: 140 };
+            const w = canvas.width - margin.left - margin.right;
+            const h = canvas.height - margin.top - margin.bottom;
+            const barHeight = Math.min(40, h / coefficients.length - 12);
+            const maxVal = 5;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Conversions per $1K Spend', canvas.width/2, 25);
+
+            coefficients.forEach((c, i) => {
+                const y = margin.top + i * (barHeight + 12);
+                const barW = (c.value / maxVal) * w;
+
+                // Bar with gradient
+                const grad = ctx.createLinearGradient(margin.left, y, margin.left + barW, y);
+                grad.addColorStop(0, c.color);
+                grad.addColorStop(1, c.color + '99');
+                ctx.fillStyle = grad;
+                ctx.fillRect(margin.left, y, barW, barHeight);
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'right';
+                ctx.fillText(c.name, margin.left - 10, y + barHeight/2 + 4);
+
+                // Value
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 12px Segoe UI';
+                ctx.fillText(`+${c.value}`, margin.left + barW + 10, y + barHeight/2 + 4);
+            });
+        }
+
+        function drawPValueChart() {
+            const canvas = document.getElementById('pvalue-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const pvalues = [
+                { name: 'LinkedIn Ads', p: 0.002 },
+                { name: 'Content Marketing', p: 0.008 },
+                { name: 'Google Ads', p: 0.024 },
+                { name: 'Email', p: 0.041 },
+                { name: 'Facebook Ads', p: 0.078 }
+            ];
+
+            const margin = { top: 50, right: 40, bottom: 50, left: 140 };
+            const w = canvas.width - margin.left - margin.right;
+            const h = canvas.height - margin.top - margin.bottom;
+            const barHeight = Math.min(40, h / pvalues.length - 12);
+            const maxP = 0.15;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('P-Values by Channel', canvas.width/2, 25);
+
+            // 0.05 threshold line
+            const thresholdX = margin.left + (0.05 / maxP) * w;
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(thresholdX, margin.top - 10);
+            ctx.lineTo(thresholdX, canvas.height - margin.bottom + 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#e94560';
+            ctx.font = '11px Segoe UI';
+            ctx.fillText('p = 0.05', thresholdX, canvas.height - 25);
+
+            pvalues.forEach((p, i) => {
+                const y = margin.top + i * (barHeight + 12);
+                const barW = Math.min(p.p / maxP, 1) * w;
+                const isSignificant = p.p < 0.05;
+
+                ctx.fillStyle = isSignificant ? '#4ecca3' : '#666';
+                ctx.fillRect(margin.left, y, barW, barHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'right';
+                ctx.fillText(p.name, margin.left - 10, y + barHeight/2 + 4);
+
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 11px Segoe UI';
+                ctx.fillStyle = isSignificant ? '#4ecca3' : '#888';
+                ctx.fillText(`p = ${p.p.toFixed(3)}${isSignificant ? ' ✓' : ''}`, margin.left + barW + 10, y + barHeight/2 + 4);
+            });
+        }
+
+        function drawCIChart() {
+            const canvas = document.getElementById('ci-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cis = [
+                { name: 'LinkedIn', est: 4.2, low: 3.1, high: 5.3 },
+                { name: 'Content', est: 3.5, low: 2.2, high: 4.8 },
+                { name: 'Google', est: 2.8, low: 1.5, high: 4.1 },
+                { name: 'Email', est: 2.1, low: 0.3, high: 3.9 },
+                { name: 'Facebook', est: 1.5, low: -0.2, high: 3.2 }
+            ];
+
+            const margin = { top: 50, right: 50, bottom: 50, left: 100 };
+            const w = canvas.width - margin.left - margin.right;
+            const h = canvas.height - margin.top - margin.bottom;
+            const rowHeight = h / cis.length;
+
+            const minVal = -1;
+            const maxVal = 6;
+            const scale = v => margin.left + ((v - minVal) / (maxVal - minVal)) * w;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('95% Confidence Intervals', canvas.width/2, 25);
+
+            // Zero line
+            const zeroX = scale(0);
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(zeroX, margin.top - 10);
+            ctx.lineTo(zeroX, canvas.height - margin.bottom + 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Segoe UI';
+            ctx.fillText('0 (no effect)', zeroX, canvas.height - 25);
+
+            cis.forEach((c, i) => {
+                const y = margin.top + i * rowHeight + rowHeight/2;
+                const includesZero = c.low <= 0 && c.high >= 0;
+                const color = includesZero ? '#888' : '#4ecca3';
+
+                // CI line
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(scale(c.low), y);
+                ctx.lineTo(scale(c.high), y);
+                ctx.stroke();
+
+                // End caps
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(scale(c.low), y - 10);
+                ctx.lineTo(scale(c.low), y + 10);
+                ctx.moveTo(scale(c.high), y - 10);
+                ctx.lineTo(scale(c.high), y + 10);
+                ctx.stroke();
+
+                // Point estimate
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(scale(c.est), y, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'right';
+                ctx.fillText(c.name, margin.left - 10, y + 4);
+            });
+        }
+
+        function drawVIFChart() {
+            const canvas = document.getElementById('vif-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const vifs = [
+                { name: 'Google Ads', vif: 6.2 },
+                { name: 'Facebook Ads', vif: 5.8 },
+                { name: 'LinkedIn Ads', vif: 2.1 },
+                { name: 'Content', vif: 1.4 },
+                { name: 'Email', vif: 1.2 }
+            ];
+
+            const margin = { top: 50, right: 50, bottom: 50, left: 120 };
+            const w = canvas.width - margin.left - margin.right;
+            const h = canvas.height - margin.top - margin.bottom;
+            const barHeight = Math.min(40, h / vifs.length - 12);
+            const maxVIF = 10;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Variance Inflation Factor (VIF)', canvas.width/2, 25);
+
+            // Threshold line at VIF = 5
+            const vif5x = margin.left + (5 / maxVIF) * w;
+            ctx.strokeStyle = '#ffc107';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(vif5x, margin.top - 10);
+            ctx.lineTo(vif5x, canvas.height - margin.bottom + 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#ffc107';
+            ctx.font = '11px Segoe UI';
+            ctx.fillText('VIF = 5 (concern threshold)', vif5x, canvas.height - 25);
+
+            vifs.forEach((v, i) => {
+                const y = margin.top + i * (barHeight + 12);
+                const barW = (v.vif / maxVIF) * w;
+                const color = v.vif > 5 ? '#e94560' : '#4ecca3';
+
+                ctx.fillStyle = color;
+                ctx.fillRect(margin.left, y, barW, barHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'right';
+                ctx.fillText(v.name, margin.left - 10, y + barHeight/2 + 4);
+
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 11px Segoe UI';
+                ctx.fillStyle = color;
+                ctx.fillText(v.vif.toFixed(1), margin.left + barW + 10, y + barHeight/2 + 4);
+            });
+        }
+
+        // Interactive VIF Demo
+        function updateVIFDemo() {
+            const canvas = document.getElementById('vif-demo-canvas');
+            if (!canvas) return;
+
+            const slider = document.getElementById('correlation-slider');
+            const correlationPct = parseInt(slider.value) / 100;
+            const r = correlationPct;
+
+            // Calculate VIF: VIF = 1 / (1 - r²)
+            const rSquared = r * r;
+            const vif = rSquared >= 0.99 ? 100 : 1 / (1 - rSquared);
+
+            // Base CI width at VIF=1, scales with sqrt(VIF)
+            const baseCIWidth = 0.8;
+            const ciWidth = baseCIWidth * Math.sqrt(vif);
+
+            // Update display values
+            document.getElementById('correlation-value').textContent = r.toFixed(2);
+
+            const vifDisplay = document.getElementById('vif-value');
+            vifDisplay.textContent = vif > 50 ? '50+' : vif.toFixed(2);
+            vifDisplay.style.color = vif > 5 ? '#e94560' : vif > 2.5 ? '#ffc107' : '#4ecca3';
+
+            document.getElementById('ci-width').textContent = ciWidth > 10 ? '±10+' : `±${ciWidth.toFixed(1)}`;
+
+            // Update interpretation
+            const interpEl = document.getElementById('vif-interpretation');
+            if (vif < 2) {
+                interpEl.innerHTML = '✓ Variables are nearly independent - coefficient estimates are precise!';
+                interpEl.style.color = '#4ecca3';
+            } else if (vif < 5) {
+                interpEl.innerHTML = '⚠ Moderate correlation - estimates less precise but still usable.';
+                interpEl.style.color = '#ffc107';
+            } else {
+                interpEl.innerHTML = '⛔ High collinearity! Hard to isolate individual effects. Consider combining or dropping variables.';
+                interpEl.style.color = '#e94560';
+            }
+
+            // Draw scatter plot
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const margin = { top: 30, right: 20, bottom: 50, left: 55 };
+            const plotW = width - margin.left - margin.right;
+            const plotH = height - margin.top - margin.bottom;
+
+            // Clear canvas
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Generate correlated data points
+            const n = 40;
+            const points = [];
+
+            // Generate base independent values
+            for (let i = 0; i < n; i++) {
+                // Generate independent random values
+                const baseX = 50 + Math.random() * 100; // Google: 50-150K
+                const baseY = 30 + Math.random() * 70;  // Facebook: 30-100K
+
+                // Mix them based on correlation
+                // When r=0: completely independent
+                // When r=1: Y follows X perfectly
+                const x = baseX;
+                const y = r * (baseX - 100) * 0.7 + 65 + (1 - r) * (baseY - 65);
+
+                points.push({ x, y });
+            }
+
+            // Find data ranges
+            const xMin = 40, xMax = 160;
+            const yMin = 20, yMax = 110;
+
+            const scaleX = v => margin.left + ((v - xMin) / (xMax - xMin)) * plotW;
+            const scaleY = v => height - margin.bottom - ((v - yMin) / (yMax - yMin)) * plotH;
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 50; x <= 150; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), margin.top);
+                ctx.lineTo(scaleX(x), height - margin.bottom);
+                ctx.stroke();
+            }
+            for (let y = 40; y <= 100; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(y));
+                ctx.lineTo(width - margin.right, scaleY(y));
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Axis labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Google Ads Spend ($K)', width / 2, height - 10);
+
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Facebook Spend ($K)', 0, 0);
+            ctx.restore();
+
+            // Axis tick labels
+            ctx.font = '10px Segoe UI';
+            ctx.fillStyle = '#888';
+            for (let x = 50; x <= 150; x += 50) {
+                ctx.fillText(x.toString(), scaleX(x), height - margin.bottom + 15);
+            }
+            ctx.textAlign = 'right';
+            for (let y = 40; y <= 100; y += 20) {
+                ctx.fillText(y.toString(), margin.left - 8, scaleY(y) + 4);
+            }
+
+            // Draw trend line if correlation is significant
+            if (r > 0.1) {
+                // Simple linear regression for the line
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                points.forEach(p => {
+                    sumX += p.x;
+                    sumY += p.y;
+                    sumXY += p.x * p.y;
+                    sumX2 += p.x * p.x;
+                });
+                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+
+                ctx.strokeStyle = `rgba(233, 69, 96, ${Math.min(r + 0.2, 0.8)})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(scaleX(xMin), scaleY(slope * xMin + intercept));
+                ctx.lineTo(scaleX(xMax), scaleY(slope * xMax + intercept));
+                ctx.stroke();
+            }
+
+            // Draw points
+            points.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(scaleX(p.x), scaleY(p.y), 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#4ecca3';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Google vs Facebook Spend', width / 2, 18);
+        }
+
+        function drawResidualPlot() {
+            const canvas = document.getElementById('residual-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const margin = { top: 40, right: 30, bottom: 60, left: 70 };
+            const plotW = width - margin.left - margin.right;
+            const plotH = height - margin.top - margin.bottom;
+
+            const minVal = 400, maxVal = 1100;
+            const scaleX = v => margin.left + ((v - minVal) / (maxVal - minVal)) * plotW;
+            const scaleY = v => height - margin.bottom - ((v - minVal) / (maxVal - minVal)) * plotH;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Title
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Actual vs Predicted Conversions', width/2, 20);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let v = 500; v <= 1000; v += 250) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(v), margin.top);
+                ctx.lineTo(scaleX(v), height - margin.bottom);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(margin.left, scaleY(v));
+                ctx.lineTo(width - margin.right, scaleY(v));
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, height - margin.bottom);
+            ctx.lineTo(width - margin.right, height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'center';
+            for (let v = 500; v <= 1000; v += 500) {
+                ctx.fillText(v.toString(), scaleX(v), height - margin.bottom + 20);
+            }
+            ctx.fillText('Actual Conversions', width / 2, height - 10);
+
+            ctx.textAlign = 'right';
+            for (let v = 500; v <= 1000; v += 500) {
+                ctx.fillText(v.toString(), margin.left - 10, scaleY(v) + 4);
+            }
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Predicted Conversions', 0, 0);
+            ctx.restore();
+
+            // Perfect prediction line
+            ctx.strokeStyle = '#4ecca3';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            ctx.beginPath();
+            ctx.moveTo(scaleX(minVal), scaleY(minVal));
+            ctx.lineTo(scaleX(maxVal), scaleY(maxVal));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Data points (actual vs predicted with noise)
+            marketingData.forEach(d => {
+                const actual = d.conversions;
+                const predicted = actual + (Math.random() - 0.5) * 100;
+                if (actual >= minVal && actual <= maxVal) {
+                    ctx.beginPath();
+                    ctx.arc(scaleX(actual), scaleY(predicted), 5, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(78, 204, 163, 0.9)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function drawPredictionChart() {
+            const canvas = document.getElementById('prediction-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const margin = { top: 60, right: 40, bottom: 70, left: 40 };
+            const w = canvas.width - margin.left - margin.right;
+            const h = canvas.height - margin.top - margin.bottom;
+
+            const minConv = 1400;
+            const maxConv = 2200;
+            const scale = v => margin.left + ((v - minConv) / (maxConv - minConv)) * w;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText("Maya's Conversion Prediction", canvas.width/2, 30);
+
+            const centerY = margin.top + h/2;
+
+            // Conversion axis
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, centerY);
+            ctx.lineTo(canvas.width - margin.right, centerY);
+            ctx.stroke();
+
+            // Ticks
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Segoe UI';
+            for (let c = 1500; c <= 2100; c += 200) {
+                const x = scale(c);
+                ctx.beginPath();
+                ctx.moveTo(x, centerY - 5);
+                ctx.lineTo(x, centerY + 5);
+                ctx.stroke();
+                ctx.fillText(c.toLocaleString(), x, centerY + 25);
+            }
+            ctx.fillText('Predicted Conversions', canvas.width/2, canvas.height - 25);
+
+            // Confidence interval
+            const ciLow = 1620, ciHigh = 1930, point = 1775;
+
+            // CI shaded area
+            ctx.fillStyle = 'rgba(78, 204, 163, 0.25)';
+            ctx.fillRect(scale(ciLow), centerY - 40, scale(ciHigh) - scale(ciLow), 80);
+
+            // CI boundaries
+            ctx.strokeStyle = '#4ecca3';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(scale(ciLow), centerY - 40);
+            ctx.lineTo(scale(ciLow), centerY + 40);
+            ctx.moveTo(scale(ciHigh), centerY - 40);
+            ctx.lineTo(scale(ciHigh), centerY + 40);
+            ctx.stroke();
+
+            // Point estimate
+            ctx.fillStyle = '#e94560';
+            ctx.beginPath();
+            ctx.arc(scale(point), centerY, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 16px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('1,775', scale(point), centerY - 55);
+
+            ctx.fillStyle = '#4ecca3';
+            ctx.font = '12px Segoe UI';
+            ctx.textAlign = 'left';
+            ctx.fillText(`95% CI: [${ciLow.toLocaleString()}, ${ciHigh.toLocaleString()}]`, margin.left, canvas.height - 45);
+
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'center';
+            ctx.fillText(ciLow.toLocaleString(), scale(ciLow), centerY - 55);
+            ctx.fillText(ciHigh.toLocaleString(), scale(ciHigh), centerY - 55);
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

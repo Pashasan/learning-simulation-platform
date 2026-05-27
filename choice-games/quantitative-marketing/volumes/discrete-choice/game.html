@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>Discrete Choice Lab | Scanner Data Analysis Workshop</title>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+    <style>
+        /* Interactive teaching screen styles */
+        .utility-breakdown {
+            background: rgba(212, 160, 60, 0.06);
+            border: 1px solid rgba(212, 160, 60, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        .utility-equation {
+            text-align: center;
+            font-size: 1.5em;
+            font-family: Georgia, 'Times New Roman', serif;
+            margin: 15px 0;
+            letter-spacing: 1px;
+        }
+        .utility-component {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: Georgia, serif;
+            font-weight: bold;
+            position: relative;
+        }
+        .utility-component:hover {
+            transform: translateY(-2px);
+        }
+        .comp-v {
+            background: rgba(78, 204, 163, 0.15);
+            border: 2px solid #4ecca3;
+            color: #4ecca3;
+        }
+        .comp-v:hover, .comp-v.active {
+            background: rgba(78, 204, 163, 0.3);
+            box-shadow: 0 0 15px rgba(78, 204, 163, 0.3);
+        }
+        .comp-eps {
+            background: rgba(233, 69, 96, 0.15);
+            border: 2px solid #e94560;
+            color: #e94560;
+        }
+        .comp-eps:hover, .comp-eps.active {
+            background: rgba(233, 69, 96, 0.3);
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.3);
+        }
+        .component-reveal {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            line-height: 1.7;
+            animation: fadeSlideIn 0.3s ease;
+        }
+        .component-reveal.visible {
+            display: block;
+        }
+        .reveal-v {
+            background: rgba(78, 204, 163, 0.08);
+            border-left: 3px solid #4ecca3;
+        }
+        .reveal-eps {
+            background: rgba(233, 69, 96, 0.08);
+            border-left: 3px solid #e94560;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .scanner-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 0.9em;
+        }
+        .scanner-table th {
+            background: rgba(212, 160, 60, 0.15);
+            color: #d4a03c;
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom: 2px solid rgba(212, 160, 60, 0.3);
+            font-weight: 600;
+        }
+        .scanner-table td {
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: #ccc;
+        }
+        .scanner-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+        .scanner-table .unobs-col {
+            color: #e94560;
+            font-style: italic;
+        }
+
+        /* Logit calculator */
+        .logit-calc {
+            background: rgba(108, 142, 191, 0.06);
+            border: 1px solid rgba(108, 142, 191, 0.2);
+            border-radius: 12px;
+            padding: 18px;
+            margin: 12px 0;
+        }
+        .brand-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 8px 0;
+            padding: 6px 0;
+        }
+        .brand-label {
+            min-width: 110px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .brand-slider-row input[type="range"] {
+            flex: 1;
+            accent-color: #d4a03c;
+            height: 6px;
+        }
+        .brand-val {
+            min-width: 50px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        .logit-results {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        .logit-result-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 16px;
+            text-align: center;
+            min-width: 90px;
+        }
+        .logit-result-box .lr-brand {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .logit-result-box .lr-prob {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        .logit-result-box .lr-exp {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 2px;
+        }
+        .logit-bar-container {
+            display: flex;
+            height: 32px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .logit-bar-seg {
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: #fff;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .shift-all-btn {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(212, 160, 60, 0.15);
+            border: 1px solid #d4a03c;
+            border-radius: 6px;
+            color: #d4a03c;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin: 4px;
+            transition: all 0.2s;
+        }
+        .shift-all-btn:hover {
+            background: rgba(212, 160, 60, 0.3);
+        }
+
+        /* Loyalty explorer */
+        .loyalty-explorer {
+            background: rgba(78, 204, 163, 0.06);
+            border: 1px solid rgba(78, 204, 163, 0.2);
+            border-radius: 12px;
+            padding: 18px;
+            margin: 12px 0;
+        }
+        .purchase-sequence {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .purchase-chip {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #fff;
+        }
+        .chip-f { background: #d4a03c; }
+        .chip-m { background: #6c8ebf; }
+        .chip-p { background: #888; }
+        .loyalty-bars {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 12px 0;
+            align-items: flex-end;
+            height: 120px;
+        }
+        .loyalty-bar-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .loyalty-bar {
+            width: 50px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.4s ease;
+        }
+        .loyalty-bar-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+        .loyalty-bar-val {
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        /* IIA demo */
+        .iia-demo {
+            background: rgba(233, 69, 96, 0.06);
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            border-radius: 12px;
+            padding: 18px;
+            margin: 12px 0;
+        }
+        .iia-shares {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        .iia-share-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 16px;
+            text-align: center;
+            min-width: 80px;
+            transition: all 0.3s;
+        }
+        .iia-share-box .share-icon {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+        }
+        .iia-share-box .share-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+        .iia-share-box .share-val {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .iia-comparison {
+            display: flex;
+            gap: 15px;
+            margin: 12px 0;
+            justify-content: center;
+        }
+        .iia-col {
+            flex: 1;
+            max-width: 220px;
+            text-align: center;
+        }
+        .iia-col h4 {
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .iia-bar-set {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .iia-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .iia-bar-label {
+            min-width: 55px;
+            font-size: 0.75em;
+            text-align: right;
+            color: #888;
+        }
+        .iia-bar-track {
+            flex: 1;
+            height: 18px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .iia-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 4px;
+            font-size: 0.65em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .iia-toggle-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .iia-toggle-btn {
+            padding: 7px 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .iia-toggle-btn.active {
+            border-color: #d4a03c;
+            background: rgba(212, 160, 60, 0.2);
+            color: #d4a03c;
+        }
+
+        /* Info tooltips */
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(212, 160, 60, 0.2);
+            color: #d4a03c;
+            font-size: 0.7em;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+            vertical-align: middle;
+            margin: 0 3px;
+        }
+        .info-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e1e3a;
+            border: 1px solid rgba(212, 160, 60, 0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            width: 240px;
+            font-size: 12px;
+            font-weight: normal;
+            color: #ccc;
+            z-index: 100;
+            line-height: 1.6;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .info-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(212, 160, 60, 0.3);
+        }
+        .info-icon:hover .info-tooltip {
+            display: block;
+        }
+
+        /* Scenario card enhancements */
+        .compact-scenario {
+            background: rgba(78, 204, 163, 0.08);
+            border-left: 3px solid #4ecca3;
+            padding: 12px 16px;
+            margin: 10px 0 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .compact-scenario-gold {
+            background: rgba(212, 160, 60, 0.08);
+            border-left: 3px solid #d4a03c;
+            padding: 12px 16px;
+            margin: 10px 0 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        /* Character role badges */
+        .role-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .role-badge-gold {
+            background: rgba(212, 160, 60, 0.2);
+            color: #d4a03c;
+        }
+        .role-badge-blue {
+            background: rgba(108, 142, 191, 0.2);
+            color: #6c8ebf;
+        }
+        .role-badge-green {
+            background: rgba(78, 204, 163, 0.2);
+            color: #4ecca3;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Discrete Choice Lab</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Insight">
+                        <span>&#127919;</span>
+                        <div class="badge-tooltip">First Correct Answer</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>&#128293;</span>
+                        <div class="badge-tooltip">3+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>&#11088;</span>
+                        <div class="badge-tooltip">All correct in a chapter</div>
+                    </div>
+                    <div class="badge" id="badge-logit" title="Logit Expert">
+                        <span>&#128200;</span>
+                        <div class="badge-tooltip">Mastered the logit model</div>
+                    </div>
+                    <div class="badge" id="badge-iia" title="IIA Detective">
+                        <span>&#128652;</span>
+                        <div class="badge-tooltip">Understood IIA property</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Choice Master">
+                        <span>&#127942;</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- ==================== TITLE SCREEN ==================== -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>Discrete Choice Lab</h1>
+                    <p class="subtitle">Scanner Data Analysis Workshop</p>
+                    <p class="arena-subtitle">Modeling Consumer Choice with Guadagni &amp; Little (1983)</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat">
+                            <div class="value">32 Weeks</div>
+                            <div class="label">Scanner Panel Data</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">3 Brands</div>
+                            <div class="label">Ground Coffee</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">?</div>
+                            <div class="label">Choice Probability</div>
+                        </div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg" viewBox="0 0 60 60">
+                                <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                                <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                                <circle cx="30" cy="20" r="8" fill="#141428"/>
+                            </svg>
+                            <div>
+                                <strong>Welcome to the Research Team!</strong>
+                                <p style="color: #888; font-size: 0.9em;">Dr. Rivera &mdash; Research Lead</p>
+                            </div>
+                        </div>
+                        <p>You've joined <span class="highlight">Dr. Rivera's</span> research group studying consumer choice in the coffee market. Using IRI scanner panel data, you'll build a discrete choice model to predict which brand consumers pick off the shelf.</p>
+                        <br>
+                        <p>Over the next <span class="highlight">~15 minutes</span>, you'll learn to:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>Decompose utility into observable and unobservable components</li>
+                            <li>Derive the multinomial logit choice probability</li>
+                            <li>Understand Guadagni &amp; Little's loyalty variable</li>
+                            <li>Identify the IIA limitation and price endogeneity challenge</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Enter the Lab</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 1: RANDOM UTILITY ==================== -->
+
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Random Utility</h2>
+                    <p class="chapter-desc">The foundation of discrete choice models</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dr. Rivera <span class="role-badge role-badge-gold">Research Lead</span></div>
+                        <p>"We have 32 weeks of scanner panel data from a grocery chain &mdash; every coffee purchase tracked at the UPC level. Before we estimate anything, we need a model of how consumers choose. The starting point is <em>random utility theory</em>."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">Every consumer <em>i</em> evaluates each product <em>j</em> and picks the one with the highest utility. But the researcher can't see everything that enters the consumer's decision:</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-teaching')">Explore the Utility Function</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Interactive Utility Breakdown -->
+            <div class="screen" id="chapter1-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Interactive Utility Breakdown</h2>
+                </div>
+
+                <div class="utility-breakdown">
+                    <p style="text-align: center; color: #888; font-size: 0.9em; margin-bottom: 8px;">Click each component to explore what it captures</p>
+                    <div class="utility-equation">
+                        U<sub>ij</sub> = <span class="utility-component comp-v" onclick="toggleReveal('v')">V<sub>ij</sub></span> + <span class="utility-component comp-eps" onclick="toggleReveal('eps')"><em>&epsilon;</em><sub>ij</sub></span>
+                    </div>
+
+                    <div class="component-reveal reveal-v" id="reveal-v">
+                        <strong style="color: #4ecca3;">V<sub>ij</sub> &mdash; Observable (Systematic) Utility</strong><br><br>
+                        What the researcher <em>can</em> measure from the data: price, whether the product is on promotion or display, brand fixed effects, and loyalty from past purchases.<br><br>
+                        <span style="color: #888;">Example: V<sub>Folgers</sub> = &beta;<sub>price</sub> &middot; ($3.49) + &beta;<sub>promo</sub> &middot; (1) + &beta;<sub>display</sub> &middot; (0) + &alpha;<sub>Folgers</sub></span>
+                    </div>
+
+                    <div class="component-reveal reveal-eps" id="reveal-eps">
+                        <strong style="color: #e94560;">&epsilon;<sub>ij</sub> &mdash; Unobservable (Random) Component</strong><br><br>
+                        Everything the researcher <em>cannot</em> observe: individual taste variation (some people love Folgers, others hate it), mood on the shopping day, unobserved quality differences, shelf positioning, and packaging appeal.<br><br>
+                        <span style="color: #888;">This is why we call it <em>random</em> utility &mdash; random from the researcher's perspective, not the consumer's.</span>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Scanner Data: Coffee Purchases</h3>
+                    <table class="scanner-table">
+                        <tr>
+                            <th>Brand</th>
+                            <th>Price</th>
+                            <th>Promo</th>
+                            <th>Display</th>
+                            <th class="unobs-col">&epsilon;<sub>ij</sub> ?</th>
+                        </tr>
+                        <tr>
+                            <td style="color: #d4a03c; font-weight: 600;">Folgers</td>
+                            <td>$3.49</td>
+                            <td>Yes</td>
+                            <td>No</td>
+                            <td class="unobs-col">???</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #6c8ebf; font-weight: 600;">Maxwell House</td>
+                            <td>$3.99</td>
+                            <td>No</td>
+                            <td>Yes</td>
+                            <td class="unobs-col">???</td>
+                        </tr>
+                        <tr>
+                            <td style="color: #888; font-weight: 600;">Private Label</td>
+                            <td>$2.29</td>
+                            <td>No</td>
+                            <td>No</td>
+                            <td class="unobs-col">???</td>
+                        </tr>
+                    </table>
+                    <p style="color: #888; font-size: 0.85em; margin-top: 8px;">We observe price, promotion, and display from scanner data. But individual tastes (&epsilon;) remain hidden.</p>
+                </div>
+
+                <div class="compact-scenario">
+                    Because we can't observe &epsilon;<sub>ij</sub>, we can only predict the <strong>probability</strong> that consumer <em>i</em> chooses brand <em>j</em>. The consumer may be perfectly rational &mdash; the randomness is in what we, the researchers, cannot see.
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-q1')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Q1 -->
+            <div class="screen" id="chapter1-q1">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Error Term</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Professor Gupta <span class="role-badge role-badge-blue">Econometrician</span></div>
+                        <p>"Let's be precise about what &epsilon;<sub>ij</sub> captures. In the random utility model U<sub>ij</sub> = V<sub>ij</sub> + &epsilon;<sub>ij</sub>, every variable has a specific interpretation. Don't confuse them."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">In the random utility model U<sub>ij</sub> = V<sub>ij</sub> + &epsilon;<sub>ij</sub>, what does &epsilon;<sub>ij</sub> capture?
+                        <span class="info-icon">?<span class="info-tooltip"><strong>Random Utility</strong><br><br>Utility is decomposed into an observable part (V) and an unobservable part (&epsilon;). The researcher builds a model for V from data, while &epsilon; captures everything else.</span></span>
+                    </div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">The retail price of alternative j at the time of the purchase decision</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">Unobservable factors like individual taste variation and unmeasured attributes</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">The aggregate market share of brand j across all consumers in the panel</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 3)">Systematic measurement error introduced by the scanner data collection process</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('chapter1-q2')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Q2 -->
+            <div class="screen" id="chapter1-q2">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Why Probabilistic?</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge role-badge-green">Research Assistant</span></div>
+                        <p>"Wait, if consumers are rational utility maximizers, shouldn't we be able to predict exactly what they'll buy? Why do we need probabilities at all? Isn't that just admitting our model is bad?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128218; Maya's Confusion</h3>
+                    <p>Maya thinks that using probabilities means consumers are irrational. But consider: two consumers face identical prices and promotions, yet one picks Folgers and the other picks Maxwell House. The difference is in what we <em>can't</em> observe about them.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Why do we model consumer choice as probabilistic rather than deterministic?</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">Because consumers are fundamentally irrational and do not maximize utility</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">Because the researcher cannot observe all factors that enter the utility function</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">Because scanner panel datasets are too small for deterministic predictions</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">Because computer simulations require a random number generator to run</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-q1')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="completeChapter(1)" disabled>Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 2: THE LOGIT MODEL ==================== -->
+
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Logit Model</h2>
+                    <p class="chapter-desc">From utility to choice probabilities</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Professor Gupta <span class="role-badge role-badge-blue">Econometrician</span></div>
+                        <p>"The random utility model is the conceptual framework. To get an actual formula for choice probabilities, we need a distributional assumption on &epsilon;. McFadden (1974) showed that one particular assumption gives an elegant closed-form solution."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">The key question: <span class="highlight">What distribution should &epsilon; follow?</span> Different assumptions give different models. The multinomial logit
+                    <span class="info-icon">?<span class="info-tooltip"><strong>Multinomial Logit</strong><br><br>A model where the probability of choosing option j equals exp(V_j) divided by the sum of exp(V_k) for all options. It assumes i.i.d. Type I Extreme Value errors.</span></span>
+                arises from one specific distributional choice.</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-q2')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-teaching')">Explore the Logit Formula</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Interactive Logit Probability Calculator -->
+            <div class="screen" id="chapter2-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Logit Probability Calculator</h2>
+                </div>
+
+                <div class="logit-calc">
+                    <p style="text-align: center; font-family: Georgia, serif; font-size: 1.1em; margin-bottom: 10px;">
+                        P<sub>j</sub> = exp(V<sub>j</sub>) / &Sigma;<sub>k</sub> exp(V<sub>k</sub>)
+                    </p>
+                    <p style="text-align: center; color: #888; font-size: 0.85em; margin-bottom: 12px;">Adjust utility values with the sliders and watch market shares update in real time</p>
+
+                    <div class="brand-slider-row">
+                        <span class="brand-label" style="color: #d4a03c;">Folgers</span>
+                        <input type="range" id="logit-v1" min="-2" max="3" step="0.1" value="1.0" oninput="updateLogitCalc()">
+                        <span class="brand-val" id="logit-v1-val" style="color: #d4a03c;">1.0</span>
+                    </div>
+                    <div class="brand-slider-row">
+                        <span class="brand-label" style="color: #6c8ebf;">Maxwell House</span>
+                        <input type="range" id="logit-v2" min="-2" max="3" step="0.1" value="0.5" oninput="updateLogitCalc()">
+                        <span class="brand-val" id="logit-v2-val" style="color: #6c8ebf;">0.5</span>
+                    </div>
+                    <div class="brand-slider-row">
+                        <span class="brand-label" style="color: #888;">Private Label</span>
+                        <input type="range" id="logit-v3" min="-2" max="3" step="0.1" value="0.0" oninput="updateLogitCalc()">
+                        <span class="brand-val" id="logit-v3-val" style="color: #888;">0.0</span>
+                    </div>
+
+                    <div class="logit-results">
+                        <div class="logit-result-box">
+                            <div class="lr-brand" style="color: #d4a03c;">Folgers</div>
+                            <div class="lr-prob" id="logit-p1" style="color: #d4a03c;">--</div>
+                            <div class="lr-exp" id="logit-e1">exp(V) = --</div>
+                        </div>
+                        <div class="logit-result-box">
+                            <div class="lr-brand" style="color: #6c8ebf;">Maxwell</div>
+                            <div class="lr-prob" id="logit-p2" style="color: #6c8ebf;">--</div>
+                            <div class="lr-exp" id="logit-e2">exp(V) = --</div>
+                        </div>
+                        <div class="logit-result-box">
+                            <div class="lr-brand" style="color: #888;">Pvt Label</div>
+                            <div class="lr-prob" id="logit-p3" style="color: #888;">--</div>
+                            <div class="lr-exp" id="logit-e3">exp(V) = --</div>
+                        </div>
+                    </div>
+
+                    <div class="logit-bar-container" id="logit-bar"></div>
+
+                    <div style="text-align: center; margin-top: 8px;">
+                        <span class="shift-all-btn" onclick="shiftAllUtilities(1)">Shift All +1</span>
+                        <span class="shift-all-btn" onclick="shiftAllUtilities(-1)">Shift All &minus;1</span>
+                        <span class="shift-all-btn" onclick="resetLogitSliders()">Reset</span>
+                    </div>
+                </div>
+
+                <div class="compact-scenario-gold">
+                    <strong>Key insight:</strong> Only utility <em>differences</em> matter in logit. Try "Shift All +1" &mdash; all probabilities stay the same! This is because adding a constant to all utilities cancels in the ratio exp(V<sub>j</sub>) / &Sigma; exp(V<sub>k</sub>).
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-q3')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Q3 -->
+            <div class="screen" id="chapter2-q3">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Distributional Assumption</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Professor Gupta <span class="role-badge role-badge-blue">Econometrician</span></div>
+                        <p>"Different distributional assumptions on &epsilon; produce different discrete choice models. Normal errors give probit, which requires simulation. But one specific distribution yields a beautiful closed-form expression."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What distributional assumption on the error terms produces the logit model?
+                        <span class="info-icon">?<span class="info-tooltip"><strong>Type I Extreme Value</strong><br><br>Also called the Gumbel distribution. Its CDF is F(&epsilon;) = exp(-exp(-&epsilon;)). When errors are i.i.d. Gumbel, the difference follows a logistic distribution, giving the logit formula.</span></span>
+                    </div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">Normal (Gaussian) errors, which yield the multinomial probit model instead</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">Uniform errors bounded between zero and one for each alternative</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">Type I Extreme Value (Gumbel), giving the closed-form logit probability</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">Exponential errors with rate parameter estimated from the data</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('chapter2-q4')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Q4 -->
+            <div class="screen" id="chapter2-q4">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Scale Invariance</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge role-badge-green">Research Assistant</span></div>
+                        <p>"I tried the logit calculator and noticed something strange. When I added +1 to all three brands, the probabilities didn't change at all! Is that a bug in the tool?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128270; Maya's Observation</h3>
+                    <p style="margin-top: 8px;">Adding a constant <em>c</em> to all utilities:</p>
+                    <p style="text-align: center; font-family: Georgia, serif; margin: 10px 0;">
+                        exp(V<sub>j</sub> + c) / &Sigma; exp(V<sub>k</sub> + c) = exp(c) &middot; exp(V<sub>j</sub>) / exp(c) &middot; &Sigma; exp(V<sub>k</sub>) = exp(V<sub>j</sub>) / &Sigma; exp(V<sub>k</sub>)
+                    </p>
+                    <p style="color: #888; font-size: 0.9em;">The exp(c) terms cancel perfectly.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">In the logit model, only utility <em>differences</em> matter because:</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">Consumers only evaluate products by comparing exactly two at a time</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">The Central Limit Theorem requires normalizing utilities before estimation</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">Absolute utility is unobservable &mdash; adding a constant to all leaves choices unchanged</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">The Gumbel distribution is symmetric around zero by construction</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-q3')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="completeChapter(2)" disabled>Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 3: ESTIMATION & LOYALTY ==================== -->
+
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Estimation &amp; Loyalty</h2>
+                    <p class="chapter-desc">Maximum likelihood and the G&amp;L innovation</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dr. Rivera <span class="role-badge role-badge-gold">Research Lead</span></div>
+                        <p>"Now that we have the logit probability formula, we need to estimate the parameters &beta; from data. The standard approach is maximum likelihood estimation. But what made Guadagni &amp; Little's 1983 paper truly influential was not just estimating the model &mdash; it was a specific variable they constructed."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">Before we discuss their innovation, let's understand <em>why</em> we use <span class="highlight">log-likelihood</span>
+                    <span class="info-icon">?<span class="info-tooltip"><strong>Log-Likelihood</strong><br><br>LL(&beta;) = &Sigma;<sub>i</sub> &Sigma;<sub>j</sub> y<sub>ij</sub> &middot; log P<sub>ij</sub>(&beta;), where y<sub>ij</sub>=1 if consumer i chose j. Maximizing LL gives the same estimates as maximizing the likelihood, but is computationally superior.</span></span>
+                rather than the likelihood itself.</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-q4')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-teaching')">Explore the Loyalty Variable</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Interactive Loyalty Variable Explorer -->
+            <div class="screen" id="chapter3-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Loyalty Variable Explorer</h2>
+                </div>
+
+                <div class="loyalty-explorer">
+                    <p style="text-align: center; font-family: Georgia, serif; font-size: 1.05em; margin-bottom: 6px;">
+                        LOYALTY<sub>ijt</sub> = &alpha; &middot; <strong>1</strong>[last purchase = j] + (1 &minus; &alpha;) &middot; LOYALTY<sub>ij,t&minus;1</sub>
+                    </p>
+                    <p style="text-align: center; color: #888; font-size: 0.85em; margin-bottom: 12px;">An exponentially smoothed measure of brand preference from past purchases</p>
+
+                    <div style="display: flex; align-items: center; gap: 12px; margin: 10px 0;">
+                        <span style="font-size: 0.9em; min-width: 90px; font-weight: 600;">&alpha; (smoothing):</span>
+                        <input type="range" id="loyalty-alpha" min="0.1" max="0.9" step="0.05" value="0.40" oninput="updateLoyalty()" style="flex: 1; accent-color: #4ecca3;">
+                        <span id="loyalty-alpha-val" style="min-width: 40px; text-align: right; font-weight: bold; color: #4ecca3;">0.40</span>
+                    </div>
+
+                    <p style="text-align: center; color: #888; font-size: 0.85em; margin: 8px 0;">Consumer purchase sequence (10 trips):</p>
+                    <div class="purchase-sequence" id="purchase-seq">
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-m">M</div>
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-p">P</div>
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-m">M</div>
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-f">F</div>
+                        <div class="purchase-chip chip-f">F</div>
+                    </div>
+                    <p style="text-align: center; font-size: 0.75em; color: #888;">
+                        <span style="color: #d4a03c;">F</span> = Folgers &nbsp;&nbsp;
+                        <span style="color: #6c8ebf;">M</span> = Maxwell House &nbsp;&nbsp;
+                        <span style="color: #888;">P</span> = Private Label
+                    </p>
+
+                    <p style="text-align: center; color: #ccc; font-size: 0.9em; margin: 10px 0;">Final Loyalty Scores After 10 Purchases:</p>
+                    <div class="loyalty-bars" id="loyalty-bars">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="compact-scenario">
+                    <strong>High &alpha;</strong> = recent purchases dominate (fast-adapting loyalty). <strong>Low &alpha;</strong> = long purchase history matters (slow-moving loyalty). G&amp;L estimated &alpha; &asymp; 0.4 from their data &mdash; try adjusting the slider to see how it affects loyalty scores.
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-q5')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Q5 -->
+            <div class="screen" id="chapter3-q5">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Maximum Likelihood</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge role-badge-green">Research Assistant</span></div>
+                        <p>"I understand we want to maximize the likelihood &mdash; find the &beta; that makes the observed choices most probable. But why does everyone maximize the <em>log</em>-likelihood instead? Does that give different parameter estimates?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Likelihood vs Log-Likelihood</h3>
+                    <p style="margin-top: 8px; line-height: 1.7;">With 1,000 consumers and 3 brands, the likelihood is a product of 1,000 probabilities (all &lt; 1). That product becomes astronomically small &mdash; too small for computers to represent without underflow.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">We maximize the log-likelihood instead of the likelihood because:</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">The log transformation produces entirely different parameter estimates</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">It turns products into sums, is numerically stable, and is globally concave</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">Log-likelihood estimation requires far fewer observations than MLE</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">It is the only way to handle missing purchase data in scanner panels</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('chapter3-q6')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Q6 -->
+            <div class="screen" id="chapter3-q6">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">The Loyalty Variable</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dr. Rivera <span class="role-badge role-badge-gold">Research Lead</span></div>
+                        <p>"Guadagni &amp; Little (1983) fit the logit model to ground coffee purchases from scanner data. Their model with just price, promotion, and brand loyalty explained over 80% of the variation. But what made their paper truly influential was one specific modeling innovation."</p>
+                    </div>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge role-badge-green">Research Assistant</span></div>
+                        <p>"Wasn't it just that they used a really large scanner dataset for the first time? Or maybe it was including price as a variable &mdash; that seems like it would have been novel back in 1983."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Guadagni &amp; Little's key innovation in their 1983 paper was:</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">Being the first researchers to include price as an explanatory variable</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">The exponentially smoothed loyalty variable capturing dynamic brand preferences</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">Inventing the multinomial logit model for use in marketing applications</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">Demonstrating that scanner data could be collected at the household level</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-q5')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="completeChapter(3)" disabled>Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 4: IIA & PRICE ENDOGENEITY ==================== -->
+
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">IIA &amp; Price Endogeneity</h2>
+                    <p class="chapter-desc">Limitations and identification challenges</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Professor Gupta <span class="role-badge role-badge-blue">Econometrician</span></div>
+                        <p>"The logit model is elegant and tractable, but it has two critical limitations that have driven decades of research. The first is structural &mdash; the IIA property. The second is econometric &mdash; price endogeneity. You must understand both before using logit in practice."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">Let's examine the most famous thought experiment in discrete choice: the <span class="highlight">Red Bus / Blue Bus</span> problem, which exposes a fundamental flaw in the i.i.d. error assumption.</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-q6')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-teaching')">See the IIA Problem</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Interactive Red Bus / Blue Bus Demo -->
+            <div class="screen" id="chapter4-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Red Bus / Blue Bus Demo</h2>
+                </div>
+
+                <div class="iia-demo">
+                    <p style="text-align: center; color: #ccc; font-size: 0.95em; margin-bottom: 10px;">A commuter chooses between transportation modes</p>
+
+                    <p style="text-align: center; color: #888; font-size: 0.85em;">Initial shares (before Blue Bus):</p>
+                    <div class="iia-shares" id="iia-initial-shares">
+                        <div class="iia-share-box">
+                            <div class="share-icon">&#128663;</div>
+                            <div class="share-label">Car</div>
+                            <div class="share-val" style="color: #d4a03c;">40%</div>
+                        </div>
+                        <div class="iia-share-box">
+                            <div class="share-icon" style="color: #e94560;">&#128652;</div>
+                            <div class="share-label">Red Bus</div>
+                            <div class="share-val" style="color: #e94560;">30%</div>
+                        </div>
+                        <div class="iia-share-box">
+                            <div class="share-icon">&#128694;</div>
+                            <div class="share-label">Walk</div>
+                            <div class="share-val" style="color: #4ecca3;">30%</div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin: 12px 0;">
+                        <span class="shift-all-btn" id="add-blue-bus-btn" onclick="addBlueBus()" style="font-size: 0.95em; padding: 8px 24px;">
+                            &#128652; Add Blue Bus
+                        </span>
+                    </div>
+
+                    <div id="iia-after-section" style="display: none;">
+                        <div class="iia-toggle-group">
+                            <span class="iia-toggle-btn active" id="iia-tog-pred" onclick="toggleIIA('prediction')">IIA Prediction</span>
+                            <span class="iia-toggle-btn" id="iia-tog-real" onclick="toggleIIA('reality')">Intuitive Reality</span>
+                        </div>
+
+                        <div class="iia-comparison">
+                            <div class="iia-col" id="iia-pred-col">
+                                <h4 style="color: #e94560;">IIA Prediction</h4>
+                                <div class="iia-bar-set" id="iia-pred-bars"></div>
+                            </div>
+                            <div class="iia-col" id="iia-real-col">
+                                <h4 style="color: #4ecca3;">Intuitive Reality</h4>
+                                <div class="iia-bar-set" id="iia-real-bars"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="compact-scenario" id="iia-explanation" style="display: none;">
+                    Under IIA, the logit model predicts Blue Bus steals <strong>proportionally</strong> from all modes. But intuitively, Blue Bus should steal mainly from Red Bus (they're close substitutes!) while barely affecting Car or Walk. This is the fundamental limitation of the i.i.d. Gumbel error assumption.
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-q7')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Q7 -->
+            <div class="screen" id="chapter4-q7">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Independence of Irrelevant Alternatives</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128218; IIA in the Coffee Market</h3>
+                    <p style="margin-top: 8px;">In our scanner data, suppose Folgers and Maxwell House each have 30% share, and a store brand has 40%. If a new premium brand enters, IIA implies it draws proportionally from <em>all</em> existing brands &mdash; even though it likely competes most directly with the other national brands.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The IIA (Independence of Irrelevant Alternatives) property means:
+                        <span class="info-icon">?<span class="info-tooltip"><strong>IIA</strong><br><br>Formally: P<sub>ij</sub>/P<sub>ik</sub> = exp(V<sub>ij</sub>)/exp(V<sub>ik</sub>), which does not depend on any alternative other than j and k. This follows from the i.i.d. error assumption in logit.</span></span>
+                    </div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">Adding a new product to the market does not change any existing demand</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">The ratio of choice probabilities between two options is independent of other options</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">All brands in the choice set must have approximately equal market shares</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">Consumer preferences for each brand are independent across shopping trips</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('chapter4-q8')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Q8 -->
+            <div class="screen" id="chapter4-q8">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Price Endogeneity</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Professor Gupta <span class="role-badge role-badge-blue">Econometrician</span></div>
+                        <p>"One last critical issue. When we estimate the price coefficient from observational scanner data, we often get estimates that seem too small &mdash; as if consumers barely respond to price. But we know from promotions that they do respond. What's going on?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128176; The Endogeneity Problem</h3>
+                    <p style="margin-top: 8px;">Consider two coffee brands: Brand A is premium quality (organic, fair-trade) priced at $8. Brand B is basic, priced at $4. Brand A sells well <em>despite</em> its high price because of high unobserved quality (&xi;). In the data, we see high price <em>and</em> high demand together &mdash; making it look like price doesn't matter.</p>
+                    <p style="margin-top: 8px; color: #888; font-size: 0.9em;">The true price effect is negative, but Cov(price, &xi;) &gt; 0 creates an upward bias, pushing the coefficient toward zero.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">In scanner data, OLS price coefficients are biased toward zero because:
+                        <span class="info-icon">?<span class="info-tooltip"><strong>Price Endogeneity</strong><br><br>Firms set prices based on product quality, which includes features the researcher can't observe. This creates Cov(price, &xi;) &gt; 0, biasing the price coefficient toward zero (attenuation bias). Solutions: instrumental variables (e.g., BLP instruments).</span></span>
+                    </div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Retail prices do not vary enough across stores to identify the price effect</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">Firms set higher prices for products with higher unobserved quality</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">Consumers systematically ignore price when choosing among familiar brands</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">The scanner equipment introduces rounding errors in the recorded price data</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-q7')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="completeChapter(4)" disabled>See Results</button>
+                </div>
+            </div>
+
+            <!-- ==================== RESULTS SCREEN ==================== -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Lab Complete!</h1>
+                    <p style="color: #d4a03c; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've completed the Discrete Choice Models training</p>
+
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="grade">-</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="correct-count">0/8</div>
+                            <div class="stat-label">Questions Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="max-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned -->
+                    <div style="max-width: 700px; margin: 20px auto;">
+                        <h3 style="margin-bottom: 15px;">Badges Earned</h3>
+                        <div class="badges-container" id="results-badges">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Cheat Sheet -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>Discrete Choice Cheat Sheet &mdash; Key Concepts</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Random Utility</div>
+                                <div class="definition">U<sub>ij</sub> = V<sub>ij</sub> + &epsilon;<sub>ij</sub></div>
+                                <div class="formula">Observable + unobservable components</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Logit Formula</div>
+                                <div class="definition">P<sub>ij</sub> = exp(V<sub>ij</sub>) / &Sigma; exp(V<sub>ik</sub>)</div>
+                                <div class="formula">Requires i.i.d. Type I Extreme Value errors</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Scale Invariance</div>
+                                <div class="definition">Only utility differences are identified</div>
+                                <div class="formula">Adding a constant to all V leaves P unchanged</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">MLE</div>
+                                <div class="definition">Maximize LL = &Sigma; y<sub>ij</sub> log P<sub>ij</sub></div>
+                                <div class="formula">Globally concave for logit &mdash; unique solution</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Loyalty Variable (G&amp;L)</div>
+                                <div class="definition">LOYALTY<sub>ijt</sub> = &alpha;&middot;1[last=j] + (1&minus;&alpha;)&middot;LOYALTY<sub>ij,t&minus;1</sub></div>
+                                <div class="formula">Exponentially smoothed past purchases</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">IIA Property</div>
+                                <div class="definition">P<sub>ij</sub>/P<sub>ik</sub> independent of other alternatives</div>
+                                <div class="formula">Red bus / blue bus problem</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Price Endogeneity</div>
+                                <div class="definition">Cov(price, &xi;) &gt; 0 biases price effect toward zero</div>
+                                <div class="formula">Firms set higher prices for better unobserved quality</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Extensions</div>
+                                <div class="definition">Nested logit, mixed logit, BLP</div>
+                                <div class="formula">Relax IIA, allow flexible substitution patterns</div>
+                            </div>
+                        </div>
+
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="copyCheatSheet()">Copy to Clipboard</button>
+                            <button class="btn-export" onclick="downloadCheatSheet()">Download as Text</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+                        <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LEADERBOARD ==================== -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from the Discrete Choice Lab</p>
+
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume identifier for this game
+        const VOLUME_ID = 'discrete-choice';
+
+        // ============== GAME STATE ==============
+        let gameState = null;
+
+        // Question answers (0-indexed correct answer)
+        const correctAnswers = {
+            'q1': 1, // Unobservable factors
+            'q2': 1, // Researcher cannot observe all factors
+            'q3': 2, // Type I Extreme Value (Gumbel)
+            'q4': 2, // Absolute utility is unobservable
+            'q5': 1, // Products into sums, numerically stable, globally concave
+            'q6': 1, // Exponentially smoothed loyalty variable
+            'q7': 1, // Ratio of choice probabilities independent of other options
+            'q8': 1  // Firms set higher prices for higher unobserved quality
+        };
+
+        const explanations = {
+            'q1': {
+                correct: '\u03B5 captures everything the researcher doesn\'t observe: individual taste variation, unobserved product attributes like shelf position or packaging appeal, mood on the shopping day, and measurement limitations. Price, promotion, and display go into V \u2014 not \u03B5.',
+                incorrect: '\u03B5_ij represents the unobservable component of utility. It captures idiosyncratic tastes, unobserved attributes, and anything else the researcher can\'t measure. Observable factors like price, promotion, and market share belong in V, not \u03B5.'
+            },
+            'q2': {
+                correct: 'Even if consumers deterministically maximize utility, the unobservable component (\u03B5) means the researcher can only predict choice probabilities. Two consumers facing identical prices may choose differently because of unobserved taste differences \u2014 the randomness is in what we can\'t see, not in the consumer\'s behavior.',
+                incorrect: 'Choice is modeled probabilistically not because consumers are irrational, but because of \u03B5 \u2014 the part of utility we can\'t observe. Consumers may be perfectly rational, but since we can\'t see everything they consider (taste, mood, unobserved quality), we can only predict probabilities.'
+            },
+            'q3': {
+                correct: 'McFadden (1974) showed that assuming \u03B5 follows i.i.d. Type I Extreme Value (Gumbel) yields the elegant closed-form logit probability: P_ij = exp(V_ij) / \u03A3 exp(V_ik). Normal errors give the probit model instead, which lacks a closed form and requires simulation.',
+                incorrect: 'The logit model requires i.i.d. Type I Extreme Value (Gumbel) errors. This specific distribution yields the closed-form logit probability: P_ij = exp(V_ij) / \u03A3 exp(V_ik). Normal errors give probit (requires simulation), not logit.'
+            },
+            'q4': {
+                correct: 'Adding a constant c to all utilities doesn\'t change choice probabilities because exp(c) cancels in the numerator and denominator of the logit formula. This means only utility differences are identified from choice data \u2014 we can never know the absolute level of utility.',
+                incorrect: 'Since adding the same constant to all utilities leaves choice probabilities unchanged (exp(c) cancels in the ratio), we can only identify utility differences from choice data. Absolute utility levels are fundamentally unobservable. The Gumbel distribution is actually skewed, not symmetric.'
+            },
+            'q5': {
+                correct: 'The log transform has three advantages: (1) it converts products of probabilities into sums of log-probabilities, preventing numerical underflow; (2) it preserves the same maximizer as the likelihood (log is monotonic); and (3) for the logit model specifically, the log-likelihood is globally concave, guaranteeing a unique maximum.',
+                incorrect: 'The log-likelihood is preferred because: (1) it converts products to sums for numerical stability, (2) it has the same maximizer as the likelihood (log is monotonic), and (3) for logit, it\'s globally concave \u2014 guaranteeing a unique solution. It does NOT give different estimates from the likelihood.'
+            },
+            'q6': {
+                correct: 'G&L introduced LOYALTY_ijt = \u03B1\u00B71[last purchase = j] + (1\u2212\u03B1)\u00B7LOYALTY_{ij,t\u22121}, an exponentially smoothed measure that allows brand preferences to evolve with purchase history. Previous models assumed static preferences. The logit model itself was from McFadden (1974), not G&L.',
+                incorrect: 'Guadagni & Little\'s key contribution was the LOYALTY variable \u2014 an exponentially smoothed moving average of past purchases that captures how brand preferences evolve over time. Price was already used in earlier models, and the logit model was developed by McFadden (1974).'
+            },
+            'q7': {
+                correct: 'IIA means P_ij/P_ik = exp(V_ij)/exp(V_ik), which doesn\'t depend on any other alternative in the choice set. This leads to proportional substitution: when a new option enters, it steals share proportionally from ALL existing options \u2014 not just from its closest substitutes. The red bus/blue bus example illustrates why this can be unrealistic.',
+                incorrect: 'IIA means the ratio P_ij/P_ik is independent of what other alternatives exist. Adding a new product DOES change shares (IIA doesn\'t prevent that), but it changes them proportionally. The problem is that a new Blue Bus should mainly steal from Red Bus, not equally from Car and Walk.'
+            },
+            'q8': {
+                correct: 'Price endogeneity arises because Cov(price, \u03BE) > 0 \u2014 firms charge more for products with higher unobserved quality. In the data, high price and high demand appear together (through unobserved quality), making the price coefficient look less negative than it truly is. This is classic omitted variable bias / attenuation bias.',
+                incorrect: 'Price endogeneity occurs because firms set higher prices for better-quality products. Since quality is partly unobserved (captured by \u03BE in the error), price and \u03BE are positively correlated. This positive correlation biases the estimated price coefficient toward zero, making it seem like consumers don\'t respond to price.'
+            }
+        };
+
+        // Screen management hook for interactive elements
+        function onScreenShow(screenId) {
+            switch (screenId) {
+                case 'chapter2-teaching':
+                    setTimeout(function() { updateLogitCalc(); }, 50);
+                    break;
+                case 'chapter3-teaching':
+                    setTimeout(function() { updateLoyalty(); }, 50);
+                    break;
+                case 'chapter4-teaching':
+                    setTimeout(function() { resetIIADemo(); }, 50);
+                    break;
+            }
+        }
+
+        // ============== INIT ==============
+        async function loadGameConfig() {
+            try {
+                const response = await fetch('config.json');
+                gameConfig = await response.json();
+            } catch (e) { console.error('Config load failed:', e); }
+        }
+
+        async function init() {
+            await loadGameConfig();
+            await initAuth();
+            if (gameConfig) gameState = createGameState(gameConfig);
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        }
+
+        async function startGame() {
+            if (!currentUser) {
+                window.location.href = '../../index.html';
+                return;
+            }
+            gameState = createGameState(gameConfig);
+            await Analytics.trackVolumeStart();
+
+            // Reset UI
+            document.querySelectorAll('.badge').forEach(b => b.classList.remove('unlocked'));
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            document.querySelectorAll('.feedback').forEach(fb => {
+                fb.className = 'feedback';
+                fb.innerHTML = '';
+            });
+            for (let i = 1; i <= 8; i++) {
+                const btn = document.getElementById('q' + i + '-next');
+                if (btn) btn.disabled = true;
+            }
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById('ch' + i + '-dot');
+                if (dot) {
+                    dot.classList.remove('active', 'completed');
+                    if (i === 1) dot.classList.add('active');
+                }
+            }
+
+            // Reset interactive element states
+            document.querySelectorAll('.component-reveal').forEach(r => r.classList.remove('visible'));
+            document.querySelectorAll('.utility-component').forEach(c => c.classList.remove('active'));
+            resetIIADemo();
+
+            updateStats();
+            updateProgress();
+            showScreen('chapter1-intro');
+        }
+
+        function restartGame() { startGame(); }
+
+        // ============== QUESTION HANDLING ==============
+        function selectOption(element, questionId, optionIndex) {
+            const result = processAnswer(gameState, questionId, optionIndex, correctAnswers[questionId], gameConfig);
+            if (result.alreadyAnswered) return;
+
+            Analytics.trackAnswer(questionId, optionIndex, correctAnswers[questionId], result.isCorrect, result.points, result.streak);
+
+            const options = document.querySelectorAll('#' + questionId + '-options .option');
+            options.forEach(opt => opt.classList.remove('selected', 'correct', 'incorrect'));
+            element.classList.add('selected');
+
+            updateAnswerUI(questionId, optionIndex, correctAnswers[questionId], result.isCorrect);
+
+            const feedback = document.getElementById(questionId + '-feedback');
+            if (result.isCorrect) {
+                feedback.className = 'feedback success show';
+                feedback.innerHTML = '<strong>&#10004; Correct!</strong> +' + Number(result.points) + ' points<br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].correct));
+            } else {
+                feedback.className = 'feedback error show';
+                feedback.innerHTML = '<strong>&#10008; Not quite.</strong><br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].incorrect));
+            }
+
+            updateStatsDisplay(gameState);
+            checkBadges(questionId, result.isCorrect);
+            document.getElementById(questionId + '-next').disabled = false;
+        }
+
+        function updateStats() { updateStatsDisplay(gameState); }
+
+        function updateProgress() {
+            const chapters = gameConfig.chapters;
+            const progress = ((gameState.currentChapter - 1) / chapters) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = 'Chapter ' + gameState.currentChapter + ' of ' + chapters;
+            document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+            for (let i = 1; i <= chapters; i++) {
+                const dot = document.getElementById('ch' + i + '-dot');
+                if (!dot) continue;
+                dot.classList.remove('active', 'completed');
+                if (i < gameState.currentChapter) dot.classList.add('completed');
+                else if (i === gameState.currentChapter) dot.classList.add('active');
+            }
+        }
+
+        function completeChapter(chapter) {
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+            checkPerfectChapter(chapter);
+
+            document.getElementById('ch' + chapter + '-dot').classList.remove('active');
+            document.getElementById('ch' + chapter + '-dot').classList.add('completed');
+
+            if (chapter < 4) {
+                gameState.currentChapter = chapter + 1;
+                document.getElementById('ch' + (chapter + 1) + '-dot').classList.add('active');
+                showScreen('chapter' + (chapter + 1) + '-intro');
+            } else {
+                gameState.currentChapter = chapter + 1;
+                showResults();
+            }
+            updateProgress();
+        }
+
+        // ============== BADGES ==============
+        function checkBadges(questionId, isCorrect) {
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 3 });
+
+            // Logit Expert badge: correct on Q5 (MLE question, mastered the logit model)
+            if (questionId === 'q5' && isCorrect && !gameState.badges.logit) {
+                gameState.badges.logit = true;
+                var badge = gameConfig.badges.logit;
+                unlockBadge('logit', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('logit', badge.name, questionId);
+            }
+            // IIA Detective badge: correct on Q7 (IIA question)
+            if (questionId === 'q7' && isCorrect && !gameState.badges.iia) {
+                gameState.badges.iia = true;
+                var badge = gameConfig.badges.iia;
+                unlockBadge('iia', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('iia', badge.name, questionId);
+            }
+        }
+
+        function checkPerfectChapter(chapter) {
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                var badge = gameConfig.badges.perfect;
+                unlockBadge('perfect', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('perfect', badge.name);
+            }
+        }
+
+        // ============== RESULTS ==============
+        function populateResultsBadges() {
+            var container = document.getElementById('results-badges');
+            var badges = [
+                { id: 'first', icon: '\u{1F3AF}', name: 'First Insight' },
+                { id: 'streak', icon: '\u{1F525}', name: '3+ Streak' },
+                { id: 'perfect', icon: '\u2B50', name: 'Perfect Chapter' },
+                { id: 'logit', icon: '\u{1F4C8}', name: 'Logit Expert' },
+                { id: 'iia', icon: '\u{1F68C}', name: 'IIA Detective' },
+                { id: 'master', icon: '\u{1F3C6}', name: 'Choice Master' }
+            ];
+            container.innerHTML = badges.map(function(badge) {
+                return '<div class="badge ' + (gameState.badges[badge.id] ? 'unlocked' : '') + '" title="' + badge.name + '">' +
+                    '<span>' + badge.icon + '</span>' +
+                    '<div class="badge-tooltip">' + badge.name + '</div></div>';
+            }).join('');
+        }
+
+        async function showResults() {
+            // Check master badge
+            if (gameState.correctAnswers === gameConfig.totalQuestions && !gameState.badges.master) {
+                gameState.badges.master = true;
+                var badge = gameConfig.badges.master;
+                unlockBadge('master', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('master', badge.name);
+            }
+
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('correct-count').textContent = gameState.correctAnswers + '/' + gameConfig.totalQuestions;
+            document.getElementById('max-streak').textContent = gameState.maxStreak;
+
+            var grade = gameConfig.grades.find(function(g) { return gameState.correctAnswers >= g.minCorrect; });
+            if (grade) document.getElementById('grade').textContent = grade.title;
+
+            populateResultsBadges();
+
+            Analytics.trackVolumeComplete(gameState, grade ? grade.title : 'Unknown');
+
+            var result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) Analytics.setRunNumber(result.runNumber);
+                else alert('Score could not be saved.');
+            }
+            showScreen('results-screen');
+            if (currentUser && result && result.runNumber) {
+                setTimeout(function() { showFeedbackModal(result.runNumber); }, 500);
+            }
+        }
+
+        // ============== CHEAT SHEET ==============
+        function copyCheatSheet() {
+            var text = generateCheatSheetText();
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Cheat sheet copied to clipboard!');
+            }).catch(function() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Cheat sheet copied to clipboard!');
+            });
+        }
+
+        function downloadCheatSheet() {
+            var text = generateCheatSheetText();
+            var blob = new Blob([text], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'discrete_choice_cheat_sheet.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateCheatSheetText() {
+            return '========================================\n' +
+                'DISCRETE CHOICE MODELS CHEAT SHEET\n' +
+                'Scanner Data Analysis Workshop\n' +
+                '========================================\n\n' +
+                'RANDOM UTILITY\n--------------\n' +
+                'U_ij = V_ij + epsilon_ij\n' +
+                'Observable + unobservable components.\n' +
+                'Choice is probabilistic because of epsilon.\n\n' +
+                'LOGIT FORMULA\n-------------\n' +
+                'P_ij = exp(V_ij) / Sum_k exp(V_ik)\n' +
+                'Requires i.i.d. Type I Extreme Value errors.\n' +
+                'Only utility DIFFERENCES are identified.\n\n' +
+                'MAXIMUM LIKELIHOOD\n------------------\n' +
+                'LL(beta) = Sum_i Sum_j y_ij * log P_ij\n' +
+                'Log transform: products -> sums.\n' +
+                'Globally concave for logit -> unique max.\n\n' +
+                'LOYALTY VARIABLE (G&L 1983)\n--------------------------\n' +
+                'LOYALTY_ijt = alpha * 1[last=j]\n' +
+                '            + (1-alpha) * LOYALTY_{ij,t-1}\n' +
+                'Exponentially weighted past purchases.\n\n' +
+                'IIA PROPERTY\n------------\n' +
+                'P_ij/P_ik independent of other alternatives.\n' +
+                'Red bus / blue bus problem.\n' +
+                'Relaxed by nested logit, mixed logit.\n\n' +
+                'PRICE ENDOGENEITY\n-----------------\n' +
+                'Cov(price, xi) > 0 -> attenuation bias.\n' +
+                'Firms charge more for better quality.\n' +
+                'Solutions: IV, BLP instruments.\n\n' +
+                'EXTENSIONS\n----------\n' +
+                'Nested logit: allows correlation within nests.\n' +
+                'Mixed logit: random coefficients.\n' +
+                'BLP (1995): aggregate data + IV.\n';
+        }
+
+        // ===========================================================
+        // INTERACTIVE TEACHING ELEMENTS
+        // ===========================================================
+
+        // ---- Ch1: Utility Component Toggle ----
+        function toggleReveal(component) {
+            var revealEl = document.getElementById('reveal-' + component);
+            var compEl = component === 'v' ? document.querySelector('.comp-v') : document.querySelector('.comp-eps');
+
+            if (revealEl.classList.contains('visible')) {
+                revealEl.classList.remove('visible');
+                compEl.classList.remove('active');
+            } else {
+                revealEl.classList.add('visible');
+                compEl.classList.add('active');
+            }
+        }
+
+        // ---- Ch2: Logit Probability Calculator ----
+        function updateLogitCalc() {
+            var v1 = parseFloat(document.getElementById('logit-v1').value);
+            var v2 = parseFloat(document.getElementById('logit-v2').value);
+            var v3 = parseFloat(document.getElementById('logit-v3').value);
+
+            document.getElementById('logit-v1-val').textContent = v1.toFixed(1);
+            document.getElementById('logit-v2-val').textContent = v2.toFixed(1);
+            document.getElementById('logit-v3-val').textContent = v3.toFixed(1);
+
+            var e1 = Math.exp(v1);
+            var e2 = Math.exp(v2);
+            var e3 = Math.exp(v3);
+            var eSum = e1 + e2 + e3;
+
+            var p1 = e1 / eSum;
+            var p2 = e2 / eSum;
+            var p3 = e3 / eSum;
+
+            document.getElementById('logit-p1').textContent = (p1 * 100).toFixed(1) + '%';
+            document.getElementById('logit-p2').textContent = (p2 * 100).toFixed(1) + '%';
+            document.getElementById('logit-p3').textContent = (p3 * 100).toFixed(1) + '%';
+
+            document.getElementById('logit-e1').textContent = 'exp(V) = ' + e1.toFixed(2);
+            document.getElementById('logit-e2').textContent = 'exp(V) = ' + e2.toFixed(2);
+            document.getElementById('logit-e3').textContent = 'exp(V) = ' + e3.toFixed(2);
+
+            // Update bar chart
+            var barContainer = document.getElementById('logit-bar');
+            barContainer.innerHTML =
+                '<div class="logit-bar-seg" style="width:' + (p1 * 100).toFixed(1) + '%; background: #d4a03c;">' + (p1 * 100 >= 8 ? (p1 * 100).toFixed(0) + '%' : '') + '</div>' +
+                '<div class="logit-bar-seg" style="width:' + (p2 * 100).toFixed(1) + '%; background: #6c8ebf;">' + (p2 * 100 >= 8 ? (p2 * 100).toFixed(0) + '%' : '') + '</div>' +
+                '<div class="logit-bar-seg" style="width:' + (p3 * 100).toFixed(1) + '%; background: #555;">' + (p3 * 100 >= 8 ? (p3 * 100).toFixed(0) + '%' : '') + '</div>';
+        }
+
+        function shiftAllUtilities(delta) {
+            var ids = ['logit-v1', 'logit-v2', 'logit-v3'];
+            ids.forEach(function(id) {
+                var slider = document.getElementById(id);
+                var newVal = Math.max(-2, Math.min(3, parseFloat(slider.value) + delta));
+                slider.value = newVal;
+            });
+            updateLogitCalc();
+        }
+
+        function resetLogitSliders() {
+            document.getElementById('logit-v1').value = 1.0;
+            document.getElementById('logit-v2').value = 0.5;
+            document.getElementById('logit-v3').value = 0.0;
+            updateLogitCalc();
+        }
+
+        // ---- Ch3: Loyalty Variable Explorer ----
+        var purchaseSequence = ['F', 'M', 'F', 'F', 'P', 'F', 'M', 'F', 'F', 'F'];
+
+        function updateLoyalty() {
+            var alpha = parseFloat(document.getElementById('loyalty-alpha').value);
+            document.getElementById('loyalty-alpha-val').textContent = alpha.toFixed(2);
+
+            // Compute loyalty scores
+            var loyalty = { F: 1/3, M: 1/3, P: 1/3 }; // initial uniform
+
+            purchaseSequence.forEach(function(brand) {
+                var newLoyalty = {};
+                ['F', 'M', 'P'].forEach(function(b) {
+                    var indicator = (brand === b) ? 1 : 0;
+                    newLoyalty[b] = alpha * indicator + (1 - alpha) * loyalty[b];
+                });
+                loyalty = newLoyalty;
+            });
+
+            // Render bars
+            var barsContainer = document.getElementById('loyalty-bars');
+            var maxLoyalty = Math.max(loyalty.F, loyalty.M, loyalty.P, 0.01);
+
+            var brands = [
+                { key: 'F', name: 'Folgers', color: '#d4a03c' },
+                { key: 'M', name: 'Maxwell', color: '#6c8ebf' },
+                { key: 'P', name: 'Pvt Label', color: '#888' }
+            ];
+
+            barsContainer.innerHTML = brands.map(function(b) {
+                var val = loyalty[b.key];
+                var barHeight = Math.max(4, (val / maxLoyalty) * 100);
+                return '<div class="loyalty-bar-wrap">' +
+                    '<div class="loyalty-bar-val" style="color:' + b.color + ';">' + val.toFixed(3) + '</div>' +
+                    '<div class="loyalty-bar" style="height:' + barHeight + 'px; background:' + b.color + ';"></div>' +
+                    '<div class="loyalty-bar-label">' + b.name + '</div>' +
+                    '</div>';
+            }).join('');
+        }
+
+        // ---- Ch4: IIA Red Bus / Blue Bus Demo ----
+        var iiaBlueBusAdded = false;
+        var iiaView = 'prediction';
+
+        function resetIIADemo() {
+            iiaBlueBusAdded = false;
+            iiaView = 'prediction';
+            var afterSection = document.getElementById('iia-after-section');
+            if (afterSection) afterSection.style.display = 'none';
+            var explanation = document.getElementById('iia-explanation');
+            if (explanation) explanation.style.display = 'none';
+            var btn = document.getElementById('add-blue-bus-btn');
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            }
+        }
+
+        function addBlueBus() {
+            if (iiaBlueBusAdded) return;
+            iiaBlueBusAdded = true;
+
+            var btn = document.getElementById('add-blue-bus-btn');
+            btn.style.opacity = '0.4';
+            btn.style.pointerEvents = 'none';
+
+            document.getElementById('iia-after-section').style.display = 'block';
+            document.getElementById('iia-explanation').style.display = 'block';
+
+            renderIIABars();
+        }
+
+        function toggleIIA(view) {
+            iiaView = view;
+            document.getElementById('iia-tog-pred').classList.toggle('active', view === 'prediction');
+            document.getElementById('iia-tog-real').classList.toggle('active', view === 'reality');
+            renderIIABars();
+        }
+
+        function renderIIABars() {
+            // IIA prediction: proportional substitution
+            var predShares = [
+                { label: 'Car', val: 26.7, color: '#d4a03c' },
+                { label: 'Red Bus', val: 20.0, color: '#e94560' },
+                { label: 'Blue Bus', val: 20.0, color: '#6c8ebf' },
+                { label: 'Walk', val: 26.7, color: '#4ecca3' }
+            ];
+
+            // Intuitive reality: Blue Bus steals mainly from Red Bus
+            var realShares = [
+                { label: 'Car', val: 38.0, color: '#d4a03c' },
+                { label: 'Red Bus', val: 15.0, color: '#e94560' },
+                { label: 'Blue Bus', val: 18.0, color: '#6c8ebf' },
+                { label: 'Walk', val: 29.0, color: '#4ecca3' }
+            ];
+
+            function buildBars(shares, containerId) {
+                var container = document.getElementById(containerId);
+                container.innerHTML = shares.map(function(s) {
+                    var width = Math.max(2, s.val * 1.8);
+                    return '<div class="iia-bar-row">' +
+                        '<span class="iia-bar-label">' + s.label + '</span>' +
+                        '<div class="iia-bar-track">' +
+                        '<div class="iia-bar-fill" style="width:' + width + '%; background:' + s.color + ';">' + s.val.toFixed(1) + '%</div>' +
+                        '</div></div>';
+                }).join('');
+            }
+
+            buildBars(predShares, 'iia-pred-bars');
+            buildBars(realShares, 'iia-real-bars');
+
+            // Highlight active view
+            var predCol = document.getElementById('iia-pred-col');
+            var realCol = document.getElementById('iia-real-col');
+            if (iiaView === 'prediction') {
+                predCol.style.opacity = '1';
+                realCol.style.opacity = '0.4';
+            } else {
+                predCol.style.opacity = '0.4';
+                realCol.style.opacity = '1';
+            }
+        }
+
+        // ============== NAVIGATION ==============
+        function goToMenu() {
+            window.location.href = '../../index.html';
+        }
+
+        // ============== STARTUP ==============
+        init();
+    </script>
+</body>
+</html>

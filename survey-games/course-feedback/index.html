@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Study Lounge | Course Feedback</title>
+<link rel="stylesheet" href="css/survey.css">
+</head>
+<body>
+<div class="ambient-bg"></div>
+
+<div class="page-container">
+  <a href="../../index.html" class="back-to-hub" style="color: var(--text-dim); text-decoration: none; font-size: 13px; margin-bottom: 12px; display: inline-block; transition: color 0.2s; position: relative; z-index: 1;">&#8592; Labs Hub</a>
+  <div class="notebook-card" id="main-card">
+    <!-- Auth Form (shown when logged out) -->
+    <div id="auth-view">
+      <div class="title">The Study Lounge</div>
+      <div class="subtitle">Course Feedback</div>
+      <div class="desc">Share your thoughts. Help shape the course.</div>
+      <div class="separator"></div>
+
+      <form id="auth-form" onsubmit="handleAuth(event)">
+        <div class="form-group hidden" id="username-group">
+          <label for="auth-username">Username</label>
+          <input type="text" id="auth-username" placeholder="Your display name" minlength="2" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label for="auth-email">Email</label>
+          <input type="email" id="auth-email" required placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label for="auth-password">Password</label>
+          <input type="password" id="auth-password" required minlength="6" placeholder="Min 6 characters">
+        </div>
+        <div id="auth-error" class="error-msg"></div>
+        <div id="auth-success" class="success-msg"></div>
+        <button type="submit" class="btn-primary" id="auth-submit">Login</button>
+      </form>
+
+      <p class="auth-switch">
+        <span id="auth-switch-text">Don't have an account?</span>
+        <a onclick="toggleAuthMode()" id="auth-switch-link">Sign up</a>
+      </p>
+      <p class="legal-links">
+        By signing up, you agree to our <a href="../../terms.html">Terms of Use</a> and <a href="../../privacy.html">Privacy Policy</a>
+      </p>
+    </div>
+
+    <!-- Module Selector (shown when logged in) -->
+    <div id="lobby-view" class="hidden">
+      <div class="title">The Study Lounge</div>
+      <div class="subtitle" id="lobby-greeting"></div>
+      <div class="separator"></div>
+      <div id="module-list" class="module-selector">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>Loading surveys...</p>
+        </div>
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="settings.html" style="font-size: 12px; color: var(--text-dim); text-decoration: none;">Settings</a>
+        <a href="#" onclick="signOutUser()" style="font-size: 12px; color: var(--text-dim); text-decoration: none;">Sign Out</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+  function __makeDemoSupabaseClient() {
+    const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+    const session = { user: DEMO_USER, access_token: 'demo' };
+    const ok = (data) => Promise.resolve({ data, error: null });
+    const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+    function builder() {
+      const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+      builderMethods.forEach((m) => { b[m] = () => b; });
+      return b;
+    }
+    return {
+      auth: {
+        getSession: () => ok({ session }),
+        getUser: () => ok({ user: DEMO_USER }),
+        signInWithPassword: () => ok({ user: DEMO_USER, session }),
+        signUp: () => ok({ user: DEMO_USER, session }),
+        signOut: () => ok(null),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => builder(),
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    };
+  }
+
+  const { createClient } = supabase;
+  const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let authMode = 'login';
+  let currentUser = null;
+
+  // Check if already logged in
+  supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      currentUser = session.user;
+      showLobby();
+    }
+  });
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      showLobby();
+    }
+  });
+
+  function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'signup' : 'login';
+    document.getElementById('auth-submit').textContent = authMode === 'login' ? 'Login' : 'Sign Up';
+    document.getElementById('auth-switch-text').textContent = authMode === 'login' ? "Don't have an account?" : 'Already have an account?';
+    document.getElementById('auth-switch-link').textContent = authMode === 'login' ? 'Sign up' : 'Login';
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-success').style.display = 'none';
+
+    var usernameGroup = document.getElementById('username-group');
+    var usernameInput = document.getElementById('auth-username');
+    if (authMode === 'signup') {
+      usernameGroup.classList.remove('hidden');
+      usernameInput.required = true;
+    } else {
+      usernameGroup.classList.add('hidden');
+      usernameInput.required = false;
+    }
+  }
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    var email = document.getElementById('auth-email').value;
+    var password = document.getElementById('auth-password').value;
+    var username = document.getElementById('auth-username').value;
+    var errorDiv = document.getElementById('auth-error');
+    var successDiv = document.getElementById('auth-success');
+    var submitBtn = document.getElementById('auth-submit');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Please wait...';
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+
+    try {
+      var result;
+      if (authMode === 'signup') {
+        result = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username: username || email.split('@')[0]
+            }
+          }
+        });
+        if (result.error) throw result.error;
+        if (result.data.user && !result.data.session) {
+          successDiv.style.display = 'block';
+          successDiv.textContent = 'Check your email to confirm your account!';
+          submitBtn.textContent = 'Email Sent!';
+          return;
+        }
+      } else {
+        result = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
+      }
+    } catch (error) {
+      errorDiv.textContent = error.message;
+      errorDiv.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = authMode === 'login' ? 'Login' : 'Sign Up';
+    }
+  }
+
+  async function showLobby() {
+    document.getElementById('auth-view').classList.add('hidden');
+    document.getElementById('lobby-view').classList.remove('hidden');
+
+    var meta = currentUser.user_metadata;
+    var name = meta?.username || meta?.display_name || currentUser.email?.split('@')[0] || 'Student';
+    document.getElementById('lobby-greeting').textContent = 'Welcome, ' + name;
+
+    // Init ambient background
+    initAmbientBg();
+
+    // Load registry
+    try {
+      var resp = await fetch('modules/registry.json');
+      var modules = await resp.json();
+      await renderModules(modules);
+    } catch (err) {
+      document.getElementById('module-list').innerHTML = '<p style="color: var(--danger); font-size: 13px;">Failed to load surveys.</p>';
+    }
+  }
+
+  async function renderModules(modules) {
+    // Check completion status for all modules
+    var { data: completions } = await supabaseClient
+      .from('survey_course_feedback_responses')
+      .select('module_id, submission_id')
+      .eq('user_id', currentUser.id);
+
+    var completedModules = new Set();
+    if (completions) {
+      completions.forEach(function(r) { completedModules.add(r.module_id); });
+    }
+
+    var html = '';
+    modules.forEach(function(mod) {
+      var completed = completedModules.has(mod.id);
+      var href = 'survey.html?module=' + encodeURIComponent(mod.id);
+
+      html += '<a href="' + href + '" class="module-card">';
+      html += '<div class="module-title">' + (mod.icon || '') + ' ' + escapeHtml(mod.name) + '</div>';
+      html += '<div class="module-desc">' + escapeHtml(mod.description) + '</div>';
+      html += '<div class="module-meta">';
+      html += '<span>' + mod.questions + ' questions</span>';
+      html += '<span>~' + (mod.estimatedTime || '3 min') + '</span>';
+      if (completed) {
+        html += '<span class="badge-completed">Completed</span>';
+      }
+      html += '</div></a>';
+    });
+
+    document.getElementById('module-list').innerHTML = html || '<p style="color: var(--text-dim); font-size: 13px;">No surveys available.</p>';
+  }
+
+  function signOutUser() {
+    supabaseClient.auth.signOut().then(function() {
+      document.getElementById('auth-view').classList.remove('hidden');
+      document.getElementById('lobby-view').classList.add('hidden');
+      currentUser = null;
+    });
+  }
+
+  function initAmbientBg() {
+    var bg = document.querySelector('.ambient-bg');
+    if (!bg || bg.childElementCount > 0) return;
+    for (var i = 0; i < 25; i++) {
+      var dot = document.createElement('div');
+      dot.className = 'scatter-dot';
+      dot.style.left = Math.random() * 100 + '%';
+      dot.style.top = Math.random() * 100 + '%';
+      dot.style.animationDelay = (Math.random() * -20) + 's';
+      dot.style.animationDuration = (15 + Math.random() * 15) + 's';
+      dot.style.width = dot.style.height = (2 + Math.random() * 4) + 'px';
+      bg.appendChild(dot);
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

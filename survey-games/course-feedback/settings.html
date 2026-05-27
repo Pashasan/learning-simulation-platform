@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings | The Study Lounge</title>
+<link rel="stylesheet" href="css/survey.css">
+</head>
+<body>
+<div class="ambient-bg"></div>
+
+<div class="content-container" style="position: relative; z-index: 1;">
+  <a href="index.html" class="back-link">&larr; Back to Lobby</a>
+
+  <h1 class="page-title">Settings</h1>
+  <p class="page-subtitle" id="user-email"></p>
+
+  <!-- Stats Section -->
+  <div class="section" id="stats-section">
+    <h2>Your Survey Activity</h2>
+    <div class="loading" id="stats-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading your stats...</p>
+    </div>
+    <div id="stats-content" style="display: none;">
+      <div class="stats-grid" id="stats-grid"></div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="section danger-zone">
+    <h2>Delete Account</h2>
+    <p class="danger-text">
+      Deleting your account will remove any personally identifiable information and data
+      associated with your account from the platform. This action cannot be undone.
+    </p>
+    <button class="btn-delete" id="btn-delete" onclick="showConfirmDialog()">Delete My Account</button>
+
+    <div class="confirm-dialog" id="confirm-dialog">
+      <p class="warning">Are you sure you want to delete your account?</p>
+      <p>This will:</p>
+      <p>
+        &bull; Anonymize your data across all games<br>
+        &bull; Delete your login account<br>
+        &bull; Sign you out permanently<br>
+        &bull; This action <strong>cannot</strong> be undone
+      </p>
+      <div class="confirm-buttons">
+        <button class="btn-confirm-delete" id="btn-confirm" onclick="deleteAccount()">Yes, Delete My Account</button>
+        <button class="btn-cancel" onclick="hideConfirmDialog()">Cancel</button>
+      </div>
+      <p class="error-msg" id="delete-error" style="display: none;"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+  function __makeDemoSupabaseClient() {
+    const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+    const session = { user: DEMO_USER, access_token: 'demo' };
+    const ok = (data) => Promise.resolve({ data, error: null });
+    const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+    function builder() {
+      const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+      builderMethods.forEach((m) => { b[m] = () => b; });
+      return b;
+    }
+    return {
+      auth: {
+        getSession: () => ok({ session }),
+        getUser: () => ok({ user: DEMO_USER }),
+        signInWithPassword: () => ok({ user: DEMO_USER, session }),
+        signUp: () => ok({ user: DEMO_USER, session }),
+        signOut: () => ok(null),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => builder(),
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    };
+  }
+
+  const { createClient } = supabase;
+  const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  // Init ambient bg
+  (function() {
+    var bg = document.querySelector('.ambient-bg');
+    if (!bg) return;
+    for (var i = 0; i < 25; i++) {
+      var dot = document.createElement('div');
+      dot.className = 'scatter-dot';
+      dot.style.left = Math.random() * 100 + '%';
+      dot.style.top = Math.random() * 100 + '%';
+      dot.style.animationDelay = (Math.random() * -20) + 's';
+      dot.style.animationDuration = (15 + Math.random() * 15) + 's';
+      dot.style.width = dot.style.height = (2 + Math.random() * 4) + 'px';
+      bg.appendChild(dot);
+    }
+  })();
+
+  // Auth guard
+  supabaseClient.auth.getSession().then(({ data: { session } }) => {
+    if (!session) {
+      window.location.href = 'index.html';
+      return;
+    }
+    currentUser = session.user;
+    document.getElementById('user-email').textContent = currentUser.email;
+    loadStats();
+  });
+
+  async function loadStats() {
+    try {
+      var userId = currentUser.id;
+
+      var { data: responses, error } = await supabaseClient
+        .from('survey_course_feedback_responses')
+        .select('module_id, submission_id, created_at')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Count unique submissions
+      var submissions = new Set();
+      var modules = new Set();
+      if (responses) {
+        responses.forEach(function(r) {
+          submissions.add(r.submission_id);
+          modules.add(r.module_id);
+        });
+      }
+
+      var totalSubmissions = submissions.size;
+      var totalModules = modules.size;
+      var totalResponses = responses ? responses.length : 0;
+      var memberSince = new Date(currentUser.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+      document.getElementById('stats-grid').innerHTML =
+        renderStatCard(totalSubmissions, 'Surveys Completed') +
+        renderStatCard(totalModules, 'Modules Tried') +
+        renderStatCard(totalResponses, 'Questions Answered') +
+        renderStatCard(memberSince, 'Member Since');
+
+      document.getElementById('stats-loading').style.display = 'none';
+      document.getElementById('stats-content').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('stats-loading').innerHTML = '<p style="color: var(--danger);">Failed to load stats: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  function renderStatCard(value, label) {
+    return '<div class="stat-card">' +
+      '<div class="stat-value">' + escapeHtml(String(value)) + '</div>' +
+      '<div class="stat-label">' + escapeHtml(label) + '</div>' +
+      '</div>';
+  }
+
+  function showConfirmDialog() {
+    document.getElementById('confirm-dialog').style.display = 'block';
+    document.getElementById('btn-delete').style.display = 'none';
+  }
+
+  function hideConfirmDialog() {
+    document.getElementById('confirm-dialog').style.display = 'none';
+    document.getElementById('btn-delete').style.display = 'inline-block';
+    document.getElementById('delete-error').style.display = 'none';
+  }
+
+  async function deleteAccount() {
+    var confirmBtn = document.getElementById('btn-confirm');
+    var errorDiv = document.getElementById('delete-error');
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Deleting...';
+    errorDiv.style.display = 'none';
+
+    try {
+      // Clear free-text survey responses and PII before account deletion
+      await supabaseClient
+        .from('survey_course_feedback_responses')
+        .update({ response_value: {}, user_email: 'Deleted', display_name: 'Deleted' })
+        .eq('user_id', currentUser.id);
+
+      await supabaseClient
+        .from('survey_course_feedback_events')
+        .update({ display_name: 'Deleted' })
+        .eq('user_id', currentUser.id);
+
+      // Delete account (anonymizes all remaining platform data, deletes auth user)
+      var { error } = await supabaseClient.rpc('delete_my_account');
+      if (error) throw error;
+
+      await supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    } catch (err) {
+      errorDiv.textContent = 'Error: ' + err.message;
+      errorDiv.style.display = 'block';
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Yes, Delete My Account';
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

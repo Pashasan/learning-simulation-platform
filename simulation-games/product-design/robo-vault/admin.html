@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../../../favicon.ico">
+<title>Admin Dashboard | RoboVault</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Space Mono', monospace;
+        background: linear-gradient(135deg, #0D1117 0%, #161B22 50%, #1C2129 100%);
+        min-height: 100vh;
+        color: #E6EDF3;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    /* Access Denied */
+    .access-denied {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        text-align: center;
+    }
+
+    .access-denied h1 { font-size: 2.5em; color: #F85149; margin-bottom: 15px; }
+    .access-denied p { color: #8B949E; margin-bottom: 20px; }
+    .access-denied a { color: #58A6FF; text-decoration: none; }
+
+    /* Header */
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 25px;
+        background: rgba(22, 27, 34, 0.92);
+        border: 1px solid rgba(48, 54, 61, 0.6);
+        border-radius: 12px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .admin-title {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #58A6FF;
+        text-shadow: 0 0 12px rgba(88, 166, 255, 0.3);
+    }
+
+    .admin-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .admin-controls span { color: #8B949E; font-size: 0.85em; }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.85em;
+        font-weight: 700;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-secondary {
+        background: rgba(88, 166, 255, 0.12);
+        color: #E6EDF3;
+        border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+
+    .btn-secondary:hover { background: rgba(88, 166, 255, 0.22); }
+
+    /* Exclude Admin toggle */
+    .toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8em;
+        color: #8B949E;
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 38px;
+        height: 20px;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: rgba(48, 54, 61, 0.8);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .toggle-slider::before {
+        content: '';
+        position: absolute;
+        width: 16px; height: 16px;
+        left: 2px; bottom: 2px;
+        background: #8B949E;
+        border-radius: 50%;
+        transition: transform 0.3s, background 0.3s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider { background: rgba(88, 166, 255, 0.4); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: #58A6FF; }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .tab-btn {
+        padding: 12px 24px;
+        background: rgba(22, 27, 34, 0.6);
+        border: 1px solid rgba(48, 54, 61, 0.4);
+        border-radius: 8px;
+        color: #8B949E;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.9em;
+        font-weight: 700;
+    }
+
+    .tab-btn:hover { background: rgba(88, 166, 255, 0.1); color: #E6EDF3; }
+
+    .tab-btn.active {
+        background: linear-gradient(180deg, #1F4068, #162D50);
+        border-color: rgba(88, 166, 255, 0.35);
+        color: #58A6FF;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+        background: rgba(22, 27, 34, 0.92);
+        border: 1px solid rgba(48, 54, 61, 0.4);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+
+    .card h3 {
+        color: #58A6FF;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(88, 166, 255, 0.15);
+        font-size: 1em;
+    }
+
+    /* Analytics Grid */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .analytics-stat {
+        background: rgba(0, 0, 0, 0.25);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid rgba(48, 54, 61, 0.3);
+    }
+
+    .analytics-stat .value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #58A6FF;
+        margin-bottom: 5px;
+    }
+
+    .analytics-stat .label {
+        font-size: 0.75em;
+        color: #8B949E;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Tables */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+        font-size: 0.85em;
+    }
+
+    .data-table th {
+        color: #58A6FF;
+        font-weight: 600;
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .data-table tr:hover { background: rgba(88, 166, 255, 0.04); }
+
+    .rank-gold { color: #ffd700; font-weight: bold; }
+    .rank-silver { color: #c0c0c0; font-weight: bold; }
+    .rank-bronze { color: #cd7f32; font-weight: bold; }
+
+    .profit-positive { color: #3FB950; font-weight: 600; }
+    .profit-negative { color: #F85149; font-weight: 600; }
+
+    .grade-S { color: #E3B341; }
+    .grade-A { color: #3FB950; }
+    .grade-B { color: #58A6FF; }
+    .grade-C { color: #F0883E; }
+    .grade-D { color: #C9A050; }
+    .grade-F { color: #F85149; }
+
+    /* Filters */
+    .filters {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .date-btns { display: flex; gap: 6px; }
+
+    .date-btn {
+        padding: 6px 14px;
+        background: rgba(48, 54, 61, 0.4);
+        border: 1px solid rgba(48, 54, 61, 0.6);
+        border-radius: 6px;
+        color: #8B949E;
+        cursor: pointer;
+        font-family: 'Space Mono', monospace;
+        font-size: 0.75em;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+
+    .date-btn:hover { color: #E6EDF3; border-color: #58A6FF; }
+    .date-btn.active { background: rgba(88, 166, 255, 0.2); color: #58A6FF; border-color: #58A6FF; }
+
+    /* Charts */
+    .chart-container {
+        margin-bottom: 25px;
+    }
+
+    .chart-container canvas {
+        width: 100%;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.15);
+    }
+
+    /* Feedback */
+    .feedback-item {
+        padding: 18px;
+        background: rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(48, 54, 61, 0.25);
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+
+    .feedback-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.85em;
+    }
+
+    .feedback-stars { color: #E3B341; }
+    .feedback-text { color: #B1BAC4; font-size: 0.85em; line-height: 1.6; margin-top: 8px; }
+    .feedback-meta { color: #484F58; font-size: 0.75em; }
+
+    .loading { text-align: center; padding: 40px; color: #8B949E; }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 28px; height: 28px;
+        border: 3px solid rgba(88, 166, 255, 0.3);
+        border-top-color: #58A6FF;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-state { text-align: center; padding: 40px; color: #484F58; font-style: italic; }
+
+    /* Sub-section titles */
+    .sub-title {
+        font-size: 0.85em;
+        color: #8B949E;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Horizontal bar chart helper */
+    .hbar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .hbar-label {
+        min-width: 110px;
+        font-size: 0.8em;
+        color: #8B949E;
+        text-align: right;
+    }
+
+    .hbar-track {
+        flex: 1;
+        height: 22px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .hbar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .hbar-value {
+        min-width: 50px;
+        font-size: 0.8em;
+        color: #E6EDF3;
+        font-weight: 600;
+    }
+
+    @media (max-width: 700px) {
+        .admin-header { flex-direction: column; align-items: flex-start; }
+        .tabs { flex-wrap: wrap; }
+        .tab-btn { font-size: 0.8em; padding: 10px 16px; }
+        .analytics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+</head>
+<body>
+    <!-- Access Denied screen -->
+    <div class="access-denied" id="access-denied" style="display: none;">
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page.</p>
+        <a href="game.html">Back to Game</a>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="container" id="dashboard" style="display: none;">
+        <div class="admin-header">
+            <div class="admin-title">RoboVault Admin</div>
+            <div class="admin-controls">
+                <div class="toggle-wrap">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="exclude-admin" onchange="onExcludeAdminChange()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    Exclude Admin
+                </div>
+                <span id="admin-email"></span>
+                <a href="game.html" class="btn btn-secondary">Back to Game</a>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('leaderboard')">Leaderboard</button>
+            <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+            <button class="tab-btn" onclick="switchTab('feedback')">Feedback</button>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div class="tab-content active" id="tab-leaderboard">
+            <div class="card">
+                <h3>Leaderboard</h3>
+                <div class="filters">
+                    <div class="toggle-wrap">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="first-run-lb" onchange="renderLeaderboard()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        First Run Only
+                    </div>
+                </div>
+                <div id="leaderboard-content">
+                    <div class="loading"><div class="loading-spinner"></div><p>Loading leaderboard...</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div class="tab-content" id="tab-analytics">
+            <div class="loading" id="analytics-loading"><div class="loading-spinner"></div><p>Loading analytics...</p></div>
+            <div id="analytics-content" style="display: none;">
+                <div class="filters">
+                    <div class="date-btns">
+                        <button class="date-btn" onclick="setDateRange(7)">7d</button>
+                        <button class="date-btn" onclick="setDateRange(30)">30d</button>
+                        <button class="date-btn active" onclick="setDateRange(90)">90d</button>
+                        <button class="date-btn" onclick="setDateRange(0)">All</button>
+                    </div>
+                </div>
+
+                <!-- Overview Stats -->
+                <div class="analytics-grid" id="overview-stats"></div>
+
+                <!-- Daily Activity -->
+                <div class="card">
+                    <h3>Daily Activity (Last 30 Days)</h3>
+                    <div class="chart-container"><canvas id="chart-daily" height="220"></canvas></div>
+                </div>
+
+                <!-- Learning Curve -->
+                <div class="card">
+                    <h3>Learning Curve: Avg Efficiency by Round</h3>
+                    <div class="filters">
+                        <div class="toggle-wrap">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="learning-first-run" onchange="renderLearningCurve()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            First Run Only
+                        </div>
+                    </div>
+                    <div class="chart-container"><canvas id="chart-learning" height="280"></canvas></div>
+                </div>
+
+                <!-- Grade Distribution -->
+                <div class="card">
+                    <h3>Grade Distribution</h3>
+                    <div id="grade-dist-bars"></div>
+                </div>
+
+                <!-- Per-Round Table -->
+                <div class="card">
+                    <h3>Per-Round Averages</h3>
+                    <div id="per-round-table"></div>
+                </div>
+
+                <!-- Product Config Popularity -->
+                <div class="card">
+                    <h3>Product Config Popularity</h3>
+                    <div id="config-popularity"></div>
+                </div>
+
+                <!-- Price Distribution -->
+                <div class="card">
+                    <h3>Price Distribution</h3>
+                    <div class="chart-container"><canvas id="chart-prices" height="250"></canvas></div>
+                </div>
+
+                <!-- Research Adoption -->
+                <div class="card">
+                    <h3>Research Adoption</h3>
+                    <div id="research-adoption"></div>
+                </div>
+
+                <!-- Completion Funnel -->
+                <div class="card">
+                    <h3>Completion Funnel</h3>
+                    <div id="completion-funnel"></div>
+                </div>
+
+                <!-- Top vs Bottom Analysis -->
+                <div class="card">
+                    <h3>Top vs Bottom Quartile Analysis</h3>
+                    <div id="quartile-analysis"></div>
+                </div>
+
+                <!-- Recent Events -->
+                <div class="card">
+                    <h3>Recent Events (Last 100)</h3>
+                    <div id="recent-events" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Tab -->
+        <div class="tab-content" id="tab-feedback">
+            <div class="loading" id="feedback-loading"><div class="loading-spinner"></div><p>Loading feedback...</p></div>
+            <div id="feedback-content" style="display: none;">
+                <div class="analytics-grid" id="feedback-stats"></div>
+                <div class="filters">
+                    <div class="toggle-wrap">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="first-run-fb" onchange="renderFeedbackList()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        First Run Only
+                    </div>
+                    <div class="toggle-wrap">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="comments-only-fb" onchange="renderFeedbackList()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        With Comments Only
+                    </div>
+                </div>
+                <div id="feedback-list"></div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+// ============================================================
+// RoboVault Admin Dashboard
+// ============================================================
+
+const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+
+function __makeDemoSupabaseClient() {
+
+  const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+
+  const session = { user: DEMO_USER, access_token: 'demo' };
+
+  const ok = (data) => Promise.resolve({ data, error: null });
+
+  const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+
+  function builder() {
+
+    const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+
+    builderMethods.forEach((m) => { b[m] = () => b; });
+
+    return b;
+
+  }
+
+  return {
+
+    auth: {
+
+      getSession: () => ok({ session }),
+
+      getUser: () => ok({ user: DEMO_USER }),
+
+      signInWithPassword: () => ok({ user: DEMO_USER, session }),
+
+      signUp: () => ok({ user: DEMO_USER, session }),
+
+      signOut: () => ok(null),
+
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+
+    },
+
+    from: () => builder(),
+
+    rpc: () => Promise.resolve({ data: null, error: null }),
+
+  };
+
+}
+const ADMIN_EMAIL = '';
+const ADMIN_PASSWORD = 'CHANGE_ME';
+async function promptAdminUnlock() {
+    if (sessionStorage.getItem('admin_unlocked') === 'yes') return true;
+    return await new Promise(function(resolve) {
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,0.96);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
+        ov.innerHTML = '<div style="background:#161b22;padding:32px;border-radius:12px;border:1px solid #30363d;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"><div style="font-size:36px;margin-bottom:12px;">&#x1F512;</div><h2 style="color:#f0f6fc;margin:0 0 8px;font-size:18px;font-weight:600;">Admin access</h2><p style="color:#8b949e;margin:0 0 20px;font-size:13px;">Enter the admin password</p><input id="__pw_in" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;margin-bottom:8px;outline:none;" /><div id="__pw_err" style="color:#f85149;font-size:12px;min-height:16px;margin-bottom:8px;text-align:left;"></div><button id="__pw_btn" style="width:100%;padding:10px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Unlock</button></div>';
+        document.body.appendChild(ov);
+        var inp = ov.querySelector('#__pw_in');
+        var er = ov.querySelector('#__pw_err');
+        var bt = ov.querySelector('#__pw_btn');
+        function go() {
+            if (inp.value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('admin_unlocked', 'yes');
+                ov.remove();
+                resolve(true);
+            } else {
+                er.textContent = 'Incorrect password';
+                inp.value = '';
+                inp.focus();
+            }
+        }
+        bt.addEventListener('click', go);
+        inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+        setTimeout(function() { inp.focus(); }, 50);
+    });
+}
+
+const DB_SCORES = 'sim_product_design_scores';
+const DB_EVENTS = 'sim_product_design_events';
+const DB_FEEDBACK = 'sim_product_design_feedback';
+
+const GRADE_COLORS = {
+    S: '#E3B341', A: '#3FB950', B: '#58A6FF',
+    C: '#F0883E', D: '#C9A050', F: '#F85149',
+};
+
+const ATTR_META = {
+    function: {
+        label: 'Function',
+        display: { household: 'Household', elderly_care: 'Elderly Care', child_education: 'Child Ed.', security: 'Security' },
+    },
+    personality: {
+        label: 'Personality',
+        display: { warm: 'Warm', efficient: 'Efficient', playful: 'Playful' },
+    },
+    form: {
+        label: 'Form Factor',
+        display: { robotic: 'Robotic', semi_humanoid: 'Semi-Human', humanoid: 'Humanoid' },
+    },
+    autonomy: {
+        label: 'Autonomy',
+        display: { supervised: 'Supervised', semi_autonomous: 'Semi-Auto', fully_autonomous: 'Full-Auto' },
+    },
+};
+
+const { createClient } = supabase;
+const sb = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let adminUserId = null;
+let allScores = [];
+let allEvents = [];
+let allFeedback = [];
+let analyticsLoaded = false;
+let feedbackLoaded = false;
+let dateRangeDays = 90;
+
+// ---- Auth ----
+
+sb.auth.getSession().then(async ({ data: { session } }) => {
+    if (!session) { window.location.href = 'index.html'; return; }
+    await promptAdminUnlock();
+    adminUserId = session.user.id;
+    document.getElementById('admin-email').textContent = session.user.email;
+    document.getElementById('dashboard').style.display = 'block';
+    loadLeaderboard();
+});
+
+async function logout() {
+    await sb.auth.signOut();
+    window.location.href = 'index.html';
+}
+
+// ---- Utilities ----
+
+function escapeHtml(str) {
+    if (str == null) return '';
+    var d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
+function formatProfit(val) {
+    if (val == null) return '-';
+    if (val >= 0) return '$' + Math.round(val).toLocaleString();
+    return '-$' + Math.round(Math.abs(val)).toLocaleString();
+}
+
+function formatProfitM(val) {
+    if (val == null) return '-';
+    var abs = Math.abs(val);
+    var str = (abs / 1000000).toFixed(1) + 'M';
+    if (val >= 0) return '$' + str;
+    return '-$' + str;
+}
+
+function formatPct(val) {
+    if (val == null) return '-';
+    return (val * 100).toFixed(1) + '%';
+}
+
+function gradeClass(grade) { return 'grade-' + (grade || 'F'); }
+
+function setupCanvas(id) {
+    var c = document.getElementById(id);
+    var dpr = window.devicePixelRatio || 1;
+    var rect = c.getBoundingClientRect();
+    var w = rect.width || c.parentElement.clientWidth || 600;
+    var h = c.height || 220;
+    c.width = w * dpr;
+    c.height = h * dpr;
+    c.style.width = w + 'px';
+    c.style.height = h + 'px';
+    var ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx: ctx, w: w, h: h };
+}
+
+function shouldExclude(userId) {
+    return document.getElementById('exclude-admin').checked && userId === adminUserId;
+}
+
+function filterScores(scores) {
+    return scores.filter(function(s) { return !shouldExclude(s.user_id); });
+}
+
+function onExcludeAdminChange() {
+    renderLeaderboard();
+    if (analyticsLoaded) renderAnalytics();
+    if (feedbackLoaded) renderFeedbackList();
+}
+
+// ---- Tabs ----
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+        b.classList.toggle('active', ['leaderboard', 'analytics', 'feedback'][i] === tab);
+    });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+
+    if (tab === 'analytics' && !analyticsLoaded) loadAnalytics();
+    if (tab === 'feedback' && !feedbackLoaded) loadFeedback();
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+
+async function loadLeaderboard() {
+    var { data, error } = await sb
+        .from(DB_SCORES)
+        .select('*')
+        .order('player_profit', { ascending: false })
+        .limit(500);
+
+    if (error) {
+        document.getElementById('leaderboard-content').innerHTML = '<p style="color:#F85149;">Error: ' + escapeHtml(error.message) + '</p>';
+        return;
+    }
+    allScores = data || [];
+    renderLeaderboard();
+}
+
+function renderLeaderboard() {
+    var scores = filterScores(allScores);
+    var firstRunOnly = document.getElementById('first-run-lb').checked;
+    if (firstRunOnly) scores = scores.filter(function(s) { return s.run_number === 1; });
+
+    // Re-sort
+    scores.sort(function(a, b) { return (b.player_profit || 0) - (a.player_profit || 0); });
+
+    if (scores.length === 0) {
+        document.getElementById('leaderboard-content').innerHTML = '<p class="empty-state">No scores yet.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr>' +
+        '<th>Rank</th><th>Player</th><th>Run</th><th>Player Profit</th><th>Oracle Profit</th><th>Efficiency</th><th>Grade</th><th>Date</th>' +
+        '</tr></thead><tbody>';
+
+    scores.forEach(function(s, i) {
+        var rank = i + 1;
+        var rankClass = rank === 1 ? 'rank-gold' : rank === 2 ? 'rank-silver' : rank === 3 ? 'rank-bronze' : '';
+        var eff = (s.oracle_profit && s.oracle_profit > 0) ? (s.player_profit / s.oracle_profit) : null;
+        var profitClass = (s.player_profit || 0) >= 0 ? 'profit-positive' : 'profit-negative';
+        var date = s.created_at ? new Date(s.created_at).toLocaleDateString() : '-';
+
+        html += '<tr>' +
+            '<td class="' + rankClass + '">' + rank + '</td>' +
+            '<td>' + escapeHtml(s.display_name || s.user_email || '-') + '</td>' +
+            '<td>' + (s.run_number || 1) + '</td>' +
+            '<td class="' + profitClass + '">' + formatProfit(s.player_profit) + '</td>' +
+            '<td>' + formatProfit(s.oracle_profit) + '</td>' +
+            '<td>' + (eff != null ? formatPct(eff) : '-') + '</td>' +
+            '<td class="' + gradeClass(s.grade) + '">' + escapeHtml(s.grade || '-') + '</td>' +
+            '<td style="color:#484F58;">' + date + '</td>' +
+            '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('leaderboard-content').innerHTML = html;
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
+async function fetchAllEvents() {
+    var all = [];
+    var pageSize = 1000;
+    var offset = 0;
+    while (true) {
+        var { data, error } = await sb
+            .from(DB_EVENTS)
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < pageSize) break;
+        offset += pageSize;
+    }
+    return all;
+}
+
+async function loadAnalytics() {
+    allEvents = await fetchAllEvents();
+    analyticsLoaded = true;
+    document.getElementById('analytics-loading').style.display = 'none';
+    document.getElementById('analytics-content').style.display = 'block';
+    renderAnalytics();
+}
+
+function dateFilter(items, dateField) {
+    if (dateRangeDays === 0) return items;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - dateRangeDays);
+    return items.filter(function(item) {
+        return new Date(item[dateField || 'created_at']) >= cutoff;
+    });
+}
+
+function setDateRange(days) {
+    dateRangeDays = days;
+    document.querySelectorAll('.date-btn').forEach(function(b) {
+        b.classList.toggle('active', parseInt(b.textContent) === days || (days === 0 && b.textContent === 'All'));
+    });
+    renderAnalytics();
+}
+
+function renderAnalytics() {
+    var events = dateFilter(filterScores(allEvents), 'created_at');
+    // Use allScores (already loaded) filtered by date
+    var scores = dateFilter(filterScores(allScores));
+
+    renderOverviewStats(events, scores);
+    renderDailyChart(events);
+    renderLearningCurve();
+    renderGradeDistribution(scores);
+    renderPerRoundTable(scores);
+    renderConfigPopularity(scores);
+    renderPriceDistribution(scores);
+    renderResearchAdoption(events);
+    renderCompletionFunnel(events);
+    renderQuartileAnalysis(scores);
+    renderRecentEvents(events);
+}
+
+// ---- Overview Stats ----
+
+function renderOverviewStats(events, scores) {
+    var uniqueUsers = new Set();
+    var sessions = 0;
+    var gamesStarted = 0;
+    var gamesCompleted = 0;
+
+    events.forEach(function(e) {
+        uniqueUsers.add(e.user_id);
+        if (e.event_type === 'session_start') sessions++;
+        if (e.event_type === 'game_start') gamesStarted++;
+        if (e.event_type === 'game_complete') gamesCompleted++;
+    });
+
+    var completionRate = gamesStarted > 0 ? (gamesCompleted / gamesStarted * 100).toFixed(0) + '%' : '-';
+    var avgProfit = scores.length > 0
+        ? Math.round(scores.reduce(function(s, r) { return s + (r.player_profit || 0); }, 0) / scores.length)
+        : 0;
+
+    var efficiencies = [];
+    scores.forEach(function(s) {
+        if (s.oracle_profit && s.oracle_profit > 0) {
+            efficiencies.push(s.player_profit / s.oracle_profit);
+        }
+    });
+    var avgEff = efficiencies.length > 0
+        ? (efficiencies.reduce(function(a, b) { return a + b; }, 0) / efficiencies.length * 100).toFixed(1) + '%'
+        : '-';
+
+    document.getElementById('overview-stats').innerHTML =
+        statCard(events.length, 'Total Events') +
+        statCard(uniqueUsers.size, 'Unique Users') +
+        statCard(sessions, 'Sessions') +
+        statCard(gamesStarted, 'Games Started') +
+        statCard(gamesCompleted, 'Completed') +
+        statCard(completionRate, 'Completion Rate') +
+        statCard(formatProfitM(avgProfit), 'Avg Profit') +
+        statCard(avgEff, 'Avg Efficiency');
+}
+
+function statCard(value, label) {
+    return '<div class="analytics-stat"><div class="value">' + escapeHtml(String(value)) + '</div><div class="label">' + escapeHtml(label) + '</div></div>';
+}
+
+// ---- Daily Activity Chart ----
+
+function renderDailyChart(events) {
+    var days = {};
+    var now = new Date();
+    for (var i = 29; i >= 0; i--) {
+        var d = new Date(now);
+        d.setDate(d.getDate() - i);
+        days[d.toISOString().slice(0, 10)] = 0;
+    }
+    events.forEach(function(e) {
+        var key = (e.created_at || '').slice(0, 10);
+        if (key in days) days[key]++;
+    });
+
+    var labels = Object.keys(days);
+    var values = Object.values(days);
+    var s = setupCanvas('chart-daily');
+    drawLineChart(s.ctx, s.w, s.h, 50, [{ values: values, color: '#58A6FF' }], labels.map(function(l) { return l.slice(5); }));
+}
+
+// ---- Learning Curve Chart ----
+
+function computePerRoundStats(scores) {
+    var byRound = {};
+    for (var r = 1; r <= 6; r++) byRound[r] = { profits: [], ratios: [], prices: [], shares: [] };
+
+    scores.forEach(function(s) {
+        var rd = s.rounds_data;
+        if (!rd || !Array.isArray(rd)) return;
+        rd.forEach(function(r) {
+            var rn = r.round;
+            if (rn >= 1 && rn <= 6) {
+                byRound[rn].profits.push(r.profit || 0);
+                byRound[rn].ratios.push(r.profit_ratio != null ? r.profit_ratio : 0);
+                byRound[rn].prices.push(r.price || 0);
+                byRound[rn].shares.push(r.share || 0);
+            }
+        });
+    });
+    return byRound;
+}
+
+function renderLearningCurve() {
+    var scores = filterScores(allScores);
+    var firstRunOnly = document.getElementById('learning-first-run').checked;
+    if (firstRunOnly) scores = scores.filter(function(s) { return s.run_number === 1; });
+
+    // Only completed games (have rounds_data with 6 rounds)
+    scores = scores.filter(function(s) {
+        return s.rounds_data && Array.isArray(s.rounds_data) && s.rounds_data.length === 6;
+    });
+
+    var byRound = computePerRoundStats(scores);
+
+    var means = [];
+    var upper = [];
+    var lower = [];
+    for (var r = 1; r <= 6; r++) {
+        var ratios = byRound[r].ratios;
+        if (ratios.length === 0) {
+            means.push(0);
+            upper.push(0);
+            lower.push(0);
+        } else {
+            var n = ratios.length;
+            var mean = ratios.reduce(function(a, b) { return a + b; }, 0) / n;
+            var variance = ratios.reduce(function(s, v) { return s + (v - mean) * (v - mean); }, 0) / (n > 1 ? n - 1 : 1);
+            var se = Math.sqrt(variance / n);
+            means.push(mean);
+            upper.push(mean + se);
+            lower.push(mean - se);
+        }
+    }
+
+    var s = setupCanvas('chart-learning');
+    var ctx = s.ctx;
+    var w = s.w;
+    var h = s.h;
+    var pad = { top: 30, right: 30, bottom: 50, left: 60 };
+    var plotW = w - pad.left - pad.right;
+    var plotH = h - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Y-axis range: 0 to 1
+    var yMin = 0;
+    var yMax = 1;
+
+    function xPos(i) { return pad.left + (i / 5) * plotW; }
+    function yPos(v) { return pad.top + (1 - (v - yMin) / (yMax - yMin)) * plotH; }
+
+    // Grid lines
+    ctx.strokeStyle = '#1A2332';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 5; g++) {
+        var gy = yPos(g * 0.2);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, gy);
+        ctx.lineTo(w - pad.right, gy);
+        ctx.stroke();
+    }
+
+    // SE band
+    ctx.fillStyle = 'rgba(88, 166, 255, 0.12)';
+    ctx.beginPath();
+    for (var i = 0; i < 6; i++) {
+        var x = xPos(i);
+        var y = yPos(upper[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    for (var i = 5; i >= 0; i--) {
+        ctx.lineTo(xPos(i), yPos(lower[i]));
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // SE caps (error bars)
+    ctx.strokeStyle = 'rgba(88, 166, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    for (var i = 0; i < 6; i++) {
+        var x = xPos(i);
+        var capW = 6;
+        ctx.beginPath();
+        ctx.moveTo(x, yPos(upper[i]));
+        ctx.lineTo(x, yPos(lower[i]));
+        ctx.stroke();
+        // Top cap
+        ctx.beginPath();
+        ctx.moveTo(x - capW, yPos(upper[i]));
+        ctx.lineTo(x + capW, yPos(upper[i]));
+        ctx.stroke();
+        // Bottom cap
+        ctx.beginPath();
+        ctx.moveTo(x - capW, yPos(lower[i]));
+        ctx.lineTo(x + capW, yPos(lower[i]));
+        ctx.stroke();
+    }
+
+    // Mean line
+    ctx.strokeStyle = '#58A6FF';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (var i = 0; i < 6; i++) {
+        var x = xPos(i);
+        var y = yPos(means[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Dots + value labels
+    for (var i = 0; i < 6; i++) {
+        var x = xPos(i);
+        var y = yPos(means[i]);
+        ctx.fillStyle = '#58A6FF';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0D1117';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Value label
+        ctx.fillStyle = '#E6EDF3';
+        ctx.font = '11px "Space Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(formatPct(means[i]), x, y - 12);
+    }
+
+    // X-axis labels
+    ctx.fillStyle = '#8B949E';
+    ctx.font = '12px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    for (var i = 0; i < 6; i++) {
+        ctx.fillText('R' + (i + 1), xPos(i), h - pad.bottom + 25);
+    }
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    for (var g = 0; g <= 5; g++) {
+        ctx.fillText((g * 20) + '%', pad.left - 10, yPos(g * 0.2) + 4);
+    }
+
+    // Axis titles
+    ctx.fillStyle = '#484F58';
+    ctx.font = '11px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Round', w / 2, h - 5);
+
+    // Sample size
+    var n = byRound[1].ratios.length;
+    ctx.fillStyle = '#484F58';
+    ctx.font = '11px "Space Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('n = ' + n + ' games', w - pad.right, pad.top - 10);
+}
+
+// ---- Grade Distribution ----
+
+function renderGradeDistribution(scores) {
+    var counts = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
+    scores.forEach(function(s) { if (s.grade && counts[s.grade] !== undefined) counts[s.grade]++; });
+
+    var total = scores.length || 1;
+    var html = '';
+    ['S', 'A', 'B', 'C', 'D', 'F'].forEach(function(g) {
+        var pct = (counts[g] / total * 100).toFixed(0);
+        html += '<div class="hbar-row">' +
+            '<span class="hbar-label" style="color:' + GRADE_COLORS[g] + ';">' + g + '</span>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:' + GRADE_COLORS[g] + ';"></div></div>' +
+            '<span class="hbar-value">' + counts[g] + ' (' + pct + '%)</span>' +
+            '</div>';
+    });
+    document.getElementById('grade-dist-bars').innerHTML = html;
+}
+
+// ---- Per-Round Table ----
+
+function renderPerRoundTable(scores) {
+    var byRound = computePerRoundStats(scores);
+    var html = '<table class="data-table"><thead><tr><th>Round</th><th>Avg Profit</th><th>Avg Efficiency</th><th>Avg Price</th><th>Avg Share</th><th>Games</th></tr></thead><tbody>';
+
+    for (var r = 1; r <= 6; r++) {
+        var d = byRound[r];
+        var n = d.profits.length;
+        if (n === 0) {
+            html += '<tr><td>R' + r + '</td><td colspan="5" style="color:#484F58;">No data</td></tr>';
+            continue;
+        }
+        var avgP = Math.round(d.profits.reduce(function(a, b) { return a + b; }, 0) / n);
+        var avgR = d.ratios.reduce(function(a, b) { return a + b; }, 0) / n;
+        var avgPr = Math.round(d.prices.reduce(function(a, b) { return a + b; }, 0) / n);
+        var avgS = d.shares.reduce(function(a, b) { return a + b; }, 0) / n;
+
+        html += '<tr>' +
+            '<td style="font-weight:bold;">R' + r + '</td>' +
+            '<td class="' + (avgP >= 0 ? 'profit-positive' : 'profit-negative') + '">' + formatProfit(avgP) + '</td>' +
+            '<td>' + formatPct(avgR) + '</td>' +
+            '<td>' + formatProfit(avgPr) + '</td>' +
+            '<td>' + (avgS * 100).toFixed(1) + '%</td>' +
+            '<td style="color:#484F58;">' + n + '</td>' +
+            '</tr>';
+    }
+
+    html += '</tbody></table>';
+    document.getElementById('per-round-table').innerHTML = html;
+}
+
+// ---- Config Popularity ----
+
+function renderConfigPopularity(scores) {
+    var attrs = ['function', 'personality', 'form', 'autonomy'];
+    var counts = {};
+    attrs.forEach(function(a) { counts[a] = {}; });
+
+    scores.forEach(function(s) {
+        var rd = s.rounds_data;
+        if (!rd || !Array.isArray(rd)) return;
+        rd.forEach(function(r) {
+            if (!r.config) return;
+            attrs.forEach(function(a) {
+                var val = r.config[a];
+                if (val) counts[a][val] = (counts[a][val] || 0) + 1;
+            });
+        });
+    });
+
+    var colors = ['#58A6FF', '#3FB950', '#E3B341', '#F0883E', '#F85149'];
+    var html = '';
+
+    attrs.forEach(function(a) {
+        var meta = ATTR_META[a];
+        html += '<p class="sub-title" style="margin-top:15px;">' + escapeHtml(meta.label) + '</p>';
+        var entries = Object.entries(counts[a]).sort(function(x, y) { return y[1] - x[1]; });
+        var maxVal = entries.length > 0 ? entries[0][1] : 1;
+        entries.forEach(function(e, i) {
+            var pct = (e[1] / maxVal * 100).toFixed(0);
+            var displayName = (meta.display && meta.display[e[0]]) || e[0];
+            html += '<div class="hbar-row">' +
+                '<span class="hbar-label">' + escapeHtml(displayName) + '</span>' +
+                '<div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:' + colors[i % colors.length] + ';"></div></div>' +
+                '<span class="hbar-value">' + e[1] + '</span>' +
+                '</div>';
+        });
+    });
+
+    document.getElementById('config-popularity').innerHTML = html;
+}
+
+// ---- Price Distribution ----
+
+function renderPriceDistribution(scores) {
+    // Histogram: prices in $500 steps from $2000 to $15000
+    var bins = {};
+    var oracleBins = {};
+    for (var p = 2000; p <= 15000; p += 500) {
+        bins[p] = 0;
+        oracleBins[p] = 0;
+    }
+
+    scores.forEach(function(s) {
+        var rd = s.rounds_data;
+        if (!rd || !Array.isArray(rd)) return;
+        rd.forEach(function(r) {
+            // Player price
+            var pp = Math.round((r.price || 0) / 500) * 500;
+            if (pp >= 2000 && pp <= 15000) bins[pp] = (bins[pp] || 0) + 1;
+            // Oracle price
+            var op = Math.round((r.oracle_price || 0) / 500) * 500;
+            if (op >= 2000 && op <= 15000) oracleBins[op] = (oracleBins[op] || 0) + 1;
+        });
+    });
+
+    var labels = Object.keys(bins).map(function(p) { return '$' + (parseInt(p) / 1000).toFixed(1) + 'K'; });
+    var playerVals = Object.values(bins);
+    var oracleVals = Object.values(oracleBins);
+    var maxVal = Math.max.apply(null, playerVals.concat(oracleVals).concat([1]));
+
+    var s = setupCanvas('chart-prices');
+    var ctx = s.ctx;
+    var w = s.w;
+    var h = s.h;
+    var pad = { top: 25, right: 20, bottom: 50, left: 50 };
+    var plotW = w - pad.left - pad.right;
+    var plotH = h - pad.top - pad.bottom;
+    var n = playerVals.length;
+    var barW = plotW / n;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid
+    ctx.strokeStyle = '#1A2332';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+        var gy = pad.top + plotH - (g / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, gy);
+        ctx.lineTo(w - pad.right, gy);
+        ctx.stroke();
+    }
+
+    // Bars
+    for (var i = 0; i < n; i++) {
+        var x = pad.left + i * barW;
+        var halfBar = barW * 0.35;
+
+        // Player bar
+        var ph = (playerVals[i] / maxVal) * plotH;
+        ctx.fillStyle = 'rgba(88, 166, 255, 0.6)';
+        ctx.fillRect(x + barW * 0.1, pad.top + plotH - ph, halfBar, ph);
+
+        // Oracle bar
+        var oh = (oracleVals[i] / maxVal) * plotH;
+        ctx.fillStyle = 'rgba(227, 179, 65, 0.5)';
+        ctx.fillRect(x + barW * 0.1 + halfBar + 2, pad.top + plotH - oh, halfBar, oh);
+    }
+
+    // X-axis labels (show every 4th)
+    ctx.fillStyle = '#8B949E';
+    ctx.font = '10px "Space Mono", monospace';
+    ctx.textAlign = 'center';
+    for (var i = 0; i < n; i += 4) {
+        ctx.fillText(labels[i], pad.left + i * barW + barW / 2, h - pad.bottom + 20);
+    }
+
+    // Legend
+    ctx.fillStyle = 'rgba(88, 166, 255, 0.6)';
+    ctx.fillRect(w - 200, 10, 12, 12);
+    ctx.fillStyle = '#8B949E';
+    ctx.font = '11px "Space Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Player', w - 184, 20);
+
+    ctx.fillStyle = 'rgba(227, 179, 65, 0.5)';
+    ctx.fillRect(w - 110, 10, 12, 12);
+    ctx.fillStyle = '#8B949E';
+    ctx.fillText('Oracle', w - 94, 20);
+}
+
+// ---- Research Adoption ----
+
+function renderResearchAdoption(events) {
+    var researchEvents = events.filter(function(e) { return e.event_type === 'research_buy'; });
+    var conjointCount = 0;
+    var pricingCount = 0;
+    var byRound = {};
+    for (var r = 1; r <= 6; r++) byRound[r] = { conjoint: 0, pricing: 0, total: 0 };
+
+    researchEvents.forEach(function(e) {
+        var d = e.event_data || {};
+        var method = d.method || '';
+        var round = d.round || 1;
+        if (method === 'conjoint') {
+            conjointCount++;
+            if (byRound[round]) byRound[round].conjoint++;
+        } else if (method === 'pricing_study') {
+            pricingCount++;
+            if (byRound[round]) byRound[round].pricing++;
+        }
+        if (byRound[round]) byRound[round].total++;
+    });
+
+    var total = conjointCount + pricingCount || 1;
+    var html = '<div style="display:flex;gap:20px;margin-bottom:20px;">' +
+        '<div class="analytics-stat" style="flex:1;"><div class="value">' + conjointCount + '</div><div class="label">Conjoint Purchases</div></div>' +
+        '<div class="analytics-stat" style="flex:1;"><div class="value">' + pricingCount + '</div><div class="label">Pricing Studies</div></div>' +
+        '</div>';
+
+    html += '<p class="sub-title">Per-Round Adoption</p>';
+    html += '<table class="data-table"><thead><tr><th>Round</th><th>Conjoint</th><th>Pricing</th><th>Total</th></tr></thead><tbody>';
+    for (var r = 1; r <= 6; r++) {
+        var d = byRound[r];
+        html += '<tr><td>R' + r + '</td><td>' + d.conjoint + '</td><td>' + d.pricing + '</td><td>' + d.total + '</td></tr>';
+    }
+    html += '</tbody></table>';
+
+    document.getElementById('research-adoption').innerHTML = html;
+}
+
+// ---- Completion Funnel ----
+
+function renderCompletionFunnel(events) {
+    var sessions = 0;
+    var gamesStarted = 0;
+    var roundCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    var gamesCompleted = 0;
+
+    events.forEach(function(e) {
+        if (e.event_type === 'session_start') sessions++;
+        if (e.event_type === 'game_start') gamesStarted++;
+        if (e.event_type === 'round_complete') {
+            var round = (e.event_data || {}).round;
+            if (round >= 1 && round <= 6) roundCounts[round]++;
+        }
+        if (e.event_type === 'game_complete') gamesCompleted++;
+    });
+
+    var steps = [
+        { label: 'Sessions', count: sessions },
+        { label: 'Games Started', count: gamesStarted },
+    ];
+    for (var r = 1; r <= 6; r++) {
+        steps.push({ label: 'R' + r + ' Complete', count: roundCounts[r] });
+    }
+    steps.push({ label: 'Game Complete', count: gamesCompleted });
+
+    var maxCount = steps[0].count || 1;
+    var html = '';
+    steps.forEach(function(step) {
+        var pct = (step.count / maxCount * 100).toFixed(0);
+        html += '<div class="hbar-row">' +
+            '<span class="hbar-label">' + step.label + '</span>' +
+            '<div class="hbar-track"><div class="hbar-fill" style="width:' + pct + '%;background:linear-gradient(90deg, #58A6FF, #3FB950);"></div></div>' +
+            '<span class="hbar-value">' + step.count + '</span>' +
+            '</div>';
+    });
+
+    document.getElementById('completion-funnel').innerHTML = html;
+}
+
+// ---- Quartile Analysis ----
+
+function renderQuartileAnalysis(scores) {
+    if (scores.length < 4) {
+        document.getElementById('quartile-analysis').innerHTML = '<p class="empty-state">Need at least 4 games for quartile analysis.</p>';
+        return;
+    }
+
+    var sorted = scores.slice().sort(function(a, b) { return (b.player_profit || 0) - (a.player_profit || 0); });
+    var q = Math.ceil(sorted.length / 4);
+    var top = sorted.slice(0, q);
+    var bottom = sorted.slice(-q);
+
+    function analyze(group) {
+        var avgProfit = Math.round(group.reduce(function(s, r) { return s + (r.player_profit || 0); }, 0) / group.length);
+        var efficiencies = [];
+        var configCounts = {};
+        group.forEach(function(s) {
+            if (s.oracle_profit && s.oracle_profit > 0) efficiencies.push(s.player_profit / s.oracle_profit);
+            var rd = s.rounds_data;
+            if (!rd || !Array.isArray(rd)) return;
+            rd.forEach(function(r) {
+                if (!r.config) return;
+                var key = r.config.function + '/' + r.config.personality;
+                configCounts[key] = (configCounts[key] || 0) + 1;
+            });
+        });
+        var avgEff = efficiencies.length > 0 ? efficiencies.reduce(function(a, b) { return a + b; }, 0) / efficiencies.length : 0;
+        var topConfig = Object.entries(configCounts).sort(function(a, b) { return b[1] - a[1]; })[0];
+        return { avgProfit: avgProfit, avgEff: avgEff, topConfig: topConfig ? topConfig[0] : '-', count: group.length };
+    }
+
+    var topA = analyze(top);
+    var botA = analyze(bottom);
+
+    var html = '<table class="data-table"><thead><tr><th></th><th>Top 25%</th><th>Bottom 25%</th></tr></thead><tbody>' +
+        '<tr><td>Players</td><td>' + topA.count + '</td><td>' + botA.count + '</td></tr>' +
+        '<tr><td>Avg Profit</td><td class="profit-positive">' + formatProfit(topA.avgProfit) + '</td><td class="' + (botA.avgProfit >= 0 ? 'profit-positive' : 'profit-negative') + '">' + formatProfit(botA.avgProfit) + '</td></tr>' +
+        '<tr><td>Avg Efficiency</td><td>' + formatPct(topA.avgEff) + '</td><td>' + formatPct(botA.avgEff) + '</td></tr>' +
+        '<tr><td>Top Config</td><td>' + escapeHtml(topA.topConfig) + '</td><td>' + escapeHtml(botA.topConfig) + '</td></tr>' +
+        '</tbody></table>';
+
+    document.getElementById('quartile-analysis').innerHTML = html;
+}
+
+// ---- Recent Events ----
+
+function renderRecentEvents(events) {
+    var recent = events.slice(0, 100);
+    if (recent.length === 0) {
+        document.getElementById('recent-events').innerHTML = '<p class="empty-state">No events.</p>';
+        return;
+    }
+
+    var html = '<table class="data-table"><thead><tr><th>Time</th><th>User</th><th>Event</th><th>Details</th></tr></thead><tbody>';
+    recent.forEach(function(e) {
+        var time = e.created_at ? new Date(e.created_at).toLocaleString() : '-';
+        var user = e.display_name || (e.user_email || '').split('@')[0] || '-';
+        var details = '';
+        var d = e.event_data || {};
+        if (e.event_type === 'game_complete') details = 'Grade: ' + (d.grade || '-') + ' | Profit: ' + formatProfit(d.total_profit);
+        else if (e.event_type === 'round_complete') details = 'R' + (d.round || '?') + ' | ' + formatProfit(d.profit) + ' | ' + (d.grade || '-');
+        else if (e.event_type === 'research_buy') details = (d.method || '?') + ' (R' + (d.round || '?') + ')';
+        else if (e.event_type === 'product_launch') details = 'R' + (d.round || '?') + ' @ ' + formatProfit(d.price);
+
+        html += '<tr>' +
+            '<td style="color:#484F58;white-space:nowrap;">' + escapeHtml(time) + '</td>' +
+            '<td>' + escapeHtml(user) + '</td>' +
+            '<td>' + escapeHtml(e.event_type) + '</td>' +
+            '<td style="color:#8B949E;">' + escapeHtml(details) + '</td>' +
+            '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('recent-events').innerHTML = html;
+}
+
+// ---- Generic Line Chart ----
+
+function drawLineChart(ctx, w, h, padding, datasets, xLabels) {
+    var pad = padding || 50;
+    var plotW = w - pad * 2;
+    var plotH = h - pad * 2;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Find max value
+    var maxVal = 0;
+    datasets.forEach(function(ds) {
+        ds.values.forEach(function(v) { if (v > maxVal) maxVal = v; });
+    });
+    if (maxVal === 0) maxVal = 1;
+
+    // Grid
+    ctx.strokeStyle = '#1A2332';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+        var gy = pad + plotH - (g / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(pad, gy);
+        ctx.lineTo(w - pad, gy);
+        ctx.stroke();
+    }
+
+    // Lines
+    datasets.forEach(function(ds) {
+        var n = ds.values.length;
+        ctx.strokeStyle = ds.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (var i = 0; i < n; i++) {
+            var x = pad + (i / (n - 1 || 1)) * plotW;
+            var y = pad + plotH - (ds.values[i] / maxVal) * plotH;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Fill area
+        ctx.fillStyle = ds.color.replace(')', ', 0.08)').replace('rgb', 'rgba');
+        if (ds.color.startsWith('#')) {
+            ctx.fillStyle = ds.color + '14';
+        }
+        ctx.beginPath();
+        for (var i = 0; i < n; i++) {
+            var x = pad + (i / (n - 1 || 1)) * plotW;
+            var y = pad + plotH - (ds.values[i] / maxVal) * plotH;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.lineTo(pad + plotW, pad + plotH);
+        ctx.lineTo(pad, pad + plotH);
+        ctx.closePath();
+        ctx.fill();
+    });
+
+    // X labels (show subset if too many)
+    if (xLabels) {
+        ctx.fillStyle = '#484F58';
+        ctx.font = '10px "Space Mono", monospace';
+        ctx.textAlign = 'center';
+        var step = Math.ceil(xLabels.length / 10);
+        for (var i = 0; i < xLabels.length; i += step) {
+            var x = pad + (i / (xLabels.length - 1 || 1)) * plotW;
+            ctx.fillText(xLabels[i], x, h - pad + 18);
+        }
+    }
+
+    // Y labels
+    ctx.fillStyle = '#484F58';
+    ctx.font = '10px "Space Mono", monospace';
+    ctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++) {
+        var val = Math.round((g / 4) * maxVal);
+        ctx.fillText(val, pad - 8, pad + plotH - (g / 4) * plotH + 4);
+    }
+}
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+
+async function loadFeedback() {
+    var { data, error } = await sb
+        .from(DB_FEEDBACK)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        document.getElementById('feedback-loading').innerHTML = '<p style="color:#F85149;">Error: ' + escapeHtml(error.message) + '</p>';
+        return;
+    }
+    allFeedback = data || [];
+    feedbackLoaded = true;
+    document.getElementById('feedback-loading').style.display = 'none';
+    document.getElementById('feedback-content').style.display = 'block';
+    renderFeedbackStats();
+    renderFeedbackList();
+}
+
+function renderFeedbackStats() {
+    var fb = allFeedback.filter(function(f) { return !shouldExclude(f.user_id); });
+    var total = fb.length;
+    var avgRating = total > 0
+        ? (fb.reduce(function(s, f) { return s + (f.rating || 0); }, 0) / total).toFixed(1)
+        : '-';
+    var withComments = fb.filter(function(f) { return f.feedback_text && f.feedback_text.trim(); }).length;
+
+    var stars = '';
+    if (avgRating !== '-') {
+        var full = Math.round(parseFloat(avgRating));
+        for (var i = 0; i < 5; i++) stars += i < full ? '\u2605' : '\u2606';
+    }
+
+    document.getElementById('feedback-stats').innerHTML =
+        statCard(total, 'Total Responses') +
+        statCard(stars + ' ' + avgRating, 'Avg Rating') +
+        statCard(withComments, 'With Comments');
+}
+
+function renderFeedbackList() {
+    var fb = allFeedback.filter(function(f) { return !shouldExclude(f.user_id); });
+    var firstRunOnly = document.getElementById('first-run-fb').checked;
+    var commentsOnly = document.getElementById('comments-only-fb').checked;
+
+    if (firstRunOnly) fb = fb.filter(function(f) { return f.run_number === 1; });
+    if (commentsOnly) fb = fb.filter(function(f) { return f.feedback_text && f.feedback_text.trim(); });
+
+    if (fb.length === 0) {
+        document.getElementById('feedback-list').innerHTML = '<p class="empty-state">No feedback matches filters.</p>';
+        return;
+    }
+
+    var html = '';
+    fb.forEach(function(f) {
+        var stars = '';
+        for (var i = 0; i < 5; i++) stars += i < (f.rating || 0) ? '\u2605' : '\u2606';
+        var date = f.created_at ? new Date(f.created_at).toLocaleDateString() : '-';
+        var name = f.display_name || (f.user_email || '').split('@')[0] || 'Anonymous';
+
+        html += '<div class="feedback-item">' +
+            '<div class="feedback-header">' +
+            '<span>' + escapeHtml(name) + (f.run_number ? ' (Run ' + f.run_number + ')' : '') + '</span>' +
+            '<span class="feedback-stars">' + stars + '</span>' +
+            '</div>' +
+            (f.feedback_text ? '<div class="feedback-text">' + escapeHtml(f.feedback_text) + '</div>' : '') +
+            '<div class="feedback-meta">' + date + '</div>' +
+            '</div>';
+    });
+
+    document.getElementById('feedback-list').innerHTML = html;
+}
+</script>
+</body>
+</html>

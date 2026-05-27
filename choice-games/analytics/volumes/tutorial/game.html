@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>Data Basics Tutorial</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Data Basics Tutorial</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Steps">
+                        <span>🎯</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>🔥</span>
+                        <div class="badge-tooltip">3+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-mean" title="Mean Machine">
+                        <span>📊</span>
+                        <div class="badge-tooltip">Averages Expert</div>
+                    </div>
+                    <div class="badge" id="badge-spread" title="Spread Expert">
+                        <span>📏</span>
+                        <div class="badge-tooltip">Variability Expert</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Data Master">
+                        <span>🏆</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 2</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Title Screen -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>Data Basics Tutorial</h1>
+                    <p class="subtitle">Learn the Fundamentals</p>
+                    <p class="arena-subtitle">Master Descriptive Statistics</p>
+
+                    <div class="story-intro">
+                        <p>Welcome to the <span class="highlight">Data Basics Tutorial</span>!</p>
+                        <br>
+                        <p>In this quick tutorial, you'll learn:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>How to calculate and interpret <strong>averages</strong></li>
+                            <li>What <strong>spread</strong> tells us about data</li>
+                            <li>How to read basic <strong>charts</strong></li>
+                        </ul>
+                        <p style="color: #888; margin-top: 15px;"><em>Perfect for beginners! Takes about 5 minutes.</em></p>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Start Tutorial</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- Chapter 1: Averages -->
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Understanding Averages</h2>
+                    <p class="chapter-desc">Learn what the mean tells us about data</p>
+                </div>
+
+                <div class="narrative">
+                    <p>Imagine you surveyed 5 customers about how many times they visited your store this month:</p>
+                    <div style="text-align: center; margin: 20px 0; font-size: 1.5em; color: #4ecca3;">
+                        2, 3, 5, 5, 10
+                    </div>
+                    <p>The <span class="highlight">mean (average)</span> is calculated by adding all values and dividing by the count:</p>
+                    <div class="equation-display">
+                        Mean = (2 + 3 + 5 + 5 + 10) / 5 = 25 / 5 = <span class="highlight">5 visits</span>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('q1-screen')">Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="screen" id="q1-screen">
+                <div class="quiz-container">
+                    <h3>Question 1</h3>
+                    <p class="question">A coffee shop tracks daily sales (in cups): <strong>40, 55, 60, 65, 80</strong>. What is the mean daily sales?</p>
+
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="checkAnswer('q1', 0)">55 cups</div>
+                        <div class="option" onclick="checkAnswer('q1', 1)">60 cups</div>
+                        <div class="option" onclick="checkAnswer('q1', 2)">65 cups</div>
+                        <div class="option" onclick="checkAnswer('q1', 3)">80 cups</div>
+                    </div>
+
+                    <div class="feedback" id="q1-feedback"></div>
+                    <button class="btn btn-primary" id="q1-next" style="display: none;" onclick="showScreen('q2-intro')">Next</button>
+                </div>
+            </div>
+
+            <!-- Question 2 Intro -->
+            <div class="screen" id="q2-intro">
+                <div class="narrative">
+                    <p>The <span class="highlight">median</span> is the middle value when data is sorted. It's useful when you have outliers!</p>
+                    <p style="margin-top: 15px;">Consider salaries at a small company: <strong>$30k, $35k, $40k, $45k, $200k</strong></p>
+                    <div class="equation-display">
+                        Mean = $70k (pulled up by the $200k outlier)<br>
+                        Median = $40k (the actual middle value)
+                    </div>
+                    <p>The median better represents a "typical" salary here!</p>
+                </div>
+                <div class="nav-buttons">
+                    <span></span>
+                    <button class="btn btn-primary" onclick="showScreen('q2-screen')">Continue to Question</button>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="screen" id="q2-screen">
+                <div class="quiz-container">
+                    <h3>Question 2</h3>
+                    <p class="question">House prices in a neighborhood (in $000s): <strong>200, 220, 240, 250, 900</strong>. Which measure better represents a "typical" house price?</p>
+
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="checkAnswer('q2', 0)">Mean ($362k) - it uses all the data</div>
+                        <div class="option" onclick="checkAnswer('q2', 1)">Median ($240k) - the outlier skews the mean</div>
+                        <div class="option" onclick="checkAnswer('q2', 2)">Maximum ($900k) - shows what's possible</div>
+                        <div class="option" onclick="checkAnswer('q2', 3)">They're equally good measures</div>
+                    </div>
+
+                    <div class="feedback" id="q2-feedback"></div>
+                    <button class="btn btn-primary" id="q2-next" style="display: none;" onclick="completeChapter(1); showScreen('chapter2-intro')">Next Chapter</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Spread -->
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Understanding Spread</h2>
+                    <p class="chapter-desc">Learn why variability matters</p>
+                </div>
+
+                <div class="narrative">
+                    <p>Two basketball players both average <span class="highlight">20 points per game</span>:</p>
+                    <div style="margin: 20px 0;">
+                        <p><strong>Player A:</strong> 18, 19, 20, 21, 22 (consistent)</p>
+                        <p><strong>Player B:</strong> 5, 10, 20, 30, 35 (variable)</p>
+                    </div>
+                    <p>The <span class="highlight">range</span> (max - min) shows spread:</p>
+                    <div class="equation-display">
+                        Player A: Range = 22 - 18 = 4 points<br>
+                        Player B: Range = 35 - 5 = 30 points
+                    </div>
+                    <p>Same average, very different consistency!</p>
+                </div>
+
+                <div class="nav-buttons">
+                    <span></span>
+                    <button class="btn btn-primary" onclick="showScreen('q3-screen')">Continue</button>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="screen" id="q3-screen">
+                <div class="quiz-container">
+                    <h3>Question 3</h3>
+                    <p class="question">You're choosing a supplier. Both deliver in 5 days on average, but:<br><br>
+                    <strong>Supplier A:</strong> Always delivers in 4-6 days<br>
+                    <strong>Supplier B:</strong> Sometimes 1 day, sometimes 10 days<br><br>
+                    Which is more reliable for planning?</p>
+
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="checkAnswer('q3', 0)">Supplier A - low variability means predictable</div>
+                        <div class="option" onclick="checkAnswer('q3', 1)">Supplier B - sometimes faster is better</div>
+                        <div class="option" onclick="checkAnswer('q3', 2)">They're equally reliable - same average</div>
+                        <div class="option" onclick="checkAnswer('q3', 3)">Can't tell without more data</div>
+                    </div>
+
+                    <div class="feedback" id="q3-feedback"></div>
+                    <button class="btn btn-primary" id="q3-next" style="display: none;" onclick="showScreen('q4-intro')">Next</button>
+                </div>
+            </div>
+
+            <!-- Question 4 Intro -->
+            <div class="screen" id="q4-intro">
+                <div class="narrative">
+                    <p>Charts help us see patterns that numbers alone can hide.</p>
+                    <p style="margin-top: 15px;">A <span class="highlight">histogram</span> shows how data is distributed:</p>
+                    <canvas id="histogram-canvas" width="500" height="250" style="background: #1a1a2e; border-radius: 10px; margin: 20px auto; display: block;"></canvas>
+                    <p style="text-align: center; color: #888;">This shows most values clustered in the middle with fewer at the extremes.</p>
+                </div>
+                <div class="nav-buttons">
+                    <span></span>
+                    <button class="btn btn-primary" onclick="showScreen('q4-screen')">Continue to Question</button>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="screen" id="q4-screen">
+                <div class="quiz-container">
+                    <h3>Question 4</h3>
+                    <canvas id="comparison-canvas" width="500" height="200" style="background: #1a1a2e; border-radius: 10px; margin: 20px auto; display: block;"></canvas>
+                    <p class="question">Both datasets have the same mean (50). Based on the histograms above, which has HIGHER variability?</p>
+
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="checkAnswer('q4', 0)">Dataset A (tall, narrow) - more concentrated</div>
+                        <div class="option" onclick="checkAnswer('q4', 1)">Dataset B (short, wide) - more spread out</div>
+                        <div class="option" onclick="checkAnswer('q4', 2)">They have the same variability</div>
+                        <div class="option" onclick="checkAnswer('q4', 3)">Can't tell from histograms</div>
+                    </div>
+
+                    <div class="feedback" id="q4-feedback"></div>
+                    <button class="btn btn-primary" id="q4-next" style="display: none;" onclick="completeChapter(2); showResults()">See Results</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h2>Tutorial Complete!</h2>
+                    <div class="final-score" id="final-score">0</div>
+                    <div class="grade" id="grade">Data Beginner</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="correct-count">0/4</div>
+                            <div class="stat-label">Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="max-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <div class="cheat-sheet">
+                        <h4>Key Takeaways</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Mean (Average)</div>
+                                <div class="definition">Sum of all values divided by count. Sensitive to outliers.</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Median</div>
+                                <div class="definition">Middle value when sorted. Better for skewed data.</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Range</div>
+                                <div class="definition">Maximum minus minimum. Shows total spread.</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Variability</div>
+                                <div class="definition">How spread out data is. Low = consistent, High = variable.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="restartGame()">Try Again</button>
+                        <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="exitToVolumes()">Back to Volumes</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Screen -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Tutorial Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores for Data Basics Tutorial</p>
+
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume identifier for this game
+        const VOLUME_ID = 'tutorial';
+
+        // ============== GAME STATE ==============
+        let gameState = null;
+
+        const correctAnswers = {
+            'q1': 1, // 60 cups
+            'q2': 1, // Median
+            'q3': 0, // Supplier A
+            'q4': 1  // Dataset B
+        };
+
+        const explanations = {
+            'q1': {
+                correct: "Correct! (40 + 55 + 60 + 65 + 80) / 5 = 300 / 5 = 60 cups.",
+                incorrect: "Add all values: 40 + 55 + 60 + 65 + 80 = 300. Divide by 5: 300 / 5 = 60 cups."
+            },
+            'q2': {
+                correct: "Exactly! The $900k outlier pulls the mean way up. The median ($240k) better represents what a typical house costs.",
+                incorrect: "The $900k house is an outlier that skews the mean. The median ($240k) is the middle value and better represents typical prices."
+            },
+            'q3': {
+                correct: "Right! Low variability means predictable performance. With Supplier A, you can reliably plan for 4-6 day delivery.",
+                incorrect: "Even though they have the same average, Supplier A's low variability (4-6 days) makes planning much easier than B's 1-10 day range."
+            },
+            'q4': {
+                correct: "Correct! A wider, flatter histogram means data is more spread out. Dataset B has higher variability.",
+                incorrect: "Look at the width: Dataset B is spread across more values (wider), indicating higher variability. Dataset A is concentrated (narrower), indicating lower variability."
+            }
+        };
+
+        // ============== SCREEN MANAGEMENT ==============
+        // Hook for screen-specific actions (called by showScreen in game-utils.js)
+        function onScreenShow(screenId) {
+            if (screenId === 'q4-intro') {
+                setTimeout(drawHistogram, 100);
+            } else if (screenId === 'q4-screen') {
+                setTimeout(drawComparison, 100);
+            }
+        }
+
+        async function startGame() {
+            if (!currentUser) {
+                window.location.href = '../../index.html';
+                return;
+            }
+            gameState = createGameState(gameConfig);
+            await Analytics.trackVolumeStart();
+            updateStatsDisplay(gameState);
+            updateProgress();
+            resetUI();
+            showScreen('chapter1-intro');
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function resetUI() {
+            document.querySelectorAll('.option').forEach(o => o.classList.remove('selected', 'correct', 'incorrect'));
+            document.querySelectorAll('.feedback').forEach(f => { f.classList.remove('show', 'success', 'error'); f.innerHTML = ''; });
+            document.querySelectorAll('[id$="-next"]').forEach(b => b.style.display = 'none');
+            document.querySelectorAll('.badge').forEach(b => b.classList.remove('unlocked'));
+            document.getElementById('ch1-dot').className = 'chapter-dot active';
+            document.getElementById('ch2-dot').className = 'chapter-dot';
+        }
+
+        // ============== GAME LOGIC ==============
+        function checkAnswer(qId, selected) {
+            const result = processAnswer(gameState, qId, selected, correctAnswers[qId], gameConfig);
+            if (result.alreadyAnswered) return;
+
+            // Track the answer
+            Analytics.trackAnswer(qId, selected, correctAnswers[qId], result.isCorrect, result.points, result.streak);
+
+            updateAnswerUI(qId, selected, correctAnswers[qId], result.isCorrect);
+            const explanation = result.isCorrect ? explanations[qId].correct : explanations[qId].incorrect;
+            showAnswerFeedback(qId, result.isCorrect, result.points, explanation);
+            enableNextButton(qId);
+
+            if (result.isCorrect) {
+                checkBadges(qId);
+            }
+
+            updateStatsDisplay(gameState);
+            updateProgress();
+        }
+
+        function checkBadges(qId) {
+            // Check standard badges (first, streak, master)
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 3 });
+
+            // Tutorial-specific badges
+            if (!gameState.badges.mean && (qId === 'q1' || qId === 'q2')) {
+                gameState.badges.mean = true;
+                const badge = gameConfig.badges.mean;
+                unlockBadge('mean', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('mean', badge.name, qId);
+            }
+            if (!gameState.badges.spread && (qId === 'q3' || qId === 'q4')) {
+                gameState.badges.spread = true;
+                const badge = gameConfig.badges.spread;
+                unlockBadge('spread', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('spread', badge.name, qId);
+            }
+        }
+
+        function completeChapter(chapter) {
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+            document.getElementById(`ch${chapter}-dot`).classList.remove('active');
+            document.getElementById(`ch${chapter}-dot`).classList.add('completed');
+            if (chapter < 2) {
+                gameState.currentChapter = chapter + 1;
+                document.getElementById(`ch${chapter + 1}-dot`).classList.add('active');
+            }
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const totalQuestions = gameConfig.totalQuestions;
+            const answered = Object.keys(gameState.answeredQuestions).length;
+            const percent = Math.round((answered / totalQuestions) * 100);
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-text').textContent = `Chapter ${gameState.currentChapter} of ${gameConfig.chapters}`;
+        }
+
+        async function showResults() {
+            if (gameState.correctAnswers === 4 && !gameState.badges.master) {
+                gameState.badges.master = true;
+                unlockBadge('master', '🏆', 'Data Master!');
+                Analytics.trackBadgeUnlock('master', 'Data Master!');
+            }
+
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('correct-count').textContent = `${gameState.correctAnswers}/4`;
+            document.getElementById('max-streak').textContent = gameState.maxStreak;
+
+            let grade = 'Data Beginner';
+            if (gameState.correctAnswers >= 4) grade = 'Data Expert';
+            else if (gameState.correctAnswers >= 3) grade = 'Data Analyst';
+            else if (gameState.correctAnswers >= 2) grade = 'Data Learner';
+            document.getElementById('grade').textContent = grade;
+
+            // Track volume completion
+            Analytics.trackVolumeComplete(gameState, grade);
+
+            const result = await saveGameScore(gameState);
+            if (result && result.runNumber) {
+                Analytics.setRunNumber(result.runNumber);
+            } else if (currentUser) {
+                alert('Your score could not be saved. Please check your connection and try replaying.');
+            }
+            showScreen('results-screen');
+
+            // Show feedback modal for logged-in users
+            if (currentUser && result && result.runNumber) {
+                setTimeout(() => showFeedbackModal(result.runNumber), 500);
+            }
+        }
+
+        // ============== CANVAS DRAWING ==============
+        function drawHistogram() {
+            const canvas = document.getElementById('histogram-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 500, 250);
+
+            const data = [2, 5, 12, 25, 35, 25, 12, 5, 2];
+            const barWidth = 45;
+            const maxHeight = 180;
+            const startX = 40;
+
+            ctx.fillStyle = '#4ecca3';
+            data.forEach((val, i) => {
+                const height = (val / 35) * maxHeight;
+                ctx.fillRect(startX + i * (barWidth + 5), 220 - height, barWidth, height);
+            });
+
+            ctx.fillStyle = '#888';
+            ctx.font = '12px Segoe UI';
+            ctx.fillText('Low', 40, 245);
+            ctx.fillText('Values', 220, 245);
+            ctx.fillText('High', 420, 245);
+        }
+
+        function drawComparison() {
+            const canvas = document.getElementById('comparison-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, 500, 200);
+
+            // Dataset A - narrow
+            ctx.fillStyle = '#4ecca3';
+            const dataA = [1, 5, 25, 45, 25, 5, 1];
+            dataA.forEach((val, i) => {
+                const height = (val / 45) * 80;
+                ctx.fillRect(30 + i * 25, 90 - height, 20, height);
+            });
+
+            // Dataset B - wide
+            ctx.fillStyle = '#e94560';
+            const dataB = [8, 12, 15, 18, 15, 12, 8];
+            dataB.forEach((val, i) => {
+                const height = (val / 18) * 80;
+                ctx.fillRect(280 + i * 25, 90 - height, 20, height);
+            });
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Segoe UI';
+            ctx.fillText('Dataset A', 80, 110);
+            ctx.fillText('Dataset B', 330, 110);
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Segoe UI';
+            ctx.fillText('(tall, narrow)', 70, 125);
+            ctx.fillText('(short, wide)', 320, 125);
+        }
+
+        // ============== INIT ==============
+        window.onload = async function() {
+            await loadGameConfig();
+            await initAuth();
+            // Initialize analytics after auth
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        };
+    </script>
+</body>
+</html>

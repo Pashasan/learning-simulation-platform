@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/analytics-game/favicon.ico">
+    <title>Page Moved | Educational Game Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #e94560, #4ecca3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .redirect-msg {
+            color: #4ecca3;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        a {
+            color: #4ecca3;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        a:hover {
+            color: #6ee7b7;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 14px 36px;
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(233, 69, 96, 0.5);
+            color: white;
+        }
+    </style>
+    <script>
+        (function() {
+            var path = window.location.pathname;
+            var base = '/analytics-game';
+
+            // Strip base path prefix if present
+            var relative = path;
+            if (path.indexOf(base) === 0) {
+                relative = path.substring(base.length);
+            }
+
+            var redirectMap = [
+                { pattern: /^\/admin\.html/, target: '/choice-games/analytics/admin.html' },
+                { pattern: /^\/volumes\//, target: '/choice-games/analytics/volumes/' },
+                { pattern: /^\/css\//, target: '/choice-games/analytics/css/' },
+                { pattern: /^\/js\//, target: '/choice-games/analytics/js/' },
+                { pattern: /^\/scripts\//, target: '/choice-games/analytics/scripts/' },
+                { pattern: /^\/templates\//, target: '/choice-games/analytics/templates/' },
+                { pattern: /^\/brew-and-budget\//, target: '/simulation-games/resource-allocation/brew-and-budget/' }
+            ];
+
+            for (var i = 0; i < redirectMap.length; i++) {
+                var rule = redirectMap[i];
+                if (rule.pattern.test(relative)) {
+                    var newRelative = relative.replace(rule.pattern, rule.target);
+                    var newUrl = base + newRelative + window.location.search + window.location.hash;
+                    window.location.replace(newUrl);
+                    return;
+                }
+            }
+
+            // Special case: old root index.html (the analytics quiz login page)
+            if (relative === '/index.html' || relative === '/') {
+                // The new root IS the hub page, so no redirect needed for /
+                // But /index.html is now the hub, which is correct
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>This page has moved</h1>
+        <p>We recently reorganized the site. The page you're looking for may have moved to a new location.</p>
+        <a href="/analytics-game/" class="btn">Go to Game Hub</a>
+    </div>
+</body>
+</html>

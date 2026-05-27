@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>Empirical Methods Lab | PhD Workshop</title>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+    <style>
+        /* ===== Primitive Builder (Ch1 teaching) ===== */
+        .primitive-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            max-width: 650px;
+            margin: 20px auto;
+        }
+        .primitive-box {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(108, 142, 191, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .primitive-box:hover {
+            border-color: #d4a03c;
+            background: rgba(212, 160, 60, 0.08);
+        }
+        .primitive-box.revealed {
+            border-color: #4ecca3;
+            background: rgba(78, 204, 163, 0.08);
+        }
+        .primitive-box .prim-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 1.05em;
+            color: #d4a03c;
+            margin-bottom: 8px;
+        }
+        .primitive-box .prim-header .prim-icon {
+            font-size: 1.4em;
+        }
+        .primitive-box .prim-header .prim-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+            color: #888;
+        }
+        .primitive-box.revealed .prim-header .prim-arrow {
+            transform: rotate(90deg);
+            color: #4ecca3;
+        }
+        .primitive-box .prim-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, opacity 0.4s ease;
+            opacity: 0;
+            color: #ccc;
+            font-size: 0.92em;
+            line-height: 1.6;
+        }
+        .primitive-box.revealed .prim-body {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+        .prim-counter {
+            text-align: center;
+            margin-top: 15px;
+            color: #888;
+            font-size: 0.9em;
+        }
+        .prim-counter span {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        /* ===== DGP Flow Diagram (Ch2 teaching) ===== */
+        .dgp-flow-container {
+            max-width: 650px;
+            margin: 20px auto;
+        }
+        .dgp-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .dgp-step {
+            background: rgba(255,255,255,0.06);
+            border: 2px solid rgba(108, 142, 191, 0.2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            text-align: center;
+            min-width: 120px;
+            transition: all 0.5s ease;
+            position: relative;
+        }
+        .dgp-step .dgp-label {
+            font-weight: bold;
+            font-size: 0.88em;
+            color: #888;
+            transition: color 0.4s ease;
+        }
+        .dgp-step .dgp-sublabel {
+            font-size: 0.75em;
+            color: #555;
+            margin-top: 4px;
+            transition: color 0.4s ease;
+        }
+        .dgp-step.active-step {
+            border-color: #d4a03c;
+            background: rgba(212, 160, 60, 0.15);
+            transform: scale(1.08);
+        }
+        .dgp-step.active-step .dgp-label {
+            color: #d4a03c;
+        }
+        .dgp-step.active-step .dgp-sublabel {
+            color: #e8c46a;
+        }
+        .dgp-step.completed-step {
+            border-color: #4ecca3;
+            background: rgba(78, 204, 163, 0.08);
+        }
+        .dgp-step.completed-step .dgp-label {
+            color: #4ecca3;
+        }
+        .dgp-arrow {
+            font-size: 1.5em;
+            color: #555;
+            margin: 0 6px;
+            transition: color 0.4s ease;
+        }
+        .dgp-arrow.active-arrow {
+            color: #d4a03c;
+        }
+        .dgp-arrow.completed-arrow {
+            color: #4ecca3;
+        }
+        .dgp-inverse {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            border-radius: 10px;
+            color: #e94560;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        .dgp-inverse.visible {
+            opacity: 1;
+        }
+        .dgp-btn-row {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        /* ===== Method Comparison (Ch3 teaching) ===== */
+        .method-toggles {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0 10px 0;
+            flex-wrap: wrap;
+        }
+        .method-toggle {
+            padding: 10px 22px;
+            border: 2px solid rgba(108, 142, 191, 0.3);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            font-weight: bold;
+        }
+        .method-toggle:hover {
+            border-color: #6c8ebf;
+            color: #fff;
+        }
+        .method-toggle.active-method {
+            color: #141428;
+            font-weight: bold;
+        }
+        .method-toggle[data-method="descriptive"].active-method {
+            background: #6c8ebf;
+            border-color: #6c8ebf;
+        }
+        .method-toggle[data-method="reduced"].active-method {
+            background: #d4a03c;
+            border-color: #d4a03c;
+        }
+        .method-toggle[data-method="structural"].active-method {
+            background: #4ecca3;
+            border-color: #4ecca3;
+        }
+        .method-panel {
+            display: none;
+            max-width: 600px;
+            margin: 15px auto 0;
+            padding: 20px;
+            border-radius: 12px;
+            animation: fadeIn 0.4s ease;
+            line-height: 1.7;
+        }
+        .method-panel.active-panel {
+            display: block;
+        }
+        .method-panel h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .method-panel .method-row {
+            display: flex;
+            gap: 10px;
+            margin: 6px 0;
+            align-items: flex-start;
+        }
+        .method-panel .method-row .row-label {
+            font-weight: bold;
+            min-width: 100px;
+            flex-shrink: 0;
+        }
+        .method-panel-descriptive {
+            background: rgba(108, 142, 191, 0.12);
+            border: 1px solid rgba(108, 142, 191, 0.4);
+        }
+        .method-panel-descriptive h4 { color: #6c8ebf; }
+        .method-panel-descriptive .row-label { color: #6c8ebf; }
+
+        .method-panel-reduced {
+            background: rgba(212, 160, 60, 0.12);
+            border: 1px solid rgba(212, 160, 60, 0.4);
+        }
+        .method-panel-reduced h4 { color: #d4a03c; }
+        .method-panel-reduced .row-label { color: #d4a03c; }
+
+        .method-panel-structural {
+            background: rgba(78, 204, 163, 0.12);
+            border: 1px solid rgba(78, 204, 163, 0.4);
+        }
+        .method-panel-structural h4 { color: #4ecca3; }
+        .method-panel-structural .row-label { color: #4ecca3; }
+
+        .method-cannot {
+            color: #e94560;
+            font-style: italic;
+        }
+
+        /* ===== Identification Demo (Ch4 teaching) ===== */
+        .ident-demo {
+            max-width: 650px;
+            margin: 20px auto;
+        }
+        .ident-canvas-wrap {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .ident-status {
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 8px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .ident-status.not-identified {
+            color: #e94560;
+            background: rgba(233, 69, 96, 0.15);
+            border: 1px solid rgba(233, 69, 96, 0.4);
+        }
+        .ident-status.identified {
+            color: #4ecca3;
+            background: rgba(78, 204, 163, 0.15);
+            border: 1px solid rgba(78, 204, 163, 0.4);
+        }
+        .ident-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        .ident-slider-row label {
+            color: #888;
+            min-width: 150px;
+        }
+        .ident-slider-row input[type="range"] {
+            flex: 1;
+        }
+        .ident-val {
+            color: #6c8ebf;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        /* ===== Character color overrides ===== */
+        .speaker-chen { color: #6c8ebf; }
+        .speaker-patel { color: #d4a03c; }
+        .speaker-alex { color: #4ecca3; }
+
+        .narrative-chen { border-left-color: #6c8ebf; background: rgba(108, 142, 191, 0.08); }
+        .narrative-patel { border-left-color: #d4a03c; background: rgba(212, 160, 60, 0.08); }
+        .narrative-alex { border-left-color: #4ecca3; background: rgba(78, 204, 163, 0.08); }
+
+        .avatar-chen { border-color: #6c8ebf; }
+        .avatar-patel { border-color: #d4a03c; }
+        .avatar-alex { border-color: #4ecca3; }
+
+        @media (max-width: 600px) {
+            .primitive-grid { grid-template-columns: 1fr; }
+            .dgp-steps { flex-direction: column; align-items: center; }
+            .dgp-arrow { transform: rotate(90deg); }
+            .method-toggles { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Empirical Methods Lab</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Insight">
+                        <span>&#127919;</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>&#128293;</span>
+                        <div class="badge-tooltip">3+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>&#11088;</span>
+                        <div class="badge-tooltip">Perfect Chapter</div>
+                    </div>
+                    <div class="badge" id="badge-structural" title="Structural Thinker">
+                        <span>&#127959;&#65039;</span>
+                        <div class="badge-tooltip">Structural Thinker</div>
+                    </div>
+                    <div class="badge" id="badge-identified" title="Identification Expert">
+                        <span>&#128269;</span>
+                        <div class="badge-tooltip">Identification Expert</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="Methods Master">
+                        <span>&#127942;</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- ==================== TITLE SCREEN ==================== -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>Empirical Methods Lab</h1>
+                    <p class="subtitle">PhD Research Methods Workshop</p>
+                    <p class="arena-subtitle">From Data to Deep Parameters</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat">
+                            <div class="value">8</div>
+                            <div class="label">Questions</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">4</div>
+                            <div class="label">Chapters</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">~15</div>
+                            <div class="label">Minutes</div>
+                        </div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                                <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                                <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                                <circle cx="30" cy="20" r="8" fill="#141428"/>
+                                <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                            </svg>
+                            <div>
+                                <strong>Welcome to the Research Lab!</strong>
+                                <p style="color: #888; font-size: 0.9em;">Professor Chen - Faculty Advisor</p>
+                            </div>
+                        </div>
+                        <p>You've just started your <span class="highlight">PhD in Marketing</span> and joined Professor Chen's research lab. Before diving into your own research, you need to master the foundational framework for understanding empirical methods.</p>
+                        <br>
+                        <p>You'll be joined by <strong style="color: #d4a03c;">Dr. Patel</strong>, a senior PhD student who demands rigor, and <strong style="color: #4ecca3;">Alex</strong>, a junior student who sometimes gets confused -- keep them both on track!</p>
+                        <br>
+                        <p>Over the next <span class="highlight">15 minutes</span>, you'll explore:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>The primitives that generate observed market data</li>
+                            <li>How agents and equilibrium connect models to outcomes</li>
+                            <li>What separates descriptive, reduced-form, and structural methods</li>
+                            <li>When model-free evidence is (and isn't) enough</li>
+                        </ul>
+                        <p style="color: #888; margin-top: 15px;"><em>Based on Reiss (2011) - a foundational reading for empirical marketing research.</em></p>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Begin Workshop</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 1: Model Primitives ==================== -->
+
+            <!-- Ch1 Intro -->
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Model Primitives</h2>
+                    <p class="chapter-desc">The building blocks of every empirical model</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen">
+                    <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Every economic model is built from a small set of fundamental components -- what Reiss calls <em>primitives</em>
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>Primitives</strong><br><br>The foundational building blocks of an economic model. They describe what agents want, what they can do, what they know, and how they interact. Critically, they are "deep" -- they don't change when policies change.</span>
+                        </span>. These are the 'deep parameters' that don't change when policies change. Let me show you what they are."</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-teaching')">Explore the Primitives</button>
+                </div>
+            </div>
+
+            <!-- Ch1 Teaching: Interactive Primitive Builder -->
+            <div class="screen" id="chapter1-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Four Primitives</h2>
+                    <p class="chapter-desc">Click each box to reveal the building blocks of every model</p>
+                </div>
+
+                <div class="primitive-grid">
+                    <div class="primitive-box" id="prim-preferences" onclick="revealPrimitive('preferences')">
+                        <div class="prim-header">
+                            <span class="prim-icon">&#9829;</span>
+                            <span>Preferences</span>
+                            <span class="prim-arrow">&#9654;</span>
+                        </div>
+                        <div class="prim-body">
+                            <strong>Utility functions</strong> -- what agents <em>want</em>. Consumers maximize utility over products; firms maximize profit. These encode tastes, risk attitudes, and objectives.
+                        </div>
+                    </div>
+                    <div class="primitive-box" id="prim-technology" onclick="revealPrimitive('technology')">
+                        <div class="prim-header">
+                            <span class="prim-icon">&#9881;</span>
+                            <span>Technology</span>
+                            <span class="prim-arrow">&#9654;</span>
+                        </div>
+                        <div class="prim-body">
+                            <strong>Production functions and cost structures</strong> -- what agents <em>can do</em>. This covers manufacturing capabilities, distribution networks, and resource constraints that shape feasible actions.
+                        </div>
+                    </div>
+                    <div class="primitive-box" id="prim-information" onclick="revealPrimitive('information')">
+                        <div class="prim-header">
+                            <span class="prim-icon">&#128065;</span>
+                            <span>Information Structure</span>
+                            <span class="prim-arrow">&#9654;</span>
+                        </div>
+                        <div class="prim-body">
+                            <strong>What agents observe and know</strong> -- who sees what, and when. Do firms observe rival costs? Do consumers know product quality? Asymmetric information drives many marketing phenomena.
+                        </div>
+                    </div>
+                    <div class="primitive-box" id="prim-equilibrium" onclick="revealPrimitive('equilibrium')">
+                        <div class="prim-header">
+                            <span class="prim-icon">&#9878;</span>
+                            <span>Equilibrium Concept</span>
+                            <span class="prim-arrow">&#9654;</span>
+                        </div>
+                        <div class="prim-body">
+                            <strong>How agents interact</strong> -- the "rules of the game." Nash equilibrium, Stackelberg leadership, competitive markets -- this determines how individual decisions aggregate into market outcomes.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prim-counter" id="prim-counter">Revealed: <span id="prim-count">0</span> / 4 primitives</div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('q1-screen')">Begin Questions</button>
+                </div>
+            </div>
+
+            <!-- Q1 -->
+            <div class="screen" id="q1-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">The Four Primitives</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen">
+                    <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Good, you've explored the primitives. Now let me test whether you can distinguish them from <em>outcomes</em>
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>Outcomes vs. Primitives</strong><br><br>Outcomes (like market share, prices, or quantities sold) are what we <em>observe</em> in data. Primitives are the deeper forces that <em>generate</em> those outcomes. The whole point of structural modeling is to go from observed outcomes back to primitives.</span>
+                        </span>. One of these is not like the others."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Which of the following is NOT one of Reiss's four model primitives?</div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">Preferences -- the utility functions that drive agent behavior</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">Market Share -- the fraction of demand captured by each firm</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">Technology -- the production functions and cost structures agents face</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 3)">Information Structure -- what agents observe and know about the market</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('q2-screen')" style="display: none;">Continue</button>
+                </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="screen" id="q2-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Deep Parameters</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen">
+                    <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Reiss calls these 'deep parameters.' That word 'deep' is doing real work -- it tells you something crucial about <em>why</em> these primitives are so valuable for policy analysis
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>Policy Invariance (Lucas Critique)</strong><br><br>If a parameter changes whenever policy changes, you can't use it to predict outcomes under new policies. Deep parameters, by definition, are stable across policy regimes -- making them the only reliable foundation for counterfactual analysis.</span>
+                        </span>."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Why are model primitives considered "deep parameters"?</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">They require advanced computational methods and large datasets to estimate</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">They remain stable even when market policies or conditions change</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">They capture surface-level patterns that are easy to observe in data</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">They can only be recovered using structural econometric models</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q1-screen')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="onCompleteChapter(1)" style="display: none;">Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 2: Data Generating Process ==================== -->
+
+            <!-- Ch2 Intro -->
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Data Generating Process</h2>
+                    <p class="chapter-desc">How primitives become the data we observe</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-patel">
+                    <svg class="avatar-svg avatar-patel" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                        <p>"Alright, you know the primitives. But here's where it gets serious. Knowing the ingredients isn't enough -- you need to understand the <em>recipe</em>. How do primitives actually produce the data we see in the real world? Let me push you on this."</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q2-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-teaching')">See the DGP Flow</button>
+                </div>
+            </div>
+
+            <!-- Ch2 Teaching: Interactive DGP Flow -->
+            <div class="screen" id="chapter2-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Data Generating Process</h2>
+                    <p class="chapter-desc">Watch how primitives flow through to observed data</p>
+                </div>
+
+                <div class="dgp-flow-container">
+                    <div class="dgp-steps">
+                        <div class="dgp-step" id="dgp-step-1">
+                            <div class="dgp-label">Primitives</div>
+                            <div class="dgp-sublabel">Preferences, Tech,<br>Info, Equilibrium</div>
+                        </div>
+                        <div class="dgp-arrow" id="dgp-arrow-1">&#10132;</div>
+                        <div class="dgp-step" id="dgp-step-2">
+                            <div class="dgp-label">Agent Optimization</div>
+                            <div class="dgp-sublabel">Consumers &amp; firms<br>maximize objectives</div>
+                        </div>
+                        <div class="dgp-arrow" id="dgp-arrow-2">&#10132;</div>
+                        <div class="dgp-step" id="dgp-step-3">
+                            <div class="dgp-label">Equilibrium</div>
+                            <div class="dgp-sublabel">Market clearing,<br>best responses</div>
+                        </div>
+                        <div class="dgp-arrow" id="dgp-arrow-3">&#10132;</div>
+                        <div class="dgp-step" id="dgp-step-4">
+                            <div class="dgp-label">Observed Data</div>
+                            <div class="dgp-sublabel">Prices, quantities,<br>market shares</div>
+                        </div>
+                    </div>
+
+                    <div class="dgp-inverse" id="dgp-inverse">
+                        &#8592; THE INVERSE PROBLEM: Can we go backwards from data to recover the primitives? &#8594;
+                    </div>
+
+                    <div class="dgp-btn-row">
+                        <button class="btn btn-primary" id="dgp-play-btn" onclick="playDGPAnimation()">&#9654; Play Animation</button>
+                    </div>
+
+                    <div class="narrative narrative-with-avatar narrative-patel" style="margin-top: 20px;">
+                        <svg class="avatar-svg avatar-patel small" viewBox="0 0 60 60">
+                            <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                            <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                            <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        </svg>
+                        <div class="narrative-content">
+                            <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                            <p>"Notice the forward direction is the <strong>Data Generating Process</strong>. The hard part -- and the whole point of empirical research -- is going <em>backwards</em>. Play the animation to see both directions."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('q3-screen')">Begin Questions</button>
+                </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="screen" id="q3-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">From Primitives to Outcomes</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-patel">
+                    <svg class="avatar-svg avatar-patel" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                        <p>"You just saw the DGP flow. Now tell me precisely: what is the mechanism that connects the primitives to the data we observe? Be specific."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">In the DGP framework, what connects primitives to observed market outcomes?</div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">Agents optimize their objectives and market equilibrium determines outcomes</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">Machine learning algorithms detect latent patterns in unstructured data</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">Random sampling ensures the data is representative of the population</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">Survey instruments translate theoretical constructs into measurable variables</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('q4-screen')" style="display: none;">Continue</button>
+                </div>
+            </div>
+
+            <!-- Q4 -->
+            <div class="screen" id="q4-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">The Inverse Problem</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-patel">
+                    <svg class="avatar-svg avatar-patel" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                        <p>"The forward direction is easy conceptually. But as empiricists, we don't get to choose the primitives and watch outcomes unfold. We start with the data. So what's the real challenge
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>The Inverse Problem</strong><br><br>In the forward direction, primitives generate data through optimization and equilibrium. The inverse problem asks: given only the observed data, can we recover the primitives that generated it? This is fundamentally harder because many different sets of primitives might produce similar-looking data.</span>
+                        </span>?"</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The fundamental empirical challenge is:</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">Collecting large enough datasets to achieve statistical power</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">Choosing the right econometric software for the analysis</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">Recovering the primitives that generated the data we observe</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">Running computations fast enough to meet publication deadlines</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q3-screen')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="onCompleteChapter(2)" style="display: none;">Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 3: Taxonomy of Methods ==================== -->
+
+            <!-- Ch3 Intro -->
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Taxonomy of Methods</h2>
+                    <p class="chapter-desc">Descriptive, reduced-form, and structural approaches</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-alex">
+                    <svg class="avatar-svg avatar-alex" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-alex">Alex <span class="role-badge">Junior PhD Student</span></div>
+                        <p>"Hey, I've been reading the Reiss paper too. Honestly, I'm a bit confused -- aren't structural methods just <em>better</em> than the others? Like, why would anyone use descriptive methods if structural recovers the real primitives?"</p>
+                    </div>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen" style="margin-top: 10px;">
+                    <svg class="avatar-svg avatar-chen small" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"That's a common misconception, Alex. Let's explore exactly what each method can and cannot do. No method is universally 'better' -- it depends on the <em>question</em> you're asking."</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q4-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-teaching')">Compare the Methods</button>
+                </div>
+            </div>
+
+            <!-- Ch3 Teaching: Interactive Method Comparison -->
+            <div class="screen" id="chapter3-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Method Comparison</h2>
+                    <p class="chapter-desc">Click each method to see what it recovers and what it cannot do</p>
+                </div>
+
+                <div class="method-toggles">
+                    <button class="method-toggle" data-method="descriptive" onclick="showMethodPanel('descriptive')">Descriptive</button>
+                    <button class="method-toggle" data-method="reduced" onclick="showMethodPanel('reduced')">Reduced-Form</button>
+                    <button class="method-toggle" data-method="structural" onclick="showMethodPanel('structural')">Structural</button>
+                </div>
+
+                <!-- Descriptive Panel -->
+                <div class="method-panel method-panel-descriptive" id="panel-descriptive">
+                    <h4>Descriptive Methods</h4>
+                    <div class="method-row">
+                        <span class="row-label">Recovers:</span>
+                        <span>Patterns, correlations, and distributions in the data -- no primitives</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Example Q:</span>
+                        <span>"What is the average price sensitivity across customer segments?"</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Cannot do:</span>
+                        <span class="method-cannot">Cannot establish causation or predict outcomes under new policies</span>
+                    </div>
+                </div>
+
+                <!-- Reduced-Form Panel -->
+                <div class="method-panel method-panel-reduced" id="panel-reduced">
+                    <h4>Reduced-Form Methods</h4>
+                    <div class="method-row">
+                        <span class="row-label">Recovers:</span>
+                        <span>Causal effects of specific interventions (average treatment effects)</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Example Q:</span>
+                        <span>"Did this price promotion cause a 30% increase in sales?"</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Cannot do:</span>
+                        <span class="method-cannot">Cannot extrapolate to untested policies or optimize across all alternatives</span>
+                    </div>
+                </div>
+
+                <!-- Structural Panel -->
+                <div class="method-panel method-panel-structural" id="panel-structural">
+                    <h4>Structural Methods</h4>
+                    <div class="method-row">
+                        <span class="row-label">Recovers:</span>
+                        <span>Deep primitives (preferences, costs) enabling full counterfactual analysis</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Example Q:</span>
+                        <span>"What is the profit-maximizing price if a new competitor enters?"</span>
+                    </div>
+                    <div class="method-row">
+                        <span class="row-label">Cannot do:</span>
+                        <span class="method-cannot">Cannot avoid strong modeling assumptions -- results depend on model being correct</span>
+                    </div>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-alex" style="margin-top: 20px;">
+                    <svg class="avatar-svg avatar-alex small" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-alex">Alex <span class="role-badge">Junior PhD Student</span></div>
+                        <p>"Oh, I see -- so structural methods are more powerful but require stronger assumptions. Each method answers a different <em>type</em> of question. Got it... I think."</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('q5-screen')">Begin Questions</button>
+                </div>
+            </div>
+
+            <!-- Q5 -->
+            <div class="screen" id="q5-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">What Separates the Methods?</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-alex">
+                    <svg class="avatar-svg avatar-alex" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-alex">Alex <span class="role-badge">Junior PhD Student</span></div>
+                        <p>"Wait, I want to make sure I've got this right. The three methods differ mostly because of the <em>software</em> they use, right? Like, structural = MATLAB, reduced-form = Stata?"</p>
+                    </div>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen" style="margin-top: 10px;">
+                    <svg class="avatar-svg avatar-chen small" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Not quite, Alex. Help them out -- what <em>fundamentally</em> distinguishes these methods?"</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What fundamentally distinguishes descriptive, reduced-form, and structural methods?</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">The programming language and statistical software each method requires</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">The minimum sample size needed to produce reliable estimates</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">The type of data source -- survey, experimental, or observational</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">The primitives each recovers and the counterfactuals each can answer</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('q6-screen')" style="display: none;">Continue</button>
+                </div>
+            </div>
+
+            <!-- Q6 -->
+            <div class="screen" id="q6-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Choosing the Right Tool</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128200; Applied Scenario: Retailer Price Optimization</h3>
+                    <p>A national retailer ran a 20%-off price promotion on a product category last quarter. The results are in:</p>
+                    <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.15);">
+                            <th style="padding: 10px; text-align: left; color: #d4a03c;">Metric</th>
+                            <th style="padding: 10px; text-align: center; color: #d4a03c;">Before Promotion</th>
+                            <th style="padding: 10px; text-align: center; color: #d4a03c;">During Promotion</th>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                            <td style="padding: 10px;">Weekly Unit Sales</td>
+                            <td style="padding: 10px; text-align: center;">1,200</td>
+                            <td style="padding: 10px; text-align: center; color: #4ecca3;">1,560 (+30%)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                            <td style="padding: 10px;">Revenue per Unit</td>
+                            <td style="padding: 10px; text-align: center;">$25.00</td>
+                            <td style="padding: 10px; text-align: center; color: #e94560;">$20.00 (-20%)</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Weekly Revenue</td>
+                            <td style="padding: 10px; text-align: center;">$30,000</td>
+                            <td style="padding: 10px; text-align: center; color: #d4a03c;">$31,200 (+4%)</td>
+                        </tr>
+                    </table>
+                    <p style="margin-top: 15px; color: #888;">Management wants to find the <strong style="color: #fff;">profit-maximizing price</strong> -- not just evaluate this one promotion.</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-patel">
+                    <svg class="avatar-svg avatar-patel small" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                        <p>"Think carefully. They don't just want to know what happened -- they want to know the <em>optimal</em> price. What kind of method do you need?"</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">To find the profit-maximizing price, which approach is needed?</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">Summarize the promotion's impact with descriptive statistics and charts</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">Estimate the causal effect using a difference-in-differences design</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">Recover demand primitives via structural modeling to optimize over all prices</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">Run additional promotions at random price points and compare outcomes</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q5-screen')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="onCompleteChapter(3)" style="display: none;">Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 4: Identification & Model-Free Evidence ==================== -->
+
+            <!-- Ch4 Intro -->
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Identification &amp; Model-Free Evidence</h2>
+                    <p class="chapter-desc">When can we learn what we need from data?</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen">
+                    <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Final chapter. Before you can estimate <em>anything</em>, you need to ask a more fundamental question: <strong>can</strong> this parameter even be learned from data
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>Identification</strong><br><br>A parameter is identified if different values of it produce different distributions of observable data. This is a property of the <em>model</em>, not the <em>data</em>. Even with infinite data, an unidentified parameter cannot be recovered.</span>
+                        </span>? That's identification. And sometimes, the simplest approach -- an experiment -- gives you all you need. But not always."</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q6-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-teaching')">Explore Identification</button>
+                </div>
+            </div>
+
+            <!-- Ch4 Teaching: Interactive Identification Demo -->
+            <div class="screen" id="chapter4-teaching">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Identification Demo</h2>
+                    <p class="chapter-desc">Drag the slider to see when parameters become distinguishable</p>
+                </div>
+
+                <div class="ident-demo">
+                    <div class="narrative narrative-with-avatar narrative-chen" style="margin-bottom: 15px;">
+                        <svg class="avatar-svg avatar-chen small" viewBox="0 0 60 60">
+                            <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                            <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                            <circle cx="30" cy="20" r="8" fill="#141428"/>
+                            <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                        </svg>
+                        <div class="narrative-content">
+                            <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                            <p>"Imagine two possible parameter values, &#952;&#8321; and &#952;&#8322;. Each produces a distribution of observables. If those distributions overlap completely, we can <em>never</em> tell which parameter generated the data -- even with infinite observations."</p>
+                        </div>
+                    </div>
+
+                    <div class="ident-canvas-wrap">
+                        <canvas id="ident-canvas" width="580" height="220"></canvas>
+                    </div>
+
+                    <div class="ident-slider-row">
+                        <label>Parameter distance:</label>
+                        <input type="range" id="ident-slider" min="0" max="100" value="0" oninput="updateIdentDemo()">
+                        <span class="ident-val" id="ident-val">0.00</span>
+                    </div>
+
+                    <div class="ident-status not-identified" id="ident-status">NOT IDENTIFIED</div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('q7-screen')">Begin Questions</button>
+                </div>
+            </div>
+
+            <!-- Q7 -->
+            <div class="screen" id="q7-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">What Is Identification?</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-patel">
+                    <svg class="avatar-svg avatar-patel" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#d4a03c"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#d4a03c"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-patel">Dr. Patel <span class="role-badge">Senior PhD Student</span></div>
+                        <p>"You just saw the demo. Now, Alex said something earlier that worried me -- they said a parameter is 'identified' when it passes a significance test. That's dangerously wrong. Can you give the correct definition?"</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">A parameter is "identified" if:</div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">It has been published in a top-tier peer-reviewed economics journal</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">The sample contains at least 10,000 observations for reliable estimation</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">Different values of it produce distinguishable distributions of observables</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">It passes a standard statistical significance test at the 5% level</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-teaching')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('q8-screen')" style="display: none;">Continue</button>
+                </div>
+            </div>
+
+            <!-- Q8 -->
+            <div class="screen" id="q8-screen">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Model-Free Evidence</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar narrative-chen">
+                    <svg class="avatar-svg avatar-chen" viewBox="0 0 60 60">
+                        <circle cx="30" cy="20" r="12" fill="#6c8ebf"/>
+                        <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#6c8ebf"/>
+                        <circle cx="30" cy="20" r="8" fill="#141428"/>
+                        <rect x="24" y="28" width="12" height="3" rx="1" fill="#d4a03c"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker speaker-chen">Professor Chen <span class="role-badge">Faculty Advisor</span></div>
+                        <p>"Last question. Experiments are the gold standard for causal inference, and sometimes their results are all you need
+                        <span class="info-icon">?
+                            <span class="info-tooltip"><strong>Model-Free Evidence</strong><br><br>Evidence from randomized experiments that doesn't require a structural model to interpret. Sufficient when the decision matches the experiment exactly and you only need average effects. Insufficient for out-of-sample predictions, welfare analysis, or optimizing over untested alternatives.</span>
+                        </span>. But when exactly? This is a question that separates careful researchers from careless ones."</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">When is model-free (experimental) evidence sufficient for a marketing decision?</div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Always -- well-designed experiments are strictly superior to any model</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">When the planned policy exactly matches the experiment and only average effects matter</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">Never -- structural models are necessary for every substantive business decision</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">Only when the firm operates exclusively in digital marketing channels</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('q7-screen')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="onCompleteChapter(4)" style="display: none;">Complete Chapter 4</button>
+                </div>
+            </div>
+
+            <!-- ==================== RESULTS SCREEN ==================== -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Workshop Complete!</h1>
+                    <p style="color: #d4a03c; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've completed the empirical methods workshop</p>
+
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="grade">-</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="correct-count">0/8</div>
+                            <div class="stat-label">Questions Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="max-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned -->
+                    <div style="max-width: 700px; margin: 20px auto;">
+                        <h3 style="margin-bottom: 15px;">&#127941; Badges Earned</h3>
+                        <div class="badges-container" id="results-badges">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Cheat Sheet -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>&#128203; Key Concepts - Empirical Methods</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Model Primitives</div>
+                                <div class="definition">Preferences, Technology, Information Structure, Equilibrium Concept</div>
+                                <div class="formula">These are the "deep parameters" - invariant to policy changes</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Data Generating Process</div>
+                                <div class="definition">Primitives &#8594; Agent Optimization &#8594; Equilibrium &#8594; Observed Data</div>
+                                <div class="formula">The forward problem: from model to data</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">The Inverse Problem</div>
+                                <div class="definition">Going from observed data back to the primitives that generated it</div>
+                                <div class="formula">This is the fundamental empirical challenge</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Descriptive Methods</div>
+                                <div class="definition">Summarize patterns in data without recovering primitives</div>
+                                <div class="formula">What happened? (means, distributions, correlations)</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Reduced-Form Methods</div>
+                                <div class="definition">Estimate causal effects without full model structure</div>
+                                <div class="formula">Did X cause Y? (experiments, IV, diff-in-diff)</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Structural Methods</div>
+                                <div class="definition">Recover primitives to enable counterfactual analysis and optimization</div>
+                                <div class="formula">What would happen if we changed policy Z?</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Identification</div>
+                                <div class="definition">A parameter is identified if different values produce different observable distributions</div>
+                                <div class="formula">A model property, not a data property</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Model-Free Evidence</div>
+                                <div class="definition">Sufficient when policy = experiment and only average effects are needed</div>
+                                <div class="formula">Insufficient for out-of-sample counterfactuals or welfare analysis</div>
+                            </div>
+                        </div>
+
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="copyCheatSheet()">&#128203; Copy to Clipboard</button>
+                            <button class="btn-export" onclick="downloadCheatSheet()">&#128190; Download as Text</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+                        <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LEADERBOARD SCREEN ==================== -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from the Empirical Methods Lab</p>
+
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume identifier for this game
+        const VOLUME_ID = 'empirical-methods';
+
+        // ============== GAME STATE ==============
+        let gameState = null;
+
+        // Question answers (0-indexed correct answer)
+        const correctAnswers = {
+            'q1': 1, // Market Share is NOT a primitive
+            'q2': 1, // Remain stable even when market policies or conditions change
+            'q3': 0, // Agents optimize their objectives and market equilibrium determines outcomes
+            'q4': 2, // Recovering the primitives that generated the data we observe
+            'q5': 3, // The primitives each recovers and the counterfactuals each can answer
+            'q6': 2, // Recover demand primitives via structural modeling
+            'q7': 2, // Different values produce distinguishable distributions
+            'q8': 1  // When the policy matches the experiment and only average effects matter
+        };
+
+        const explanations = {
+            'q1': {
+                correct: 'The four primitives are Preferences, Technology, Information Structure, and Equilibrium Concept. Market share is an outcome -- a result of how these primitives interact through agent optimization and equilibrium, not a primitive itself.',
+                incorrect: 'The four primitives are Preferences, Technology, Information Structure, and Equilibrium Concept. Market share is an observable outcome generated by these primitives, not one of the building blocks.'
+            },
+            'q2': {
+                correct: 'Exactly! Primitives are "deep" because they are invariant to policy changes. If a firm changes its pricing strategy, consumer preferences (a primitive) don\'t change -- but market outcomes do. This stability is what enables meaningful counterfactual analysis.',
+                incorrect: 'Primitives are called "deep" because they remain stable even when policies or market conditions change. This invariance is critical -- it means we can use recovered primitives to predict what happens under new policies that have never been tried.'
+            },
+            'q3': {
+                correct: 'In the DGP framework, agents (consumers, firms) take the primitives as given and optimize their objectives. Their optimal decisions then interact through an equilibrium concept, producing the observable market outcomes (prices, quantities, shares).',
+                incorrect: 'The DGP works through economic mechanisms: agents optimize their objectives given the primitives, and their decisions interact through equilibrium to produce observed data. This is an economic process, not a statistical or computational one.'
+            },
+            'q4': {
+                correct: 'This is the "inverse problem" -- we observe data (outcomes like prices and quantities), but we want to recover the underlying primitives that generated those outcomes. This conceptual challenge is what makes empirical research fundamentally difficult.',
+                incorrect: 'The fundamental challenge is the inverse problem: going from observed data back to the primitives that generated it. More data or better software doesn\'t solve this conceptual challenge -- it requires the right model structure and identification strategy.'
+            },
+            'q5': {
+                correct: 'Per Reiss, methods are not "better" or "worse" -- they differ in what primitives they can recover and what counterfactual questions they can answer. Descriptive finds patterns, reduced-form finds causal effects, structural recovers deep parameters.',
+                incorrect: 'The fundamental distinction is about what each method can recover (patterns, causal effects, or primitives) and what counterfactual questions it can answer. This is not about software, sample size, or data type.'
+            },
+            'q6': {
+                correct: 'Finding the profit-maximizing price requires knowing how demand responds to ANY price -- not just the one tested. This requires recovering demand primitives (price elasticity, substitution patterns) via structural modeling, then optimizing over the full price space.',
+                incorrect: 'Optimization requires extrapolating beyond the specific promotion that was tested. Only structural methods can recover the demand primitives needed to predict sales at every possible price point and find the optimum.'
+            },
+            'q7': {
+                correct: 'Identification is about the model\'s structure, not about data quality or statistical testing. If two different parameter values produce identical distributions of observables, no amount of data can tell them apart -- the parameter is not identified.',
+                incorrect: 'Identification means that different parameter values map to different observable distributions. It is a property of the model, not the data or the estimation procedure. A parameter can be "significant" in a regression yet still suffer from identification problems.'
+            },
+            'q8': {
+                correct: 'Experimental evidence is sufficient when (1) the planned policy exactly replicates the experimental treatment, and (2) you only need average treatment effects. For optimization across untested alternatives, welfare analysis, or out-of-sample predictions, you need a model.',
+                incorrect: 'Model-free evidence is sufficient only when the decision matches the experiment exactly and only average effects are needed. For optimization across untested alternatives or out-of-sample counterfactuals, structural models become necessary.'
+            }
+        };
+
+        // ============== INITIALIZATION ==============
+        async function init() {
+            const authed = await initAuth();
+            if (!authed) return;
+
+            const config = await loadGameConfig();
+            if (!config) {
+                alert('Failed to load game configuration.');
+                return;
+            }
+
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+
+            gameState = createGameState(gameConfig);
+            updateStatsDisplay(gameState);
+            showScreen('title-screen');
+        }
+
+        function startGame() {
+            Analytics.trackVolumeStart();
+            showScreen('chapter1-intro');
+            updateProgress();
+        }
+
+        function restartGame() {
+            gameState = createGameState(gameConfig);
+            resetGameUI(4);
+            updateStatsDisplay(gameState);
+            updateProgress();
+            // Reset interactive elements
+            resetPrimitiveBuilder();
+            resetDGPAnimation();
+            resetMethodPanels();
+            resetIdentDemo();
+            showScreen('title-screen');
+        }
+
+        // ============== SCREEN HOOKS ==============
+        function onScreenShow(screenId) {
+            if (screenId === 'chapter4-teaching') {
+                setTimeout(function() { updateIdentDemo(); }, 100);
+            }
+        }
+
+        // ============== ANSWER HANDLING ==============
+        function selectOption(element, questionId, optionIndex) {
+            var result = processAnswer(gameState, questionId, optionIndex, correctAnswers[questionId], gameConfig);
+            if (result.alreadyAnswered) return;
+
+            Analytics.trackAnswer(questionId, optionIndex, correctAnswers[questionId], result.isCorrect, result.points, result.streak);
+
+            var options = document.querySelectorAll('#' + questionId + '-options .option');
+            options.forEach(function(opt) { opt.classList.remove('selected', 'correct', 'incorrect'); });
+            element.classList.add('selected');
+
+            updateAnswerUI(questionId, optionIndex, correctAnswers[questionId], result.isCorrect);
+
+            var feedback = document.getElementById(questionId + '-feedback');
+            if (result.isCorrect) {
+                feedback.className = 'feedback success show';
+                feedback.innerHTML = '<strong>&#10004; Correct!</strong> +' + Number(result.points) + ' points<br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].correct));
+            } else {
+                feedback.className = 'feedback error show';
+                feedback.innerHTML = '<strong>&#10008; Not quite.</strong><br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].incorrect));
+            }
+
+            updateStatsDisplay(gameState);
+            checkBadges(questionId, result.isCorrect);
+
+            var nextBtn = document.getElementById(questionId + '-next');
+            if (nextBtn) {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.disabled = false;
+            }
+        }
+
+        function updateStats() { updateStatsDisplay(gameState); }
+
+        function updateProgress() {
+            var chapters = gameConfig.chapters;
+            var progress = ((gameState.currentChapter - 1) / chapters) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = 'Chapter ' + gameState.currentChapter + ' of ' + chapters;
+            document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+            for (var i = 1; i <= chapters; i++) {
+                var dot = document.getElementById('ch' + i + '-dot');
+                if (!dot) continue;
+                dot.classList.remove('active', 'completed');
+                if (i < gameState.currentChapter) dot.classList.add('completed');
+                else if (i === gameState.currentChapter) dot.classList.add('active');
+            }
+        }
+
+        function onCompleteChapter(chapter) {
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+            checkPerfectChapter(chapter);
+
+            document.getElementById('ch' + chapter + '-dot').classList.remove('active');
+            document.getElementById('ch' + chapter + '-dot').classList.add('completed');
+
+            if (chapter < 4) {
+                gameState.currentChapter = chapter + 1;
+                document.getElementById('ch' + (chapter + 1) + '-dot').classList.add('active');
+                showScreen('chapter' + (chapter + 1) + '-intro');
+            } else {
+                showResults();
+            }
+            updateProgress();
+        }
+
+        // ============== BADGES ==============
+        function checkBadges(questionId, isCorrect) {
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 3 });
+
+            // Structural Thinker: get Q6 correct (structural methods question)
+            if (questionId === 'q6' && isCorrect && !gameState.badges.structural) {
+                gameState.badges.structural = true;
+                var badge = gameConfig.badges.structural;
+                unlockBadge('structural', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('structural', badge.name, questionId);
+            }
+            // Identification Expert: get Q7 correct
+            if (questionId === 'q7' && isCorrect && !gameState.badges.identified) {
+                gameState.badges.identified = true;
+                var badge = gameConfig.badges.identified;
+                unlockBadge('identified', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('identified', badge.name, questionId);
+            }
+        }
+
+        function checkPerfectChapter(chapter) {
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                var badge = gameConfig.badges.perfect;
+                unlockBadge('perfect', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('perfect', badge.name);
+            }
+        }
+
+        // ============== RESULTS ==============
+        function populateResultsBadges() {
+            var container = document.getElementById('results-badges');
+            var badges = [
+                { id: 'first', icon: '\u{1F3AF}', name: 'First Correct' },
+                { id: 'streak', icon: '\u{1F525}', name: '3+ Streak' },
+                { id: 'perfect', icon: '\u2B50', name: 'Perfect Chapter' },
+                { id: 'structural', icon: '\u{1F3D7}\uFE0F', name: 'Structural Thinker' },
+                { id: 'identified', icon: '\u{1F50D}', name: 'Identification Expert' },
+                { id: 'master', icon: '\u{1F3C6}', name: 'All Correct' }
+            ];
+            container.innerHTML = badges.map(function(badge) {
+                return '<div class="badge ' + (gameState.badges[badge.id] ? 'unlocked' : '') + '" title="' + badge.name + '">' +
+                    '<span>' + badge.icon + '</span>' +
+                    '<div class="badge-tooltip">' + badge.name + '</div></div>';
+            }).join('');
+        }
+
+        async function showResults() {
+            // Check master badge
+            if (gameState.correctAnswers === gameConfig.totalQuestions && !gameState.badges.master) {
+                gameState.badges.master = true;
+                var badge = gameConfig.badges.master;
+                unlockBadge('master', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('master', badge.name);
+            }
+
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('correct-count').textContent = gameState.correctAnswers + '/' + gameConfig.totalQuestions;
+            document.getElementById('max-streak').textContent = gameState.maxStreak;
+
+            var grade = gameConfig.grades.find(function(g) { return gameState.correctAnswers >= g.minCorrect; });
+            if (grade) document.getElementById('grade').textContent = grade.title;
+
+            populateResultsBadges();
+
+            Analytics.trackVolumeComplete(gameState, grade ? grade.title : 'Unknown');
+
+            var result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) Analytics.setRunNumber(result.runNumber);
+                else alert('Score could not be saved.');
+            }
+            showScreen('results-screen');
+            if (currentUser && result && result.runNumber) {
+                setTimeout(function() { showFeedbackModal(result.runNumber); }, 500);
+            }
+        }
+
+        // ============== CHEAT SHEET ==============
+        function copyCheatSheet() {
+            var text = generateCheatSheetText();
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Cheat sheet copied to clipboard!');
+            }).catch(function() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Cheat sheet copied to clipboard!');
+            });
+        }
+
+        function downloadCheatSheet() {
+            var text = generateCheatSheetText();
+            var blob = new Blob([text], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'empirical_methods_cheat_sheet.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateCheatSheetText() {
+            return '========================================\n' +
+                'EMPIRICAL METHODS CHEAT SHEET\n' +
+                'PhD Research Methods Workshop\n' +
+                '========================================\n\n' +
+                'MODEL PRIMITIVES\n-----------------\n' +
+                '1. Preferences (utility functions)\n' +
+                '2. Technology (production/costs)\n' +
+                '3. Information Structure (who knows what)\n' +
+                '4. Equilibrium Concept (how agents interact)\n' +
+                'These are "deep parameters" - invariant to policy.\n\n' +
+                'DATA GENERATING PROCESS\n-----------------------\n' +
+                'Primitives -> Agent Optimization -> Equilibrium -> Data\n' +
+                'The inverse problem: recovering primitives from data.\n\n' +
+                'DESCRIPTIVE METHODS\n-------------------\n' +
+                'Summarize patterns. No primitives recovered.\n' +
+                'Q: What happened? (means, distributions)\n\n' +
+                'REDUCED-FORM METHODS\n--------------------\n' +
+                'Estimate causal effects (ATE).\n' +
+                'Q: Did X cause Y? (experiments, IV, DiD)\n\n' +
+                'STRUCTURAL METHODS\n------------------\n' +
+                'Recover primitives for counterfactuals.\n' +
+                'Q: What if we changed policy Z?\n\n' +
+                'IDENTIFICATION\n--------------\n' +
+                'Different parameter values -> different data distributions.\n' +
+                'A model property, not a data property.\n\n' +
+                'MODEL-FREE EVIDENCE\n-------------------\n' +
+                'Sufficient when policy = experiment & only ATE needed.\n' +
+                'Insufficient for optimization or welfare analysis.\n';
+        }
+
+        // ===========================================================
+        // INTERACTIVE ELEMENTS
+        // ===========================================================
+
+        // ---- Ch1: Primitive Builder ----
+        var primitivesRevealed = {};
+
+        function revealPrimitive(id) {
+            var box = document.getElementById('prim-' + id);
+            if (!box) return;
+            if (primitivesRevealed[id]) {
+                // Toggle off
+                box.classList.remove('revealed');
+                delete primitivesRevealed[id];
+            } else {
+                // Toggle on
+                box.classList.add('revealed');
+                primitivesRevealed[id] = true;
+            }
+            var count = Object.keys(primitivesRevealed).length;
+            document.getElementById('prim-count').textContent = count;
+        }
+
+        function resetPrimitiveBuilder() {
+            primitivesRevealed = {};
+            ['preferences', 'technology', 'information', 'equilibrium'].forEach(function(id) {
+                var box = document.getElementById('prim-' + id);
+                if (box) box.classList.remove('revealed');
+            });
+            var counter = document.getElementById('prim-count');
+            if (counter) counter.textContent = '0';
+        }
+
+        // ---- Ch2: DGP Flow Animation ----
+        var dgpAnimating = false;
+
+        function playDGPAnimation() {
+            if (dgpAnimating) return;
+            dgpAnimating = true;
+
+            var btn = document.getElementById('dgp-play-btn');
+            btn.disabled = true;
+            btn.textContent = 'Playing...';
+
+            // Reset
+            for (var i = 1; i <= 4; i++) {
+                document.getElementById('dgp-step-' + i).classList.remove('active-step', 'completed-step');
+            }
+            for (var i = 1; i <= 3; i++) {
+                document.getElementById('dgp-arrow-' + i).classList.remove('active-arrow', 'completed-arrow');
+            }
+            document.getElementById('dgp-inverse').classList.remove('visible');
+
+            var steps = [
+                function() {
+                    document.getElementById('dgp-step-1').classList.add('active-step');
+                },
+                function() {
+                    document.getElementById('dgp-step-1').classList.remove('active-step');
+                    document.getElementById('dgp-step-1').classList.add('completed-step');
+                    document.getElementById('dgp-arrow-1').classList.add('active-arrow');
+                },
+                function() {
+                    document.getElementById('dgp-arrow-1').classList.remove('active-arrow');
+                    document.getElementById('dgp-arrow-1').classList.add('completed-arrow');
+                    document.getElementById('dgp-step-2').classList.add('active-step');
+                },
+                function() {
+                    document.getElementById('dgp-step-2').classList.remove('active-step');
+                    document.getElementById('dgp-step-2').classList.add('completed-step');
+                    document.getElementById('dgp-arrow-2').classList.add('active-arrow');
+                },
+                function() {
+                    document.getElementById('dgp-arrow-2').classList.remove('active-arrow');
+                    document.getElementById('dgp-arrow-2').classList.add('completed-arrow');
+                    document.getElementById('dgp-step-3').classList.add('active-step');
+                },
+                function() {
+                    document.getElementById('dgp-step-3').classList.remove('active-step');
+                    document.getElementById('dgp-step-3').classList.add('completed-step');
+                    document.getElementById('dgp-arrow-3').classList.add('active-arrow');
+                },
+                function() {
+                    document.getElementById('dgp-arrow-3').classList.remove('active-arrow');
+                    document.getElementById('dgp-arrow-3').classList.add('completed-arrow');
+                    document.getElementById('dgp-step-4').classList.add('active-step');
+                },
+                function() {
+                    document.getElementById('dgp-step-4').classList.remove('active-step');
+                    document.getElementById('dgp-step-4').classList.add('completed-step');
+                },
+                function() {
+                    // Show inverse problem
+                    document.getElementById('dgp-inverse').classList.add('visible');
+                    btn.disabled = false;
+                    btn.textContent = '\u25B6 Replay Animation';
+                    dgpAnimating = false;
+                }
+            ];
+
+            var delay = 0;
+            steps.forEach(function(step, idx) {
+                setTimeout(step, delay);
+                delay += (idx < steps.length - 1) ? 600 : 800;
+            });
+        }
+
+        function resetDGPAnimation() {
+            dgpAnimating = false;
+            for (var i = 1; i <= 4; i++) {
+                var step = document.getElementById('dgp-step-' + i);
+                if (step) step.classList.remove('active-step', 'completed-step');
+            }
+            for (var i = 1; i <= 3; i++) {
+                var arrow = document.getElementById('dgp-arrow-' + i);
+                if (arrow) arrow.classList.remove('active-arrow', 'completed-arrow');
+            }
+            var inv = document.getElementById('dgp-inverse');
+            if (inv) inv.classList.remove('visible');
+            var btn = document.getElementById('dgp-play-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '\u25B6 Play Animation';
+            }
+        }
+
+        // ---- Ch3: Method Comparison Toggles ----
+        function showMethodPanel(method) {
+            // Toggle button states
+            var toggles = document.querySelectorAll('.method-toggle');
+            toggles.forEach(function(t) { t.classList.remove('active-method'); });
+
+            var panels = document.querySelectorAll('.method-panel');
+            panels.forEach(function(p) { p.classList.remove('active-panel'); });
+
+            var btn = document.querySelector('.method-toggle[data-method="' + method + '"]');
+            var panel = document.getElementById('panel-' + method);
+
+            if (btn) btn.classList.add('active-method');
+            if (panel) panel.classList.add('active-panel');
+        }
+
+        function resetMethodPanels() {
+            document.querySelectorAll('.method-toggle').forEach(function(t) { t.classList.remove('active-method'); });
+            document.querySelectorAll('.method-panel').forEach(function(p) { p.classList.remove('active-panel'); });
+        }
+
+        // ---- Ch4: Identification Demo ----
+        function updateIdentDemo() {
+            var slider = document.getElementById('ident-slider');
+            if (!slider) return;
+            var val = parseInt(slider.value);
+            var distance = val / 100;
+            document.getElementById('ident-val').textContent = distance.toFixed(2);
+
+            var threshold = 0.35;
+            var status = document.getElementById('ident-status');
+            if (distance >= threshold) {
+                status.textContent = 'IDENTIFIED';
+                status.className = 'ident-status identified';
+            } else {
+                status.textContent = 'NOT IDENTIFIED';
+                status.className = 'ident-status not-identified';
+            }
+
+            drawIdentCanvas(distance, threshold);
+        }
+
+        function drawIdentCanvas(distance, threshold) {
+            var canvas = document.getElementById('ident-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width;
+            var h = canvas.height;
+
+            ctx.fillStyle = '#141428';
+            ctx.fillRect(0, 0, w, h);
+
+            var mu1 = w * 0.5 - distance * w * 0.25;
+            var mu2 = w * 0.5 + distance * w * 0.25;
+            var sigma = 55;
+
+            // Draw distribution curves
+            function gaussY(x, mu, sig) {
+                return Math.exp(-0.5 * Math.pow((x - mu) / sig, 2)) / (sig * Math.sqrt(2 * Math.PI));
+            }
+
+            var maxPdf = gaussY(0, 0, sigma);
+            var scaleH = (h - 60) / maxPdf;
+
+            // Distribution 1 (theta_1)
+            ctx.beginPath();
+            ctx.moveTo(0, h - 30);
+            for (var x = 0; x <= w; x += 2) {
+                var y = gaussY(x, mu1, sigma) * scaleH;
+                ctx.lineTo(x, h - 30 - y);
+            }
+            ctx.lineTo(w, h - 30);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(108, 142, 191, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#6c8ebf';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (var x = 0; x <= w; x += 2) {
+                var y = gaussY(x, mu1, sigma) * scaleH;
+                if (x === 0) ctx.moveTo(x, h - 30 - y);
+                else ctx.lineTo(x, h - 30 - y);
+            }
+            ctx.stroke();
+
+            // Distribution 2 (theta_2)
+            ctx.beginPath();
+            ctx.moveTo(0, h - 30);
+            for (var x = 0; x <= w; x += 2) {
+                var y = gaussY(x, mu2, sigma) * scaleH;
+                ctx.lineTo(x, h - 30 - y);
+            }
+            ctx.lineTo(w, h - 30);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(212, 160, 60, 0.3)';
+            ctx.fill();
+            ctx.strokeStyle = '#d4a03c';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (var x = 0; x <= w; x += 2) {
+                var y = gaussY(x, mu2, sigma) * scaleH;
+                if (x === 0) ctx.moveTo(x, h - 30 - y);
+                else ctx.lineTo(x, h - 30 - y);
+            }
+            ctx.stroke();
+
+            // Labels
+            ctx.font = 'bold 13px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#6c8ebf';
+            ctx.fillText('\u03B8\u2081', mu1, 18);
+            ctx.fillStyle = '#d4a03c';
+            ctx.fillText('\u03B8\u2082', mu2, 18);
+
+            // X-axis
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, h - 30);
+            ctx.lineTo(w, h - 30);
+            ctx.stroke();
+            ctx.fillStyle = '#888';
+            ctx.font = '11px Segoe UI';
+            ctx.fillText('Observable Data Distribution', w / 2, h - 10);
+
+            // Overlap indicator
+            if (distance < threshold) {
+                var overlapPct = Math.round((1 - distance / threshold) * 100);
+                ctx.fillStyle = 'rgba(233, 69, 96, 0.8)';
+                ctx.font = 'bold 12px Segoe UI';
+                ctx.fillText('Overlap: ~' + overlapPct + '% -- Cannot distinguish!', w / 2, h - 45);
+            }
+        }
+
+        function resetIdentDemo() {
+            var slider = document.getElementById('ident-slider');
+            if (slider) slider.value = 0;
+            updateIdentDemo();
+        }
+
+        // ============== NAVIGATION ==============
+        function goToMenu() {
+            window.location.href = '../../index.html';
+        }
+
+        // ============== STARTUP ==============
+        init();
+    </script>
+</body>
+</html>

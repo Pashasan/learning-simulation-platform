@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | The Study Lounge</title>
+<link rel="stylesheet" href="css/survey.css">
+</head>
+<body>
+<div class="ambient-bg"></div>
+
+<div class="content-container" style="position: relative; z-index: 1;">
+  <a href="index.html" class="back-link">&larr; Back to Lobby</a>
+
+  <div class="admin-header">
+    <div>
+      <h1 class="page-title">Survey Results</h1>
+      <p class="page-subtitle">Aggregate feedback dashboard</p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <select class="admin-select" id="module-select">
+        <option value="">Loading...</option>
+      </select>
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); cursor: pointer; white-space: nowrap;">
+        <input type="checkbox" id="exclude-admin" style="accent-color: var(--amber); cursor: pointer;">
+        Exclude Admin
+      </label>
+      <button class="btn-export" id="btn-export" onclick="exportData()">Export JSON</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border);">
+    <button class="admin-tab active" id="tab-results" onclick="switchTab('results')">Results</button>
+    <button class="admin-tab" id="tab-analytics" onclick="switchTab('analytics')">Analytics &amp; Debug</button>
+  </div>
+  <style>
+    .admin-tab {
+      padding: 10px 20px; background: transparent; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-dim); font-family: var(--font-body); font-size: 14px; cursor: pointer; transition: all 0.2s;
+    }
+    .admin-tab:hover { color: var(--text); }
+    .admin-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .event-row { display: flex; gap: 10px; padding: 8px 12px; background: rgba(0,0,0,0.12); border-radius: 6px; margin-bottom: 4px; font-size: 12px; align-items: center; flex-wrap: wrap; }
+    .event-type-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: rgba(245,193,108,0.12); color: var(--amber); white-space: nowrap; }
+    .event-time { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+    .event-detail { color: var(--text); font-size: 12px; word-break: break-all; }
+    .debug-scroll { max-height: 500px; overflow-y: auto; }
+  </style>
+
+  <!-- Results Tab -->
+  <div class="tab-panel active" id="panel-results">
+    <div class="summary-cards" id="summary-cards">
+      <div class="loading" style="grid-column: 1 / -1;">
+        <div class="loading-spinner"></div>
+        <p>Loading results...</p>
+      </div>
+    </div>
+    <div id="results-container"></div>
+  </div>
+
+  <!-- Analytics & Debug Tab -->
+  <div class="tab-panel" id="panel-analytics">
+    <div class="summary-cards" id="analytics-summary"></div>
+    <div id="analytics-container"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+  function __makeDemoSupabaseClient() {
+    const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+    const session = { user: DEMO_USER, access_token: 'demo' };
+    const ok = (data) => Promise.resolve({ data, error: null });
+    const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+    function builder() {
+      const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+      builderMethods.forEach((m) => { b[m] = () => b; });
+      return b;
+    }
+    return {
+      auth: {
+        getSession: () => ok({ session }),
+        getUser: () => ok({ user: DEMO_USER }),
+        signInWithPassword: () => ok({ user: DEMO_USER, session }),
+        signUp: () => ok({ user: DEMO_USER, session }),
+        signOut: () => ok(null),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => builder(),
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    };
+  }
+
+  const { createClient } = supabase;
+  const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const ADMIN_EMAIL = '';
+  const ADMIN_PASSWORD = 'CHANGE_ME';
+  async function promptAdminUnlock() {
+    if (sessionStorage.getItem('admin_unlocked') === 'yes') return true;
+    return await new Promise(function(resolve) {
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,0.96);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
+      ov.innerHTML = '<div style="background:#161b22;padding:32px;border-radius:12px;border:1px solid #30363d;max-width:340px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.5);"><div style="font-size:36px;margin-bottom:12px;">&#x1F512;</div><h2 style="color:#f0f6fc;margin:0 0 8px;font-size:18px;font-weight:600;">Admin access</h2><p style="color:#8b949e;margin:0 0 20px;font-size:13px;">Enter the admin password</p><input id="__pw_in" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#f0f6fc;font-size:14px;margin-bottom:8px;outline:none;" /><div id="__pw_err" style="color:#f85149;font-size:12px;min-height:16px;margin-bottom:8px;text-align:left;"></div><button id="__pw_btn" style="width:100%;padding:10px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Unlock</button></div>';
+      document.body.appendChild(ov);
+      var inp = ov.querySelector('#__pw_in');
+      var er = ov.querySelector('#__pw_err');
+      var bt = ov.querySelector('#__pw_btn');
+      function go() {
+        if (inp.value === ADMIN_PASSWORD) {
+          sessionStorage.setItem('admin_unlocked', 'yes');
+          ov.remove();
+          resolve(true);
+        } else {
+          er.textContent = 'Incorrect password';
+          inp.value = '';
+          inp.focus();
+        }
+      }
+      bt.addEventListener('click', go);
+      inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+      setTimeout(function() { inp.focus(); }, 50);
+    });
+  }
+
+  let currentModuleConfig = null;
+  let currentResponses = [];
+  let currentEvents = [];
+  let adminUserId = null;
+
+  function getFilteredResponses() {
+    if (document.getElementById('exclude-admin').checked) {
+      return currentResponses.filter(function(r) { return r.user_email !== ADMIN_EMAIL; });
+    }
+    return currentResponses;
+  }
+
+  function getFilteredEvents() {
+    if (document.getElementById('exclude-admin').checked && adminUserId) {
+      return currentEvents.filter(function(e) { return e.user_id !== adminUserId; });
+    }
+    return currentEvents;
+  }
+
+  // Init ambient bg
+  (function() {
+    var bg = document.querySelector('.ambient-bg');
+    if (!bg) return;
+    for (var i = 0; i < 25; i++) {
+      var dot = document.createElement('div');
+      dot.className = 'scatter-dot';
+      dot.style.left = Math.random() * 100 + '%';
+      dot.style.top = Math.random() * 100 + '%';
+      dot.style.animationDelay = (Math.random() * -20) + 's';
+      dot.style.animationDuration = (15 + Math.random() * 15) + 's';
+      dot.style.width = dot.style.height = (2 + Math.random() * 4) + 'px';
+      bg.appendChild(dot);
+    }
+  })();
+
+  // Auth guard — admin only
+  supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+    if (!session) {
+      window.location.href = 'index.html';
+      return;
+    }
+    adminUserId = session.user.id;
+    await promptAdminUnlock();
+    loadRegistry();
+  });
+
+  async function loadRegistry() {
+    try {
+      var resp = await fetch('modules/registry.json');
+      var modules = await resp.json();
+
+      var select = document.getElementById('module-select');
+      select.innerHTML = '';
+      modules.forEach(function(mod) {
+        var opt = document.createElement('option');
+        opt.value = mod.id;
+        opt.textContent = mod.name;
+        select.appendChild(opt);
+      });
+
+      select.addEventListener('change', function() {
+        loadModule(select.value);
+      });
+
+      document.getElementById('exclude-admin').addEventListener('change', function() {
+        if (currentModuleConfig) {
+          renderDashboard();
+          renderAnalytics();
+        }
+      });
+
+      if (modules.length > 0) {
+        loadModule(modules[0].id);
+      }
+    } catch (err) {
+      document.getElementById('summary-cards').innerHTML = '<p style="color: var(--danger); font-size: 13px;">Failed to load registry.</p>';
+    }
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+  }
+
+  async function loadModule(moduleId) {
+    // Validate module ID (alphanumeric + hyphens only)
+    if (!moduleId || !/^[a-zA-Z0-9-]+$/.test(moduleId)) return;
+
+    document.getElementById('summary-cards').innerHTML = '<div class="loading" style="grid-column: 1/-1;"><div class="loading-spinner"></div><p>Loading...</p></div>';
+    document.getElementById('results-container').innerHTML = '';
+    document.getElementById('analytics-summary').innerHTML = '';
+    document.getElementById('analytics-container').innerHTML = '';
+
+    try {
+      // Load config
+      var configResp = await fetch('modules/' + moduleId + '/config.json');
+      currentModuleConfig = await configResp.json();
+
+      // Load all responses and events in parallel
+      var [respResult, eventsResult] = await Promise.all([
+        supabaseClient
+          .from('survey_course_feedback_responses')
+          .select('*')
+          .eq('module_id', moduleId)
+          .order('created_at', { ascending: true }),
+        supabaseClient
+          .from('survey_course_feedback_events')
+          .select('*')
+          .eq('module_id', moduleId)
+          .order('created_at', { ascending: true })
+      ]);
+
+      if (respResult.error) throw respResult.error;
+      currentResponses = respResult.data || [];
+      currentEvents = eventsResult.data || [];
+
+      renderDashboard();
+      renderAnalytics();
+    } catch (err) {
+      document.getElementById('summary-cards').innerHTML = '<p style="color: var(--danger); font-size: 13px;">Error: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  function renderDashboard() {
+    var responses = getFilteredResponses();
+    var config = currentModuleConfig;
+
+    // Custom view for general-feedback module
+    if (config.id === 'general-feedback') {
+      renderFeedbackDashboard(responses, config);
+      return;
+    }
+
+    var questions = config.questions || [];
+
+    // Count unique submissions
+    var submissions = new Set();
+    responses.forEach(function(r) { submissions.add(r.submission_id); });
+    var totalSubmissions = submissions.size;
+
+    // Unique respondents
+    var respondents = new Set();
+    responses.forEach(function(r) { if (r.user_id) respondents.add(r.user_id); });
+
+    // Questions answered
+    var totalResponses = responses.length;
+
+    // Avg questions per submission
+    var avgPerSubmission = totalSubmissions > 0 ? Math.round(totalResponses / totalSubmissions * 10) / 10 : 0;
+
+    // Summary cards
+    document.getElementById('summary-cards').innerHTML =
+      renderSummaryCard(totalSubmissions, 'Submissions') +
+      renderSummaryCard(respondents.size, 'Respondents') +
+      renderSummaryCard(totalResponses, 'Total Answers') +
+      renderSummaryCard(avgPerSubmission, 'Avg Q/Submission');
+
+    // Build per-submission context (difficulty + emoji) for cross-referencing
+    var submissionContext = {};
+    responses.forEach(function(r) {
+      if (!submissionContext[r.submission_id]) {
+        submissionContext[r.submission_id] = { name: r.display_name || 'Anonymous' };
+      }
+      if (r.question_id === 'difficulty') {
+        submissionContext[r.submission_id].difficulty = r.response_value?.value;
+      }
+      if (r.question_id === 'overall-feeling') {
+        submissionContext[r.submission_id].emoji = r.response_value?.value;
+        submissionContext[r.submission_id].emojiId = r.response_value?.emoji;
+      }
+    });
+
+    // Per-question breakdown
+    var html = '';
+    questions.forEach(function(q) {
+      var qResponses = responses.filter(function(r) { return r.question_id === q.id; });
+      html += renderQuestionResult(q, qResponses, totalSubmissions, submissionContext);
+
+      // After self-difficulty slider, show top respondent rankings
+      if (q.id === 'difficulty') {
+        html += renderRespondentRanking(qResponses, 'difficulty', 'Course Difficulty');
+      }
+
+      // After emoji, show top respondent rankings
+      if (q.id === 'overall-feeling') {
+        html += renderRespondentRanking(qResponses, 'emoji', 'Overall Feeling');
+      }
+
+      // After peer-difficulty, insert the gap analysis card
+      if (q.pairedWith) {
+        var selfResponses = responses.filter(function(r) { return r.question_id === q.pairedWith; });
+        var peerResponses = qResponses;
+        html += renderDifficultyGap(selfResponses, peerResponses);
+      }
+    });
+    document.getElementById('results-container').innerHTML = html;
+  }
+
+  function renderQuestionResult(question, responses, totalSubmissions, submissionContext) {
+    var responseRate = totalSubmissions > 0 ? Math.round((responses.length / totalSubmissions) * 100) : 0;
+    var html = '<div class="question-result-card">';
+    html += '<h3>' + escapeHtml(question.text) + '</h3>';
+    html += '<div class="q-type">' + escapeHtml(question.type) + ' &middot; ' + responses.length + ' responses (' + responseRate + '%)</div>';
+
+    switch (question.type) {
+      case 'likert':
+        html += renderLikertChart(question, responses);
+        break;
+      case 'slider':
+        html += renderSliderChart(question, responses);
+        break;
+      case 'multichoice':
+        html += renderMultichoiceChart(question, responses);
+        break;
+      case 'ranking':
+        html += renderRankingChart(question, responses);
+        break;
+      case 'text':
+        html += renderTextResponses(responses, submissionContext);
+        break;
+      case 'emoji':
+        html += renderEmojiChart(question, responses);
+        break;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function renderLikertChart(question, responses) {
+    var options = question.options || [];
+    var counts = {};
+    options.forEach(function(opt, i) { counts[i + 1] = 0; });
+    var max = 0;
+
+    responses.forEach(function(r) {
+      var val = r.response_value?.value;
+      if (val && counts[val] !== undefined) {
+        counts[val]++;
+        if (counts[val] > max) max = counts[val];
+      }
+    });
+
+    var html = '';
+    options.forEach(function(opt, i) {
+      var val = i + 1;
+      var count = counts[val] || 0;
+      var pct = max > 0 ? (count / max) * 100 : 0;
+      html += renderBarRow(opt.label, count, pct);
+    });
+
+    // Average
+    if (responses.length > 0) {
+      var sum = responses.reduce(function(s, r) { return s + (r.response_value?.value || 0); }, 0);
+      var avg = (sum / responses.length).toFixed(1);
+      html += '<div style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">Average: <strong style="color: var(--amber);">' + avg + '</strong> / ' + options.length + '</div>';
+    }
+
+    return html;
+  }
+
+  function renderSliderChart(question, responses) {
+    if (responses.length === 0) return '<p style="color: var(--text-dim); font-size: 13px;">No responses yet.</p>';
+
+    var values = responses.map(function(r) { return r.response_value?.value || 0; });
+    var min = Math.min.apply(null, values);
+    var max = Math.max.apply(null, values);
+    var avg = (values.reduce(function(a, b) { return a + b; }, 0) / values.length).toFixed(1);
+    var median = getMedian(values);
+
+    // Distribution buckets (5 buckets)
+    var qMin = question.min || 0;
+    var qMax = question.max || 100;
+    var bucketSize = (qMax - qMin) / 5;
+    var buckets = [0, 0, 0, 0, 0];
+    var bucketLabels = [];
+    for (var b = 0; b < 5; b++) {
+      var lo = Math.round(qMin + b * bucketSize);
+      var hi = Math.round(qMin + (b + 1) * bucketSize);
+      bucketLabels.push(lo + '-' + hi);
+    }
+    values.forEach(function(v) {
+      var idx = Math.min(4, Math.floor((v - qMin) / bucketSize));
+      buckets[idx]++;
+    });
+
+    var bucketMax = Math.max.apply(null, buckets);
+    var html = '';
+    for (var i = 0; i < 5; i++) {
+      var pct = bucketMax > 0 ? (buckets[i] / bucketMax) * 100 : 0;
+      html += renderBarRow(bucketLabels[i], buckets[i], pct);
+    }
+
+    html += '<div style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">';
+    html += 'Average: <strong style="color: var(--amber);">' + avg + '</strong>';
+    html += ' &middot; Median: <strong style="color: var(--amber);">' + median + '</strong>';
+    html += ' &middot; Range: ' + min + ' - ' + max;
+    html += '</div>';
+
+    return html;
+  }
+
+  function renderMultichoiceChart(question, responses) {
+    var options = question.options || [];
+    var counts = {};
+    options.forEach(function(opt) { counts[opt.id] = 0; });
+    var max = 0;
+
+    responses.forEach(function(r) {
+      var sel = r.response_value?.selected;
+      if (Array.isArray(sel)) {
+        sel.forEach(function(s) {
+          if (counts[s] !== undefined) {
+            counts[s]++;
+            if (counts[s] > max) max = counts[s];
+          }
+        });
+      } else if (sel && counts[sel] !== undefined) {
+        counts[sel]++;
+        if (counts[sel] > max) max = counts[sel];
+      }
+    });
+
+    var html = '';
+    options.forEach(function(opt) {
+      var count = counts[opt.id] || 0;
+      var pct = max > 0 ? (count / max) * 100 : 0;
+      html += renderBarRow(opt.label, count, pct);
+    });
+
+    return html;
+  }
+
+  function renderRankingChart(question, responses) {
+    var options = question.options || [];
+    if (responses.length === 0) return '<p style="color: var(--text-dim); font-size: 13px;">No responses yet.</p>';
+
+    // Calculate average rank for each item
+    var rankSums = {};
+    var rankCounts = {};
+    options.forEach(function(opt) { rankSums[opt.id] = 0; rankCounts[opt.id] = 0; });
+
+    responses.forEach(function(r) {
+      var ranked = r.response_value?.ranked;
+      if (Array.isArray(ranked)) {
+        ranked.forEach(function(id, idx) {
+          if (rankSums[id] !== undefined) {
+            rankSums[id] += (idx + 1);
+            rankCounts[id]++;
+          }
+        });
+      }
+    });
+
+    var items = options.map(function(opt) {
+      var avg = rankCounts[opt.id] > 0 ? rankSums[opt.id] / rankCounts[opt.id] : options.length;
+      return { label: opt.label, avg: avg };
+    });
+
+    items.sort(function(a, b) { return a.avg - b.avg; });
+
+    var maxRank = options.length;
+    var html = '';
+    items.forEach(function(item) {
+      var pct = maxRank > 0 ? ((maxRank - item.avg + 1) / maxRank) * 100 : 0;
+      html += renderBarRow(item.label, 'avg #' + item.avg.toFixed(1), pct);
+    });
+
+    return html;
+  }
+
+  var EMOJI_MAP = { 'struggling': '\ud83d\ude23', 'confused': '\ud83d\ude15', 'neutral': '\ud83d\ude10', 'good': '\ud83d\ude0a', 'great': '\ud83e\udd29' };
+
+  function renderTextResponses(responses, submissionContext) {
+    if (responses.length === 0) return '<p style="color: var(--text-dim); font-size: 13px;">No responses yet.</p>';
+
+    var html = '<div class="text-responses">';
+    responses.forEach(function(r) {
+      var text = r.response_value?.text;
+      if (text) {
+        var ctx = (submissionContext && submissionContext[r.submission_id]) || {};
+        var badges = '';
+        if (ctx.difficulty != null) {
+          badges += '<span style="display:inline-block; padding:1px 6px; background:rgba(245,193,108,0.12); color:var(--amber); border-radius:3px; font-size:10px; margin-right:4px;">difficulty: ' + ctx.difficulty + '</span>';
+        }
+        if (ctx.emojiId) {
+          var emojiChar = EMOJI_MAP[ctx.emojiId] || '';
+          badges += '<span style="display:inline-block; padding:1px 6px; background:rgba(123,167,201,0.12); color:var(--accent-blue); border-radius:3px; font-size:10px;">' + emojiChar + ' ' + ctx.emojiId + '</span>';
+        }
+        html += '<div class="text-response-item">';
+        if (badges) html += '<div style="margin-bottom:4px;">' + badges + '</div>';
+        html += escapeHtml(text) + '</div>';
+      }
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderRespondentRanking(responses, type, label) {
+    if (responses.length === 0) return '';
+
+    // Build list of {name, value}
+    var items = responses.map(function(r) {
+      var name = r.display_name || 'Anonymous';
+      var val;
+      if (type === 'difficulty') {
+        val = r.response_value?.value;
+      } else if (type === 'emoji') {
+        val = r.response_value?.value;
+      }
+      return { name: name, value: val != null ? val : -1 };
+    }).filter(function(item) { return item.value >= 0; });
+
+    if (items.length === 0) return '';
+
+    var sorted = items.slice().sort(function(a, b) { return a.value - b.value; });
+    var top5Low = sorted.slice(0, 5);
+    var top5High = sorted.slice(-5).reverse();
+
+    var lowLabel, highLabel;
+    if (type === 'difficulty') {
+      lowLabel = 'Find it Easiest';
+      highLabel = 'Find it Hardest';
+    } else {
+      lowLabel = 'Most Struggling';
+      highLabel = 'Feeling Best';
+    }
+
+    var html = '<div class="question-result-card">';
+    html += '<h3>Respondent Rankings: ' + escapeHtml(label) + '</h3>';
+    html += '<div class="q-type">TOP 5 EACH END</div>';
+
+    html += '<div style="display: flex; gap: 20px; flex-wrap: wrap;">';
+
+    // Low end
+    html += '<div style="flex: 1; min-width: 200px;">';
+    html += '<div style="font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-bottom: 8px;">' + escapeHtml(lowLabel) + '</div>';
+    top5Low.forEach(function(item, i) {
+      html += '<div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,0.1); border-radius:5px; margin-bottom:3px; font-size:12px;">';
+      html += '<span style="color:var(--text);">' + (i + 1) + '. ' + escapeHtml(item.name) + '</span>';
+      html += '<span style="color:var(--accent-blue); font-weight:600;">' + item.value + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // High end
+    html += '<div style="flex: 1; min-width: 200px;">';
+    html += '<div style="font-size: 12px; color: var(--amber); font-weight: 600; margin-bottom: 8px;">' + escapeHtml(highLabel) + '</div>';
+    top5High.forEach(function(item, i) {
+      html += '<div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,0.1); border-radius:5px; margin-bottom:3px; font-size:12px;">';
+      html += '<span style="color:var(--text);">' + (i + 1) + '. ' + escapeHtml(item.name) + '</span>';
+      html += '<span style="color:var(--amber); font-weight:600;">' + item.value + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderEmojiChart(question, responses) {
+    var options = question.options || [];
+    var counts = {};
+    options.forEach(function(opt) { counts[opt.id] = 0; });
+    var max = 0;
+
+    responses.forEach(function(r) {
+      var id = r.response_value?.emoji;
+      if (id && counts[id] !== undefined) {
+        counts[id]++;
+        if (counts[id] > max) max = counts[id];
+      }
+    });
+
+    var html = '';
+    options.forEach(function(opt) {
+      var count = counts[opt.id] || 0;
+      var pct = max > 0 ? (count / max) * 100 : 0;
+      html += renderBarRow(opt.emoji + ' ' + opt.label, count, pct);
+    });
+
+    if (responses.length > 0) {
+      var sum = responses.reduce(function(s, r) { return s + (r.response_value?.value || 0); }, 0);
+      var avg = (sum / responses.length).toFixed(1);
+      html += '<div style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">Average mood: <strong style="color: var(--amber);">' + avg + '</strong> / ' + options.length + '</div>';
+    }
+
+    return html;
+  }
+
+  function renderBarRow(label, count, pct) {
+    return '<div class="chart-bar-row">' +
+      '<div class="chart-bar-label">' + escapeHtml(String(label)) + '</div>' +
+      '<div class="chart-bar-track"><div class="chart-bar-fill" style="width: ' + pct + '%;"></div></div>' +
+      '<div class="chart-bar-count">' + escapeHtml(String(count)) + '</div>' +
+      '</div>';
+  }
+
+  function renderDifficultyGap(selfResponses, peerResponses) {
+    // Match self and peer responses by submission_id
+    var selfMap = {};
+    selfResponses.forEach(function(r) { selfMap[r.submission_id] = r.response_value?.value; });
+
+    var pairs = [];
+    peerResponses.forEach(function(r) {
+      var selfVal = selfMap[r.submission_id];
+      var peerVal = r.response_value?.value;
+      if (selfVal != null && peerVal != null) {
+        pairs.push({ self: selfVal, peer: peerVal, gap: peerVal - selfVal });
+      }
+    });
+
+    if (pairs.length === 0) {
+      return '<div class="question-result-card"><h3>Self vs. Peer Difficulty Perception</h3>' +
+        '<div class="q-type">COMPARISON</div>' +
+        '<p style="color: var(--text-dim); font-size: 13px;">Not enough paired responses yet.</p></div>';
+    }
+
+    var avgSelf = pairs.reduce(function(s, p) { return s + p.self; }, 0) / pairs.length;
+    var avgPeer = pairs.reduce(function(s, p) { return s + p.peer; }, 0) / pairs.length;
+    var avgGap = pairs.reduce(function(s, p) { return s + p.gap; }, 0) / pairs.length;
+
+    var html = '<div class="question-result-card">';
+    html += '<h3>Self vs. Peer Difficulty Perception</h3>';
+    html += '<div class="q-type">COMPARISON &middot; ' + pairs.length + ' paired responses</div>';
+
+    // Averages side by side
+    html += '<div style="display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap;">';
+    html += '<div style="text-align: center; flex: 1; min-width: 100px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px;">';
+    html += '<div style="font-size: 1.6em; font-weight: 700; color: var(--amber);">' + avgSelf.toFixed(1) + '</div>';
+    html += '<div style="font-size: 0.8em; color: var(--text-dim);">Avg Self Rating</div></div>';
+    html += '<div style="text-align: center; flex: 1; min-width: 100px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px;">';
+    html += '<div style="font-size: 1.6em; font-weight: 700; color: var(--accent-blue);">' + avgPeer.toFixed(1) + '</div>';
+    html += '<div style="font-size: 0.8em; color: var(--text-dim);">Avg Peer Estimate</div></div>';
+    html += '<div style="text-align: center; flex: 1; min-width: 100px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px;">';
+    var gapSign = avgGap >= 0 ? '+' : '';
+    var gapColor = Math.abs(avgGap) < 5 ? 'var(--success)' : 'var(--amber)';
+    html += '<div style="font-size: 1.6em; font-weight: 700; color: ' + gapColor + ';">' + gapSign + avgGap.toFixed(1) + '</div>';
+    html += '<div style="font-size: 0.8em; color: var(--text-dim);">Avg Gap (peer \u2212 self)</div></div>';
+    html += '</div>';
+
+    // Histogram of gap values
+    html += '<div style="font-size: 12px; color: var(--text-dim); margin-bottom: 10px;">Gap distribution (peer \u2212 self)</div>';
+
+    // Build histogram bins: -100 to +100 in steps of 10
+    var binSize = 10;
+    var bins = {};
+    for (var b = -100; b < 100; b += binSize) { bins[b] = 0; }
+    var maxCount = 0;
+    pairs.forEach(function(p) {
+      var bin = Math.floor(p.gap / binSize) * binSize;
+      bin = Math.max(-100, Math.min(90, bin)); // clamp
+      bins[bin] = (bins[bin] || 0) + 1;
+      if (bins[bin] > maxCount) maxCount = bins[bin];
+    });
+
+    // Find range with data (trim empty edges)
+    var gaps = pairs.map(function(p) { return p.gap; });
+    var minGap = Math.min.apply(null, gaps);
+    var maxGap = Math.max.apply(null, gaps);
+    var rangeStart = Math.floor(Math.min(minGap, -10) / binSize) * binSize;
+    var rangeEnd = Math.ceil(Math.max(maxGap, 10) / binSize) * binSize;
+
+    // Render as vertical bar histogram using inline CSS
+    var barKeys = [];
+    for (var k = rangeStart; k < rangeEnd; k += binSize) { barKeys.push(k); }
+
+    var histHeight = 120;
+    html += '<div style="display: flex; align-items: flex-end; gap: 2px; height: ' + histHeight + 'px; padding: 0 4px;">';
+    barKeys.forEach(function(k) {
+      var count = bins[k] || 0;
+      var barH = maxCount > 0 ? Math.round((count / maxCount) * histHeight) : 0;
+      var isZero = k <= 0 && k + binSize > 0; // bin containing 0
+      var barColor = isZero ? 'var(--success)' : (k < 0 ? 'var(--accent-blue)' : 'var(--amber)');
+      var opacity = count === 0 ? '0.15' : '1';
+      var minH = count > 0 ? 4 : 2;
+      html += '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;" title="' + k + ' to ' + (k + binSize) + ': ' + count + '">';
+      if (count > 0) {
+        html += '<div style="font-size:9px; color:var(--text-dim); margin-bottom:2px;">' + count + '</div>';
+      }
+      html += '<div style="width:100%; max-width:32px; height:' + Math.max(minH, barH) + 'px; background:' + barColor + '; opacity:' + opacity + '; border-radius:2px 2px 0 0;"></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // X-axis labels
+    html += '<div style="display: flex; gap: 2px; padding: 0 4px;">';
+    barKeys.forEach(function(k, i) {
+      var showLabel = i === 0 || i === barKeys.length - 1 || k === 0 || i % 2 === 0;
+      html += '<div style="flex:1; text-align:center; font-size:9px; color:var(--text-dim);">' + (showLabel ? k : '') + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:4px; padding: 0 4px;">';
+    html += '<span>\u2190 Peers find it easier</span><span>Peers find it harder \u2192</span>';
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  }
+
+  function renderSummaryCard(value, label) {
+    return '<div class="summary-card">' +
+      '<div class="summary-value">' + escapeHtml(String(value)) + '</div>' +
+      '<div class="summary-label">' + escapeHtml(label) + '</div>' +
+      '</div>';
+  }
+
+  function renderFeedbackDashboard(responses, config) {
+    var textResponses = responses.filter(function(r) { return r.question_id === 'feedback-text'; });
+    var sentimentResponses = responses.filter(function(r) { return r.question_id === 'feedback-sentiment'; });
+
+    // Build per-submission map
+    var submissions = {};
+    responses.forEach(function(r) {
+      if (!submissions[r.submission_id]) {
+        submissions[r.submission_id] = {
+          name: r.display_name || 'Anonymous',
+          email: r.user_email,
+          time: r.created_at
+        };
+      }
+      if (r.question_id === 'feedback-text') {
+        submissions[r.submission_id].text = r.response_value?.text;
+      }
+      if (r.question_id === 'feedback-sentiment') {
+        submissions[r.submission_id].sentiment = r.response_value?.value;
+      }
+    });
+
+    var subList = Object.values(submissions).sort(function(a, b) { return new Date(b.time) - new Date(a.time); });
+    var sentimentValues = sentimentResponses.map(function(r) { return r.response_value?.value; }).filter(function(v) { return v != null; });
+
+    // Unique submitters
+    var uniqueUsers = new Set();
+    responses.forEach(function(r) { if (r.user_id) uniqueUsers.add(r.user_id); });
+
+    // Summary stats
+    var avgSentiment = sentimentValues.length > 0
+      ? (sentimentValues.reduce(function(a, b) { return a + b; }, 0) / sentimentValues.length).toFixed(1)
+      : '--';
+    var medSentiment = sentimentValues.length > 0 ? getMedian(sentimentValues) : '--';
+
+    document.getElementById('summary-cards').innerHTML =
+      renderSummaryCard(subList.length, 'Submissions') +
+      renderSummaryCard(uniqueUsers.size, 'Unique Submitters') +
+      renderSummaryCard(avgSentiment, 'Avg Sentiment') +
+      renderSummaryCard(medSentiment, 'Med Sentiment');
+
+    var html = '';
+
+    // Sentiment histogram
+    if (sentimentValues.length > 0) {
+      html += '<div class="question-result-card">';
+      html += '<h3>Sentiment Distribution</h3>';
+      html += '<div class="q-type">HISTOGRAM &middot; ' + sentimentValues.length + ' ratings</div>';
+
+      var buckets = [0,0,0,0,0,0,0,0,0,0];
+      var bucketLabels = [];
+      for (var b = 0; b < 10; b++) {
+        bucketLabels.push((b * 10) + '-' + ((b + 1) * 10));
+      }
+      sentimentValues.forEach(function(v) {
+        var idx = Math.min(9, Math.floor(v / 10));
+        buckets[idx]++;
+      });
+      var maxBucket = Math.max.apply(null, buckets);
+
+      var histHeight = 140;
+      html += '<div style="display: flex; align-items: flex-end; gap: 3px; height: ' + histHeight + 'px; padding: 0 4px;">';
+      buckets.forEach(function(count, i) {
+        var barH = maxBucket > 0 ? Math.round((count / maxBucket) * histHeight) : 0;
+        var barColor = i < 4 ? 'var(--danger)' : (i < 6 ? 'var(--amber)' : 'var(--success)');
+        var opacity = count === 0 ? '0.15' : '1';
+        var minH = count > 0 ? 4 : 2;
+        html += '<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;" title="' + bucketLabels[i] + ': ' + count + '">';
+        if (count > 0) html += '<div style="font-size:10px; color:var(--text-dim); margin-bottom:2px;">' + count + '</div>';
+        html += '<div style="width:100%; max-width:40px; height:' + Math.max(minH, barH) + 'px; background:' + barColor + '; opacity:' + opacity + '; border-radius:3px 3px 0 0;"></div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      // X-axis labels
+      html += '<div style="display: flex; gap: 3px; padding: 0 4px;">';
+      buckets.forEach(function(_, i) {
+        html += '<div style="flex:1; text-align:center; font-size:9px; color:var(--text-dim);">' + (i * 10) + '</div>';
+      });
+      html += '</div>';
+      html += '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:4px; padding:0 4px;">';
+      html += '<span>\u2190 Negative</span><span>Positive \u2192</span>';
+      html += '</div>';
+
+      // Summary stats
+      var minVal = Math.min.apply(null, sentimentValues);
+      var maxVal = Math.max.apply(null, sentimentValues);
+      var variance = sentimentValues.reduce(function(s, v) { return s + Math.pow(v - parseFloat(avgSentiment), 2); }, 0) / sentimentValues.length;
+      var stdDev = Math.sqrt(variance).toFixed(1);
+
+      html += '<div style="margin-top:12px; font-size:12px; color:var(--text-dim);">';
+      html += 'Mean: <strong style="color:var(--amber);">' + avgSentiment + '</strong>';
+      html += ' &middot; Median: <strong style="color:var(--amber);">' + medSentiment + '</strong>';
+      html += ' &middot; Std Dev: <strong style="color:var(--amber);">' + stdDev + '</strong>';
+      html += ' &middot; Range: ' + minVal + ' \u2013 ' + maxVal;
+      html += '</div>';
+
+      html += '</div>';
+    }
+
+    // Feedback list
+    html += '<div class="question-result-card">';
+    html += '<h3>All Feedback</h3>';
+    html += '<div class="q-type">' + subList.length + ' submissions (newest first)</div>';
+
+    if (subList.length === 0) {
+      html += '<p style="color: var(--text-dim); font-size: 13px;">No feedback yet.</p>';
+    } else {
+      html += '<div class="text-responses">';
+      subList.forEach(function(sub) {
+        if (sub.text) {
+          var sentimentBadge = '';
+          if (sub.sentiment != null) {
+            var sColor = sub.sentiment < 35 ? 'var(--danger)' : (sub.sentiment < 65 ? 'var(--amber)' : 'var(--success)');
+            var sLabel = sub.sentiment < 35 ? 'Negative' : (sub.sentiment < 65 ? 'Neutral' : 'Positive');
+            sentimentBadge = '<span style="display:inline-block; padding:2px 8px; background:rgba(245,193,108,0.12); color:' + sColor + '; border-radius:4px; font-size:11px; font-weight:600;">' + escapeHtml(sLabel) + ' (' + sub.sentiment + ')</span>';
+          }
+          var timeStr = new Date(sub.time).toLocaleDateString() + ' ' + new Date(sub.time).toLocaleTimeString();
+          html += '<div class="text-response-item">';
+          html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">';
+          html += '<div style="display:flex; gap:6px; align-items:center;">';
+          html += '<span style="font-size:12px; color:var(--text); font-weight:600;">' + escapeHtml(sub.name) + '</span>';
+          html += sentimentBadge;
+          html += '</div>';
+          html += '<span style="font-size:11px; color:var(--text-dim);">' + escapeHtml(timeStr) + '</span>';
+          html += '</div>';
+          html += '<div>' + escapeHtml(sub.text) + '</div>';
+          html += '</div>';
+        }
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    document.getElementById('results-container').innerHTML = html;
+  }
+
+  function exportData() {
+    var data = getFilteredResponses();
+    if (!data || data.length === 0) {
+      alert('No data to export.');
+      return;
+    }
+    var json = JSON.stringify(data, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (currentModuleConfig?.id || 'survey') + '-responses.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function getMedian(arr) {
+    var sorted = arr.slice().sort(function(a, b) { return a - b; });
+    var mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2 * 10) / 10;
+  }
+
+  function renderAnalytics() {
+    var events = getFilteredEvents();
+    var responses = getFilteredResponses();
+    var config = currentModuleConfig;
+    var questions = config.questions || [];
+
+    // --- Summary stats ---
+    var sessions = new Set();
+    var sessionStarts = {};
+    var sessionCompletes = {};
+    events.forEach(function(e) {
+      if (e.session_id) sessions.add(e.session_id);
+      if (e.event_type === 'survey_start') sessionStarts[e.session_id] = e;
+      if (e.event_type === 'survey_complete') sessionCompletes[e.session_id] = e;
+    });
+
+    var totalSessions = sessions.size;
+    var startCount = Object.keys(sessionStarts).length;
+    var completeCount = Object.keys(sessionCompletes).length;
+    var dropoffRate = startCount > 0 ? Math.round((1 - completeCount / startCount) * 100) : 0;
+
+    // Average completion time from survey_complete events
+    var completionTimes = [];
+    Object.values(sessionCompletes).forEach(function(e) {
+      var ms = e.event_data?.time_taken_ms;
+      if (ms) completionTimes.push(ms);
+    });
+    var avgCompletionSec = completionTimes.length > 0
+      ? Math.round(completionTimes.reduce(function(a, b) { return a + b; }, 0) / completionTimes.length / 1000)
+      : 0;
+    var medianCompletionSec = completionTimes.length > 0
+      ? Math.round(getMedian(completionTimes) / 1000)
+      : 0;
+
+    document.getElementById('analytics-summary').innerHTML =
+      renderSummaryCard(totalSessions, 'Sessions') +
+      renderSummaryCard(startCount, 'Surveys Started') +
+      renderSummaryCard(completeCount, 'Completed') +
+      renderSummaryCard(dropoffRate + '%', 'Drop-off Rate') +
+      renderSummaryCard(avgCompletionSec + 's', 'Avg Completion') +
+      renderSummaryCard(medianCompletionSec + 's', 'Median Completion');
+
+    var html = '';
+
+    // --- Per-question response time ---
+    var answerEvents = events.filter(function(e) { return e.event_type === 'question_answer'; });
+    var qTimeMap = {};
+    answerEvents.forEach(function(e) {
+      var qid = e.event_data?.question_id;
+      var ms = e.event_data?.time_on_question_ms;
+      if (qid && ms) {
+        if (!qTimeMap[qid]) qTimeMap[qid] = [];
+        qTimeMap[qid].push(ms);
+      }
+    });
+
+    if (Object.keys(qTimeMap).length > 0) {
+      html += '<div class="question-result-card">';
+      html += '<h3>Time Per Question</h3>';
+      html += '<div class="q-type">RESPONSE TIMING</div>';
+
+      var maxAvg = 0;
+      var qTimeRows = questions.map(function(q) {
+        var times = qTimeMap[q.id] || [];
+        var avg = times.length > 0 ? times.reduce(function(a, b) { return a + b; }, 0) / times.length : 0;
+        if (avg > maxAvg) maxAvg = avg;
+        return { id: q.id, text: q.text, type: q.type, avg: avg, count: times.length, median: times.length > 0 ? getMedian(times) : 0 };
+      });
+
+      qTimeRows.forEach(function(row) {
+        var pct = maxAvg > 0 ? (row.avg / maxAvg) * 100 : 0;
+        var label = row.text.length > 30 ? row.text.substring(0, 30) + '...' : row.text;
+        var avgSec = (row.avg / 1000).toFixed(1);
+        var medSec = (row.median / 1000).toFixed(1);
+        html += '<div class="chart-bar-row">';
+        html += '<div class="chart-bar-label" title="' + escapeHtml(row.text) + '">' + escapeHtml(label) + '</div>';
+        html += '<div class="chart-bar-track"><div class="chart-bar-fill" style="width: ' + pct + '%;"></div></div>';
+        html += '<div class="chart-bar-count" style="width: 80px;">' + avgSec + 's / ' + medSec + 's</div>';
+        html += '</div>';
+      });
+
+      html += '<div style="font-size: 11px; color: var(--text-dim); margin-top: 8px;">Values: avg / median</div>';
+      html += '</div>';
+    }
+
+    // --- Drop-off funnel ---
+    var viewEvents = events.filter(function(e) { return e.event_type === 'question_view'; });
+    var viewSessionSets = {};
+    viewEvents.forEach(function(e) {
+      var qid = e.event_data?.question_id;
+      if (qid && e.session_id) {
+        if (!viewSessionSets[qid]) viewSessionSets[qid] = new Set();
+        viewSessionSets[qid].add(e.session_id);
+      }
+    });
+
+    if (Object.keys(viewSessionSets).length > 0) {
+      html += '<div class="question-result-card">';
+      html += '<h3>Question Funnel (Unique Sessions)</h3>';
+      html += '<div class="q-type">DROP-OFF ANALYSIS</div>';
+
+      var maxViews = 0;
+      questions.forEach(function(q) {
+        var count = viewSessionSets[q.id] ? viewSessionSets[q.id].size : 0;
+        if (count > maxViews) maxViews = count;
+      });
+
+      questions.forEach(function(q, i) {
+        var count = viewSessionSets[q.id] ? viewSessionSets[q.id].size : 0;
+        var pct = maxViews > 0 ? (count / maxViews) * 100 : 0;
+        var label = 'Q' + (i + 1) + ': ' + (q.text.length > 25 ? q.text.substring(0, 25) + '...' : q.text);
+        html += renderBarRow(label, count, pct);
+      });
+      html += '</div>';
+    }
+
+    // --- Submission timeline ---
+    var submissions = {};
+    responses.forEach(function(r) {
+      if (!submissions[r.submission_id]) {
+        submissions[r.submission_id] = { time: r.created_at, user: r.display_name || 'Anonymous' };
+      }
+    });
+    var subList = Object.values(submissions).sort(function(a, b) { return new Date(a.time) - new Date(b.time); });
+
+    if (subList.length > 0) {
+      html += '<div class="question-result-card">';
+      html += '<h3>Submission Timeline</h3>';
+      html += '<div class="q-type">CHRONOLOGICAL &middot; ' + subList.length + ' submissions</div>';
+      html += '<div class="debug-scroll">';
+      subList.forEach(function(s, i) {
+        var t = new Date(s.time);
+        var timeStr = t.toLocaleDateString() + ' ' + t.toLocaleTimeString();
+        html += '<div class="event-row">';
+        html += '<span class="event-type-badge">#' + (i + 1) + '</span>';
+        html += '<span class="event-time">' + timeStr + '</span>';
+        html += '<span class="event-detail">' + escapeHtml(s.user) + '</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // --- Raw event log ---
+    if (events.length > 0) {
+      html += '<div class="question-result-card">';
+      html += '<h3>Event Log</h3>';
+      html += '<div class="q-type">DEBUG &middot; ' + events.length + ' events (newest first)</div>';
+      html += '<div class="debug-scroll">';
+      var reversed = events.slice().reverse().slice(0, 200);
+      reversed.forEach(function(e) {
+        var t = new Date(e.timestamp_client || e.created_at);
+        var timeStr = t.toLocaleTimeString();
+        var detail = e.event_data ? JSON.stringify(e.event_data) : '';
+        if (detail.length > 120) detail = detail.substring(0, 120) + '...';
+        html += '<div class="event-row">';
+        html += '<span class="event-type-badge">' + escapeHtml(e.event_type || '?') + '</span>';
+        html += '<span class="event-time">' + timeStr + '</span>';
+        html += '<span class="event-detail" style="color: var(--text-dim);">' + escapeHtml(e.display_name || '') + '</span>';
+        html += '<span class="event-detail">' + escapeHtml(detail) + '</span>';
+        html += '</div>';
+      });
+      if (events.length > 200) {
+        html += '<div style="font-size: 11px; color: var(--text-dim); padding: 8px;">Showing 200 of ' + events.length + ' events</div>';
+      }
+      html += '</div></div>';
+    }
+
+    document.getElementById('analytics-container').innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

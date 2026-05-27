@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../../../favicon.ico">
+<title>Settings | RoboVault</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Space Mono', monospace;
+        background: linear-gradient(135deg, #0D1117 0%, #161B22 50%, #1C2129 100%);
+        min-height: 100vh;
+        color: #E6EDF3;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #58A6FF;
+        text-decoration: none;
+        margin-bottom: 30px;
+        font-size: 0.95em;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover { color: #79B8FF; }
+
+    h1 {
+        font-size: 2.2em;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, #58A6FF, #79B8FF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle { color: #8B949E; font-size: 0.9em; margin-bottom: 30px; }
+
+    .section {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 28px;
+        margin-bottom: 25px;
+        border: 1px solid #30363D;
+    }
+
+    .section h2 {
+        color: #58A6FF;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(88, 166, 255, 0.25);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 14px;
+    }
+
+    .stat-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid rgba(48, 54, 61, 0.5);
+    }
+
+    .stat-value {
+        font-size: 1.7em;
+        font-weight: bold;
+        color: #58A6FF;
+        margin-bottom: 4px;
+    }
+
+    .stat-label { font-size: 0.8em; color: #8B949E; }
+
+    .sub-section { margin-top: 24px; }
+
+    .sub-section-title {
+        color: #8B949E;
+        font-size: 0.85em;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .learning-progress {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        border: 1px solid rgba(48, 54, 61, 0.3);
+        flex-wrap: wrap;
+    }
+
+    .learning-arrow {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+
+    .learning-val {
+        text-align: center;
+    }
+
+    .learning-val .lv-num {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #58A6FF;
+    }
+
+    .learning-val .lv-label {
+        font-size: 0.75em;
+        color: #8B949E;
+    }
+
+    .round-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .round-chip {
+        padding: 8px 14px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid rgba(48, 54, 61, 0.4);
+        min-width: 70px;
+    }
+
+    .round-chip .rc-round {
+        font-size: 0.7em;
+        color: #8B949E;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .round-chip .rc-val {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #58A6FF;
+        margin-top: 2px;
+    }
+
+    .config-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid rgba(48, 54, 61, 0.3);
+    }
+
+    .config-row .cfg-attr {
+        color: #79B8FF;
+        font-weight: 700;
+        font-size: 0.9em;
+    }
+
+    .config-row .cfg-val {
+        color: #8B949E;
+        font-size: 0.85em;
+    }
+
+    .grade-dist { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+    .grade-chip {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+
+    .grade-S { background: rgba(227, 179, 65, 0.2); color: #E3B341; }
+    .grade-A { background: rgba(63, 185, 80, 0.2); color: #3FB950; }
+    .grade-B { background: rgba(88, 166, 255, 0.2); color: #58A6FF; }
+    .grade-C { background: rgba(240, 136, 62, 0.2); color: #F0883E; }
+    .grade-D { background: rgba(201, 160, 80, 0.2); color: #C9A050; }
+    .grade-F { background: rgba(248, 81, 73, 0.2); color: #F85149; }
+
+    .danger-zone { border-color: rgba(248, 81, 73, 0.3); }
+    .danger-zone h2 { color: #F85149; border-bottom-color: rgba(248, 81, 73, 0.3); }
+
+    .danger-text {
+        color: #8B949E;
+        font-size: 0.85em;
+        margin-bottom: 20px;
+        line-height: 1.7;
+    }
+
+    .btn-delete {
+        padding: 12px 28px;
+        font-size: 0.9em;
+        font-family: 'Space Mono', monospace;
+        font-weight: 700;
+        background: transparent;
+        border: 1px solid #F85149;
+        color: #F85149;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-delete:hover { background: rgba(248, 81, 73, 0.15); }
+
+    .confirm-dialog {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(248, 81, 73, 0.08);
+        border: 1px solid rgba(248, 81, 73, 0.3);
+        border-radius: 10px;
+    }
+
+    .confirm-dialog p { color: #B1BAC4; font-size: 0.85em; margin-bottom: 14px; line-height: 1.7; }
+    .confirm-dialog .warning { color: #F85149; font-weight: bold; }
+
+    .confirm-buttons { display: flex; gap: 12px; }
+
+    .btn-confirm-delete {
+        padding: 10px 22px;
+        font-size: 0.85em;
+        font-family: 'Space Mono', monospace;
+        font-weight: 700;
+        background: #F85149;
+        border: none;
+        color: #E6EDF3;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .btn-confirm-delete:hover { background: #da4841; }
+    .btn-confirm-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-cancel {
+        padding: 10px 22px;
+        font-size: 0.85em;
+        font-family: 'Space Mono', monospace;
+        background: transparent;
+        border: 1px solid #30363D;
+        color: #8B949E;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-cancel:hover { border-color: #58A6FF; color: #58A6FF; }
+
+    .loading { text-align: center; padding: 40px; color: #8B949E; }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 28px; height: 28px;
+        border: 3px solid rgba(88, 166, 255, 0.3);
+        border-top-color: #58A6FF;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg { color: #F85149; font-size: 0.85em; margin-top: 10px; }
+</style>
+</head>
+<body>
+    <div class="container">
+        <a href="game.html" class="back-link">&larr; Back to Game</a>
+
+        <h1>Settings</h1>
+        <p class="subtitle" id="user-email"></p>
+
+        <div class="section" id="stats-section">
+            <h2>Your Stats</h2>
+            <div class="loading" id="stats-loading">
+                <div class="loading-spinner"></div>
+                <p>Loading your stats...</p>
+            </div>
+            <div id="stats-content" style="display: none;">
+                <div class="stats-grid" id="stats-grid"></div>
+                <div class="sub-section" id="learning-section" style="display: none;">
+                    <p class="sub-section-title">Learning Progress</p>
+                    <div class="learning-progress" id="learning-progress"></div>
+                </div>
+                <div class="sub-section" id="per-round-section" style="display: none;">
+                    <p class="sub-section-title">Avg Efficiency by Round</p>
+                    <div class="round-chips" id="round-chips"></div>
+                </div>
+                <div class="sub-section" id="fav-config-section" style="display: none;">
+                    <p class="sub-section-title">Favorite Configs</p>
+                    <div id="fav-configs"></div>
+                </div>
+                <div id="grade-section" style="margin-top: 20px;">
+                    <p style="color: #8B949E; font-size: 0.85em; margin-bottom: 10px;">Grade Distribution</p>
+                    <div class="grade-dist" id="grade-dist"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section danger-zone">
+            <h2>Delete Account</h2>
+            <p class="danger-text">
+                Deleting your account will remove any personally identifiable information and data
+                associated with your account from the platform. This action cannot be undone.
+            </p>
+            <button class="btn-delete" id="btn-delete" onclick="showConfirmDialog()">Delete My Account</button>
+
+            <div class="confirm-dialog" id="confirm-dialog">
+                <p class="warning">Are you sure you want to delete your account?</p>
+                <p>This will:</p>
+                <p>
+                    &bull; Anonymize your data across all games<br>
+                    &bull; Delete your login account<br>
+                    &bull; Sign you out permanently<br>
+                    &bull; This action <strong>cannot</strong> be undone
+                </p>
+                <div class="confirm-buttons">
+                    <button class="btn-confirm-delete" id="btn-confirm" onclick="deleteAccount()">Yes, Delete My Account</button>
+                    <button class="btn-cancel" onclick="hideConfirmDialog()">Cancel</button>
+                </div>
+                <p class="error-msg" id="delete-error" style="display: none;"></p>
+            </div>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const DEMO_MODE = SUPABASE_URL.includes('YOUR_PROJECT_REF') || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY';
+    function __makeDemoSupabaseClient() {
+      const DEMO_USER = { id: 'guest-demo', email: 'guest@demo.local', user_metadata: { username: 'Guest' } };
+      const session = { user: DEMO_USER, access_token: 'demo' };
+      const ok = (data) => Promise.resolve({ data, error: null });
+      const builderMethods = ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte','in','is','like','ilike','or','and','order','limit','range','single','maybeSingle','filter','match','not','contains','containedBy','overlaps','textSearch','returns'];
+      function builder() {
+        const b = { then: (r) => r({ data: [], error: null }), catch: () => b };
+        builderMethods.forEach((m) => { b[m] = () => b; });
+        return b;
+      }
+      return {
+        auth: {
+          getSession: () => ok({ session }),
+          getUser: () => ok({ user: DEMO_USER }),
+          signInWithPassword: () => ok({ user: DEMO_USER, session }),
+          signUp: () => ok({ user: DEMO_USER, session }),
+          signOut: () => ok(null),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+        from: () => builder(),
+        rpc: () => Promise.resolve({ data: null, error: null }),
+      };
+    }
+
+    const { createClient } = supabase;
+    const supabaseClient = DEMO_MODE ? __makeDemoSupabaseClient() : createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+            window.location.href = 'index.html';
+            return;
+        }
+        currentUser = session.user;
+        document.getElementById('user-email').textContent = currentUser.email;
+        loadStats();
+    });
+
+    var ATTR_DISPLAY = {
+        function: { label: 'Function', display: { household: 'Household', elderly_care: 'Elderly Care', child_education: 'Child Ed.', security: 'Security' } },
+        personality: { label: 'Personality', display: { warm: 'Warm', efficient: 'Efficient', playful: 'Playful' } },
+        form: { label: 'Form Factor', display: { robotic: 'Robotic', semi_humanoid: 'Semi-Human', humanoid: 'Humanoid' } },
+        autonomy: { label: 'Autonomy', display: { supervised: 'Supervised', semi_autonomous: 'Semi-Auto', fully_autonomous: 'Full-Auto' } },
+    };
+
+    async function loadStats() {
+        try {
+            var userId = currentUser.id;
+            var { data: scores, error } = await supabaseClient
+                .from('sim_product_design_scores')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            if (!scores || scores.length === 0) {
+                document.getElementById('stats-loading').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
+                document.getElementById('stats-grid').innerHTML = '<p style="color: #8B949E; grid-column: 1 / -1;">No games played yet. Go design some robots!</p>';
+                document.getElementById('grade-section').style.display = 'none';
+                return;
+            }
+
+            var totalGames = scores.length;
+            var bestProfit = Math.max.apply(null, scores.map(function(s) { return s.player_profit || 0; }));
+            var avgProfit = Math.round(scores.reduce(function(sum, s) { return sum + (s.player_profit || 0); }, 0) / totalGames);
+            var memberSince = new Date(currentUser.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+            var gradeRank = { 'S': 0, 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'F': 5 };
+            var bestGrade = scores.reduce(function(best, s) {
+                if (!s.grade) return best;
+                if (!best || (gradeRank[s.grade] !== undefined && gradeRank[s.grade] < gradeRank[best])) return s.grade;
+                return best;
+            }, null) || '-';
+
+            // Compute efficiency stats from rounds_data
+            var allRatios = [];
+            var totalRounds = 0;
+            var byRound = {};
+            for (var r = 1; r <= 6; r++) byRound[r] = [];
+            var configCounts = { function: {}, personality: {}, form: {}, autonomy: {} };
+
+            scores.forEach(function(s) {
+                var rd = s.rounds_data;
+                if (!rd || !Array.isArray(rd)) return;
+                rd.forEach(function(r) {
+                    totalRounds++;
+                    if (r.profit_ratio != null) {
+                        allRatios.push(r.profit_ratio);
+                        if (r.round >= 1 && r.round <= 6) byRound[r.round].push(r.profit_ratio);
+                    }
+                    if (r.config) {
+                        ['function', 'personality', 'form', 'autonomy'].forEach(function(attr) {
+                            var val = r.config[attr];
+                            if (val) configCounts[attr][val] = (configCounts[attr][val] || 0) + 1;
+                        });
+                    }
+                });
+            });
+
+            var avgEff = allRatios.length > 0
+                ? (allRatios.reduce(function(a, b) { return a + b; }, 0) / allRatios.length * 100).toFixed(1) + '%'
+                : '-';
+            var bestEff = allRatios.length > 0
+                ? (Math.max.apply(null, allRatios) * 100).toFixed(1) + '%'
+                : '-';
+
+            function fmtProfit(val) {
+                var abs = Math.abs(val);
+                var str = (abs / 1000000).toFixed(1) + 'M';
+                if (val >= 0) return '$' + str;
+                return '-$' + str;
+            }
+
+            // Stats grid: add efficiency and total rounds
+            document.getElementById('stats-grid').innerHTML =
+                renderStatCard(totalGames, 'Games Played') +
+                renderStatCard(fmtProfit(bestProfit), 'Best Profit') +
+                renderStatCard(fmtProfit(avgProfit), 'Avg Profit') +
+                renderStatCard(bestGrade, 'Best Grade') +
+                renderStatCard(avgEff, 'Avg Efficiency') +
+                renderStatCard(bestEff, 'Best Efficiency') +
+                renderStatCard(totalRounds, 'Total Rounds') +
+                renderStatCard(memberSince, 'Member Since');
+
+            // Learning progress: first game vs latest game avg efficiency
+            var completedGames = scores.filter(function(s) {
+                return s.rounds_data && Array.isArray(s.rounds_data) && s.rounds_data.length === 6;
+            });
+            if (completedGames.length >= 2) {
+                var firstGame = completedGames[0];
+                var latestGame = completedGames[completedGames.length - 1];
+                var firstAvg = firstGame.rounds_data.reduce(function(s, r) { return s + (r.profit_ratio || 0); }, 0) / 6;
+                var latestAvg = latestGame.rounds_data.reduce(function(s, r) { return s + (r.profit_ratio || 0); }, 0) / 6;
+                var delta = latestAvg - firstAvg;
+                var deltaColor = delta >= 0 ? '#3FB950' : '#F85149';
+                var arrow = delta >= 0 ? '\u25B2' : '\u25BC';
+
+                document.getElementById('learning-progress').innerHTML =
+                    '<div class="learning-val"><div class="lv-num">' + (firstAvg * 100).toFixed(1) + '%</div><div class="lv-label">First Game</div></div>' +
+                    '<div class="learning-arrow" style="color:' + deltaColor + ';">' + arrow + '</div>' +
+                    '<div class="learning-val"><div class="lv-num">' + (latestAvg * 100).toFixed(1) + '%</div><div class="lv-label">Latest Game</div></div>' +
+                    '<div class="learning-val" style="margin-left:auto;"><div class="lv-num" style="color:' + deltaColor + ';">' + (delta >= 0 ? '+' : '') + (delta * 100).toFixed(1) + '%</div><div class="lv-label">Change</div></div>';
+                document.getElementById('learning-section').style.display = 'block';
+            }
+
+            // Per-round avg efficiency chips
+            var hasRoundData = false;
+            var chipsHtml = '';
+            for (var r = 1; r <= 6; r++) {
+                var ratios = byRound[r];
+                if (ratios.length > 0) {
+                    hasRoundData = true;
+                    var avg = ratios.reduce(function(a, b) { return a + b; }, 0) / ratios.length;
+                    chipsHtml += '<div class="round-chip"><div class="rc-round">R' + r + '</div><div class="rc-val">' + (avg * 100).toFixed(0) + '%</div></div>';
+                }
+            }
+            if (hasRoundData) {
+                document.getElementById('round-chips').innerHTML = chipsHtml;
+                document.getElementById('per-round-section').style.display = 'block';
+            }
+
+            // Favorite configs
+            var configHtml = '';
+            var hasConfigData = false;
+            ['function', 'personality', 'form', 'autonomy'].forEach(function(attr) {
+                var counts = configCounts[attr];
+                var entries = Object.entries(counts);
+                if (entries.length === 0) return;
+                hasConfigData = true;
+                entries.sort(function(a, b) { return b[1] - a[1]; });
+                var top = entries[0];
+                var displayName = (ATTR_DISPLAY[attr].display[top[0]]) || top[0];
+                configHtml += '<div class="config-row">' +
+                    '<span class="cfg-attr">' + escapeHtml(ATTR_DISPLAY[attr].label) + '</span>' +
+                    '<span class="cfg-val">' + escapeHtml(displayName) + ' (' + top[1] + '\u00D7)</span>' +
+                    '</div>';
+            });
+            if (hasConfigData) {
+                document.getElementById('fav-configs').innerHTML = configHtml;
+                document.getElementById('fav-config-section').style.display = 'block';
+            }
+
+            // Grade distribution
+            var gradeCounts = {};
+            scores.forEach(function(s) {
+                if (s.grade) gradeCounts[s.grade] = (gradeCounts[s.grade] || 0) + 1;
+            });
+
+            var gradeOrder = ['S', 'A', 'B', 'C', 'D', 'F'];
+            var gradeHtml = '';
+            gradeOrder.forEach(function(g) {
+                if (gradeCounts[g]) {
+                    gradeHtml += '<span class="grade-chip grade-' + g + '">' + g + ': ' + gradeCounts[g] + '</span>';
+                }
+            });
+            if (gradeHtml) {
+                document.getElementById('grade-dist').innerHTML = gradeHtml;
+            } else {
+                document.getElementById('grade-section').style.display = 'none';
+            }
+
+            document.getElementById('stats-loading').style.display = 'none';
+            document.getElementById('stats-content').style.display = 'block';
+        } catch (err) {
+            document.getElementById('stats-loading').innerHTML = '<p style="color: #F85149;">Failed to load stats: ' + escapeHtml(err.message) + '</p>';
+        }
+    }
+
+    function renderStatCard(value, label) {
+        return '<div class="stat-card">' +
+            '<div class="stat-value">' + escapeHtml(String(value)) + '</div>' +
+            '<div class="stat-label">' + escapeHtml(label) + '</div>' +
+            '</div>';
+    }
+
+    function showConfirmDialog() {
+        document.getElementById('confirm-dialog').style.display = 'block';
+        document.getElementById('btn-delete').style.display = 'none';
+    }
+
+    function hideConfirmDialog() {
+        document.getElementById('confirm-dialog').style.display = 'none';
+        document.getElementById('btn-delete').style.display = 'inline-block';
+        document.getElementById('delete-error').style.display = 'none';
+    }
+
+    async function deleteAccount() {
+        var confirmBtn = document.getElementById('btn-confirm');
+        var errorDiv = document.getElementById('delete-error');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
+        errorDiv.style.display = 'none';
+
+        try {
+            var { error } = await supabaseClient.rpc('delete_my_account');
+            if (error) throw error;
+            await supabaseClient.auth.signOut();
+            window.location.href = 'index.html';
+        } catch (err) {
+            errorDiv.textContent = 'Error: ' + err.message;
+            errorDiv.style.display = 'block';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Yes, Delete My Account';
+        }
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>

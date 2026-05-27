@@ -1,0 +1,28 @@
+[
+  {
+    "id": "empirical-methods",
+    "name": "Empirical Methods in Marketing",
+    "title": "Empirical Methods",
+    "icon": "\ud83d\udcda",
+    "number": "Session 1",
+    "description": "Explore the taxonomy of empirical methods in marketing research, from descriptive to structural approaches. Based on Reiss (2011).",
+    "questions": 8,
+    "time": "~15 min",
+    "topics": ["Model Primitives", "Data Generating Process", "Identification", "Structural Models"],
+    "leaderboardTab": "Empirical",
+    "order": 1
+  },
+  {
+    "id": "discrete-choice",
+    "name": "Discrete Choice Models",
+    "title": "Discrete Choice",
+    "icon": "\ud83c\udfaf",
+    "number": "Session 2",
+    "description": "Master the multinomial logit model through scanner panel data analysis. Based on Guadagni & Little (1983).",
+    "questions": 8,
+    "time": "~15 min",
+    "topics": ["Random Utility", "Multinomial Logit", "MLE", "IIA Property"],
+    "leaderboardTab": "Choice",
+    "order": 2
+  }
+]

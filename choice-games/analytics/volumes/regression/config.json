@@ -1,0 +1,35 @@
+{
+  "id": "regression",
+  "title": "The Analytics Arena",
+  "subtitle": "SportsBrand Digital Performance Lab",
+  "tagline": "Where Data Drives Decisions",
+  "description": "Learn regression analysis through an interactive marketing analytics scenario",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Blood", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "5+ Streak" },
+    "perfect": { "icon": "⭐", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "skeptic": { "icon": "🧐", "name": "Healthy Skeptic", "description": "Causation Master" },
+    "uncertainty": { "icon": "📊", "name": "Uncertainty Pro", "description": "Confidence Interval Expert" },
+    "master": { "icon": "🏆", "name": "Analytics Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Lead Analyst" },
+    { "minCorrect": 5, "title": "Senior Analyst" },
+    { "minCorrect": 3, "title": "Junior Analyst" },
+    { "minCorrect": 0, "title": "Trainee Analyst" }
+  ]
+}

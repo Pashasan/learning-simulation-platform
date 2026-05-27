@@ -1,0 +1,35 @@
+{
+  "id": "empirical-methods",
+  "title": "Empirical Methods Lab",
+  "subtitle": "PhD Research Methods Workshop",
+  "tagline": "From Data to Deep Parameters",
+  "description": "Learn the taxonomy of empirical methods in marketing through an interactive PhD seminar scenario",
+  "scoring": {
+    "basePoints": 100,
+    "streakBonus": 25
+  },
+  "theme": {
+    "primaryColor": "#d4a03c",
+    "secondaryColor": "#6c8ebf",
+    "backgroundColor": "#141428"
+  },
+  "supabase": {
+    "table": "choice_quant_mktg_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "\ud83c\udfaf", "name": "First Insight", "description": "First Correct Answer" },
+    "streak": { "icon": "\ud83d\udd25", "name": "On Fire", "description": "3+ Streak" },
+    "perfect": { "icon": "\u2b50", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "structural": { "icon": "\ud83c\udfd7\ufe0f", "name": "Structural Thinker", "description": "Mastered structural methods" },
+    "identified": { "icon": "\ud83d\udd0d", "name": "Identification Expert", "description": "Understood identification" },
+    "master": { "icon": "\ud83c\udfc6", "name": "Methods Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Professor" },
+    { "minCorrect": 5, "title": "Associate Professor" },
+    { "minCorrect": 3, "title": "Assistant Professor" },
+    { "minCorrect": 0, "title": "PhD Student" }
+  ]
+}

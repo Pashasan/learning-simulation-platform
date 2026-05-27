@@ -1,0 +1,31 @@
+{
+  "id": "your-volume-id",
+  "title": "Your Volume Title",
+  "subtitle": "Your Subtitle",
+  "tagline": "Your Tagline",
+  "description": "Description of what this volume teaches",
+  "theme": {
+    "primaryColor": "#e94560",
+    "secondaryColor": "#4ecca3",
+    "backgroundColor": "#1a1a2e"
+  },
+  "supabase": {
+    "table": "choice_analytics_scores"
+  },
+  "chapters": 4,
+  "totalQuestions": 8,
+  "badges": {
+    "first": { "icon": "🎯", "name": "First Blood", "description": "First Correct Answer" },
+    "streak": { "icon": "🔥", "name": "On Fire", "description": "5+ Streak" },
+    "perfect": { "icon": "⭐", "name": "Perfect Chapter", "description": "All correct in a chapter" },
+    "custom1": { "icon": "🔍", "name": "Custom Badge", "description": "Your badge description" },
+    "custom2": { "icon": "💡", "name": "Another Badge", "description": "Another description" },
+    "master": { "icon": "🏆", "name": "Master", "description": "All Correct" }
+  },
+  "grades": [
+    { "minCorrect": 7, "title": "Expert" },
+    { "minCorrect": 5, "title": "Advanced" },
+    { "minCorrect": 3, "title": "Intermediate" },
+    { "minCorrect": 0, "title": "Beginner" }
+  ]
+}

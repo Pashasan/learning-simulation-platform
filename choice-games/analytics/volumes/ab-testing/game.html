@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    <title>The StreamVerse Lab | A/B Testing</title>
+    <!-- Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/game.css">
+    <script src="../../js/supabase-config.js"></script>
+    <script src="../../js/game-utils.js"></script>
+    <script src="../../js/game-logic.js"></script>
+    <script src="../../js/canvas-utils.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/leaderboard.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script src="../../js/analytics.js"></script>
+    <style>
+        .explorer-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-align: center;
+            margin: 8px 0;
+        }
+        .explorer-label {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+        }
+        .explorer-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 10px 0 5px 0;
+        }
+        .explorer-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 10px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .compact-scenario {
+            background: rgba(78, 204, 163, 0.08);
+            border-left: 3px solid #4ecca3;
+            padding: 12px 16px;
+            margin: 10px 0 15px 0;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .segment-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        .segment-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px 18px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .segment-box .seg-val { font-size: 1.3em; font-weight: bold; }
+        .segment-box .seg-lbl { font-size: 0.75em; color: #888; }
+        .ci-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        .ci-toggle label { color: #888; font-size: 0.9em; cursor: pointer; }
+        .ci-toggle input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer;
+            accent-color: #4ecca3;
+        }
+        .prob-counter {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .prob-counter .prob-val {
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+        .prob-counter .prob-lbl {
+            color: #888;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">StreamVerse A/B Testing Lab</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="badges-container" id="header-badges">
+                    <div class="badge" id="badge-first" title="First Blood">
+                        <span>🎯</span>
+                        <div class="badge-tooltip">First Correct</div>
+                    </div>
+                    <div class="badge" id="badge-streak" title="On Fire">
+                        <span>🔥</span>
+                        <div class="badge-tooltip">5+ Streak</div>
+                    </div>
+                    <div class="badge" id="badge-perfect" title="Perfect Chapter">
+                        <span>⭐</span>
+                        <div class="badge-tooltip">Perfect Chapter</div>
+                    </div>
+                    <div class="badge" id="badge-randomizer" title="Randomizer">
+                        <span>🎲</span>
+                        <div class="badge-tooltip">Experiment Design Expert</div>
+                    </div>
+                    <div class="badge" id="badge-significant" title="Significance Spotter">
+                        <span>📊</span>
+                        <div class="badge-tooltip">Statistical Testing Pro</div>
+                    </div>
+                    <div class="badge" id="badge-master" title="A/B Testing Master">
+                        <span>🏆</span>
+                        <div class="badge-tooltip">All Correct</div>
+                    </div>
+                </div>
+                <!-- User Info -->
+                <div class="auth-container">
+                    <span id="user-display-name"></span>
+                    <button class="btn-auth btn-auth-secondary" onclick="exitToVolumes()">Exit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="progress-text">Chapter 1 of 4</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="chapter-indicators">
+                <div class="chapter-dot active" id="ch1-dot">1</div>
+                <div class="chapter-dot" id="ch2-dot">2</div>
+                <div class="chapter-dot" id="ch3-dot">3</div>
+                <div class="chapter-dot" id="ch4-dot">4</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- ==================== TITLE SCREEN ==================== -->
+            <div class="screen active" id="title-screen">
+                <div class="title-screen">
+                    <h1>The StreamVerse Lab</h1>
+                    <p class="subtitle">StreamVerse A/B Testing Division</p>
+                    <p class="arena-subtitle">Where Experiments Drive Decisions</p>
+
+                    <div class="dashboard-hero">
+                        <div class="dashboard-stat">
+                            <div class="value">5,000</div>
+                            <div class="label">Users in Experiment</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">A vs B</div>
+                            <div class="label">Thumbnail Variants</div>
+                        </div>
+                        <div class="dashboard-stat">
+                            <div class="value">?</div>
+                            <div class="label">Click Impact</div>
+                        </div>
+                    </div>
+
+                    <div class="story-intro">
+                        <div class="character">
+                            <svg class="avatar-svg" viewBox="0 0 60 60">
+                                <circle cx="30" cy="20" r="12" fill="#4ecca3"/>
+                                <path d="M15 55 Q15 35 30 35 Q45 35 45 55" fill="#4ecca3"/>
+                                <circle cx="30" cy="20" r="8" fill="#1a1a2e"/>
+                                <rect x="24" y="28" width="12" height="3" rx="1" fill="#e94560"/>
+                            </svg>
+                            <div>
+                                <strong>Welcome to the Team, Analyst!</strong>
+                                <p style="color: #888; font-size: 0.9em;">StreamVerse &mdash; Product Analytics Division</p>
+                            </div>
+                        </div>
+                        <p>You've just joined <span class="highlight">StreamVerse's</span> product analytics team. The leadership wants answers: <em>Do our new thumbnail designs actually increase click-through rates?</em></p>
+                        <br>
+                        <p>Over the next <span class="highlight">~15 minutes</span>, you'll learn to:</p>
+                        <ul style="margin: 15px 0 15px 25px; line-height: 2;">
+                            <li>Understand why randomization matters in A/B tests</li>
+                            <li>Interpret chi-square tests and p-values</li>
+                            <li>Handle multiple comparisons correctly</li>
+                            <li>Make data-driven decisions with nuance</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-primary pulse" onclick="startGame()">Enter the Lab</button>
+                    <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');" style="margin-top: 10px;">View Leaderboard</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 1: EXPERIMENT DESIGN ==================== -->
+
+            <div class="screen" id="chapter1-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Experiment Design</h2>
+                    <p class="chapter-desc">Why randomization is the foundation of causal inference</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dana <span class="role-badge">Head of Product</span></div>
+                        <p>"We redesigned the thumbnails for our top shows. But before rolling out to everyone, we need to test them. Some team members want to just show the new thumbnails to our most active users first. Others say we should randomize."</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">In an <span class="highlight">A/B test</span>, we randomly assign users to see either the old design (control) or the new design (treatment):</p>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128270; Observational</h3>
+                        <p>Users self-select into groups. Active users may differ from inactive ones in ways that affect clicks.</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#127922; Randomized</h3>
+                        <p>Random assignment balances groups on <em>all</em> factors &mdash; known and unknown.</p>
+                    </div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('title-screen')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch1-randomizer')">Try the Randomizer</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Interactive Randomization Simulator -->
+            <div class="screen" id="ch1-randomizer">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Randomization Simulator</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="randomizer-canvas" width="500" height="320"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Try It!</h3>
+                        <p style="color: #888; font-size: 0.85em; margin-bottom: 10px;">Click "Randomize" to assign 200 users to Treatment or Control. Watch the balance metrics converge.</p>
+                        <div style="text-align: center; margin: 10px 0;">
+                            <button class="btn btn-secondary" id="randomize-btn" onclick="runRandomizer()" style="font-size: 0.85em; padding: 8px 20px;">Randomize 200 Users</button>
+                        </div>
+                        <div class="explorer-row">
+                            <div class="explorer-box">
+                                <div class="explorer-value" id="rand-treat" style="color: #4ecca3;">0</div>
+                                <div class="explorer-label">Treatment</div>
+                            </div>
+                            <div class="explorer-box">
+                                <div class="explorer-value" id="rand-control" style="color: #e94560;">0</div>
+                                <div class="explorer-label">Control</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <p style="color: #888; font-size: 0.8em; text-align: center;">Balance: Avg Age</p>
+                            <div class="explorer-row">
+                                <div class="explorer-box" style="padding: 6px 14px;">
+                                    <div id="rand-age-t" style="font-weight: bold; color: #4ecca3;">--</div>
+                                    <div style="font-size: 0.7em; color: #888;">Treatment</div>
+                                </div>
+                                <div class="explorer-box" style="padding: 6px 14px;">
+                                    <div id="rand-age-c" style="font-weight: bold; color: #e94560;">--</div>
+                                    <div style="font-size: 0.7em; color: #888;">Control</div>
+                                </div>
+                            </div>
+                            <p style="color: #888; font-size: 0.8em; text-align: center; margin-top: 6px;">Balance: % Mobile</p>
+                            <div class="explorer-row">
+                                <div class="explorer-box" style="padding: 6px 14px;">
+                                    <div id="rand-mob-t" style="font-weight: bold; color: #4ecca3;">--</div>
+                                    <div style="font-size: 0.7em; color: #888;">Treatment</div>
+                                </div>
+                                <div class="explorer-box" style="padding: 6px 14px;">
+                                    <div id="rand-mob-c" style="font-weight: bold; color: #e94560;">--</div>
+                                    <div style="font-size: 0.7em; color: #888;">Control</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    Notice how random assignment creates <strong>balanced groups</strong> even though individual users differ. The more users, the more balanced the groups become.
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter1-q1')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Q1 -->
+            <div class="screen" id="chapter1-q1">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">Randomization vs Observation</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128218; The Setup</h3>
+                    <p>StreamVerse wants to test new thumbnails. One proposal: show them only to users who logged in this week. The other: randomly assign all users.</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Why is random assignment better than showing new thumbnails only to active users?</div>
+                    <div class="options" id="q1-options">
+                        <div class="option" onclick="selectOption(this, 'q1', 0)">It balances all factors &mdash; measured and unmeasured &mdash; across groups</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 1)">Active users are more representative of the overall user base, giving cleaner data for analysis</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 2)">Both approaches produce the same result</div>
+                        <div class="option" onclick="selectOption(this, 'q1', 3)">It requires fewer users to reach significance</div>
+                    </div>
+                    <div class="feedback" id="q1-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch1-randomizer')">Back</button>
+                    <button class="btn btn-primary" id="q1-next" onclick="showScreen('chapter1-q2')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch1: Q2 -->
+            <div class="screen" id="chapter1-q2">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 1</div>
+                    <h2 class="chapter-title">What Randomization Guarantees</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#ffc107"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="20" y="38" width="20" height="2" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Raj <span class="role-badge">Data Engineer</span></div>
+                        <p>"I ran a balance check: the treatment and control groups have nearly identical average age, subscription length, and device mix. Does that mean randomization worked?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Balance Check Results</h3>
+                    <p style="margin-top: 10px;">Treatment: avg age = 32.1, 64% mobile, avg sub = 14 months</p>
+                    <p>Control: avg age = 31.8, 63% mobile, avg sub = 14.2 months</p>
+                    <p style="color: #4ecca3; margin-top: 10px;">All differences tiny and statistically insignificant (p > 0.3).</p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">These balance check results confirm that randomization...</div>
+                    <div class="options" id="q2-options">
+                        <div class="option" onclick="selectOption(this, 'q2', 0)">Perfectly eliminates all possible bias</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 1)">Created balanced groups on observed factors, giving confidence in balance on unobserved factors too</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 2)">Was unnecessary since the groups look similar</div>
+                        <div class="option" onclick="selectOption(this, 'q2', 3)">Guarantees the new thumbnails will work</div>
+                    </div>
+                    <div class="feedback" id="q2-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-q1')">Back</button>
+                    <button class="btn btn-primary" id="q2-next" onclick="completeChapter(1)" disabled>Complete Chapter 1</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 2: STATISTICAL ANALYSIS ==================== -->
+
+            <div class="screen" id="chapter2-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Statistical Analysis</h2>
+                    <p class="chapter-desc">Testing whether the observed difference is real</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dana <span class="role-badge">Head of Product</span></div>
+                        <p>"The results are in! The new thumbnails got a 27.8% click rate vs 24.5% for the old ones. That's a 3.3 percentage point increase! But can we trust this?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">Before celebrating, we need to ask: <span class="highlight">Could this difference have occurred by chance?</span> The chi-square test compares what we observed to what we'd expect if there were no difference.</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter1-q2')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch2-chi-square')">Explore the Data</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Interactive Chi-Square Visualizer -->
+            <div class="screen" id="ch2-chi-square">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Chi-Square Visualizer</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="chi-square-canvas" width="500" height="320"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>How It Works</h3>
+                        <p style="color: #888; font-size: 0.85em; margin-bottom: 8px;">The chi-square test compares <span style="color: #4ecca3;">observed</span> counts to what we'd <span style="color: #ffc107;">expect</span> if there were no effect.</p>
+                        <div class="slider-container" style="margin-top: 8px;">
+                            <label style="font-size: 0.85em;">Treatment click rate:</label>
+                            <input type="range" id="chi-slider" min="20" max="40" step="0.5" value="27.8" oninput="updateChiSquare()">
+                        </div>
+                        <div class="explorer-row">
+                            <div class="explorer-box">
+                                <div class="explorer-value" id="chi-treat-rate" style="color: #4ecca3; font-size: 1.4em;">27.8%</div>
+                                <div class="explorer-label">Treatment CTR</div>
+                            </div>
+                            <div class="explorer-box">
+                                <div class="explorer-value" style="color: #888; font-size: 1.4em;">24.5%</div>
+                                <div class="explorer-label">Control CTR</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px;">
+                            <div style="font-size: 0.85em; color: #888;">Chi-square statistic:</div>
+                            <div id="chi-stat" style="font-size: 1.6em; font-weight: bold; color: #4ecca3;">8.95</div>
+                            <div style="font-size: 0.85em; color: #888; margin-top: 2px;">p-value:</div>
+                            <div id="chi-pval" style="font-size: 1.4em; font-weight: bold; color: #4ecca3;">0.003</div>
+                        </div>
+                        <p style="color: #888; font-size: 0.8em; margin-top: 8px; text-align: center;">Drag the slider to see how the chi-square statistic and p-value change.</p>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    When treatment and control click rates are close, &#967;&sup2; is small and p is large (no evidence of an effect). As the gap grows, &#967;&sup2; increases and p shrinks.
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter2-q3')">Interpret the Results</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Q3 -->
+            <div class="screen" id="chapter2-q3">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Interpreting p-values</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Chi-Square Test Results</h3>
+                    <p style="margin-top: 10px;">Null hypothesis: New thumbnails have no effect on clicks.</p>
+                    <p style="margin-top: 5px;">Test statistic: &#967;&sup2; = 8.95</p>
+                    <p style="margin-top: 5px; color: #4ecca3;"><strong>p-value = 0.003</strong></p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What does a p-value of 0.003 mean in this context?</div>
+                    <div class="options" id="q3-options">
+                        <div class="option" onclick="selectOption(this, 'q3', 0)">There is a 0.3% probability the new thumbnails are better</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 1)">The click rate improved by exactly 0.3%</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 2)">If thumbnails had no effect, there's only a 0.3% chance of seeing this large a difference</div>
+                        <div class="option" onclick="selectOption(this, 'q3', 3)">We can be 99.7% confident the new thumbnails are superior in every metric measured</div>
+                    </div>
+                    <div class="feedback" id="q3-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch2-chi-square')">Back</button>
+                    <button class="btn btn-primary" id="q3-next" onclick="showScreen('chapter2-q4')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch2: Q4 -->
+            <div class="screen" id="chapter2-q4">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 2</div>
+                    <h2 class="chapter-title">Why Use Regression?</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#1e1b4b"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <polygon points="30,8 32,13 28,13" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">Senior Data Scientist</span></div>
+                        <p>"The chi-square says it's significant. But I also ran a regression controlling for device, subscription tier, and time of day. The treatment effect barely changed."</p>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128202; Simple Comparison</h3>
+                        <p>Treatment effect: <strong>+3.3pp</strong></p>
+                        <p style="color: #888; font-size: 0.9em;">Just comparing group means</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128200; With Controls</h3>
+                        <p>Treatment effect: <strong>+3.1pp</strong></p>
+                        <p style="color: #888; font-size: 0.9em;">Controlling for device, tier, time</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">The treatment effect barely changed when adding controls (+3.3pp &rarr; +3.1pp). This suggests:</div>
+                    <div class="options" id="q4-options">
+                        <div class="option" onclick="selectOption(this, 'q4', 0)">Randomization successfully balanced confounders</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 1)">The control variables are useless and should be dropped from the model entirely</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 2)">The experiment failed because a good study should show very different results with and without controls</div>
+                        <div class="option" onclick="selectOption(this, 'q4', 3)">Only the regression is trustworthy, not the comparison</div>
+                    </div>
+                    <div class="feedback" id="q4-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-q3')">Back</button>
+                    <button class="btn btn-primary" id="q4-next" onclick="completeChapter(2)" disabled>Complete Chapter 2</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 3: ADVANCED TESTING ==================== -->
+
+            <div class="screen" id="chapter3-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Advanced Testing</h2>
+                    <p class="chapter-desc">Multiple comparisons and practical significance</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dana <span class="role-badge">Head of Product</span></div>
+                        <p>"The design team created 4 different thumbnail variants (A, B, C, D). We tested all of them against the control. Variant C has p&nbsp;=&nbsp;0.04. Should we celebrate?"</p>
+                    </div>
+                </div>
+
+                <p style="margin: 15px 0; line-height: 1.8;">When you test <span class="highlight">multiple variants</span>, you increase the chance of finding a "significant" result by pure luck. This is the <strong>multiple testing problem</strong>.</p>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter2-q4')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch3-false-positive')">See the Danger</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Interactive False Positive Explorer -->
+            <div class="screen" id="ch3-false-positive">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">False Positive Explorer</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="fp-canvas" width="500" height="300"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>The Multiple Testing Trap</h3>
+                        <p style="color: #888; font-size: 0.85em; margin-bottom: 8px;">Each test has a 5% false positive rate. But with multiple tests, the overall risk compounds rapidly.</p>
+                        <div class="slider-container">
+                            <label style="font-size: 0.85em;">Number of tests:</label>
+                            <input type="range" id="fp-slider" min="1" max="20" step="1" value="4" oninput="updateFalsePositive()">
+                        </div>
+                        <div class="prob-counter">
+                            <div class="prob-val" id="fp-tests" style="color: #ffc107;">4</div>
+                            <div class="prob-lbl">simultaneous tests</div>
+                        </div>
+                        <div class="prob-counter">
+                            <div class="prob-val" id="fp-rate" style="color: #e94560;">18.5%</div>
+                            <div class="prob-lbl">chance of &ge;1 false positive</div>
+                        </div>
+                        <div style="margin-top: 8px; text-align: center;">
+                            <div style="font-size: 0.85em; color: #888;">Bonferroni threshold:</div>
+                            <div id="fp-bonf" style="font-size: 1.2em; font-weight: bold; color: #4ecca3;">0.0125</div>
+                            <div style="font-size: 0.75em; color: #888;">(0.05 &divide; number of tests)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    With 4 tests, there's nearly a 1-in-5 chance of a false positive! The <strong>Bonferroni correction</strong> lowers the threshold to 0.05/k to keep the overall error rate at 5%.
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter3-q5')">Test Your Understanding</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Q5 -->
+            <div class="screen" id="chapter3-q5">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Multiple Testing Correction</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Results: 4 Variants vs Control</h3>
+                    <div style="margin: 15px 0;">
+                        <p>Variant A: p = 0.32</p>
+                        <p>Variant B: p = 0.15</p>
+                        <p style="color: #ffc107;">Variant C: p = 0.04 (significant at 0.05)</p>
+                        <p>Variant D: p = 0.78</p>
+                    </div>
+                    <p style="color: #888;">Bonferroni threshold: 0.05 / 4 = <span class="highlight">0.0125</span></p>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">After Bonferroni correction for 4 comparisons, is Variant C (p&nbsp;=&nbsp;0.04) still significant?</div>
+                    <div class="options" id="q5-options">
+                        <div class="option" onclick="selectOption(this, 'q5', 0)">Yes &mdash; p = 0.04 is below 0.05, so it remains significant</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 1)">No &mdash; the corrected threshold is 0.0125, and 0.04 exceeds it</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 2)">Yes &mdash; Bonferroni is only needed when you have more than 10 simultaneous comparisons to worry about</div>
+                        <div class="option" onclick="selectOption(this, 'q5', 3)">Just pick whichever variant has the lowest p-value</div>
+                    </div>
+                    <div class="feedback" id="q5-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch3-false-positive')">Back</button>
+                    <button class="btn btn-primary" id="q5-next" onclick="showScreen('chapter3-q6')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch3: Q6 -->
+            <div class="screen" id="chapter3-q6">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 3</div>
+                    <h2 class="chapter-title">Statistical vs Practical Significance</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#ffc107"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#374151"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <rect x="20" y="38" width="20" height="2" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Raj <span class="role-badge">Data Engineer</span></div>
+                        <p>"I ran the test on our full 2 million user sample. Click rate went from 24.50% to 24.62%. Highly significant: p&nbsp;=&nbsp;0.001! But that's only +0.12pp. Worth the deploy effort?"</p>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128200; Statistically Significant</h3>
+                        <p>p = 0.001 &mdash; the effect is real.</p>
+                    </div>
+                    <div class="scenario-card" style="flex: 1;">
+                        <h3>&#128176; Practically Significant?</h3>
+                        <p>+0.12pp &asymp; 2,400 extra clicks/day. Worth the engineering work?</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">When can a result be statistically significant but not practically significant?</div>
+                    <div class="options" id="q6-options">
+                        <div class="option" onclick="selectOption(this, 'q6', 0)">When the experiment ran longer than planned</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 1)">When the sample is very large but the effect is tiny</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 2)">When the p-value falls exactly on the 0.05 boundary</div>
+                        <div class="option" onclick="selectOption(this, 'q6', 3)">This is impossible &mdash; statistical significance always means the effect matters for business decisions</div>
+                    </div>
+                    <div class="feedback" id="q6-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-q5')">Back</button>
+                    <button class="btn btn-primary" id="q6-next" onclick="completeChapter(3)" disabled>Complete Chapter 3</button>
+                </div>
+            </div>
+
+            <!-- ==================== CHAPTER 4: BUSINESS DECISIONS ==================== -->
+
+            <div class="screen" id="chapter4-intro">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Business Decisions</h2>
+                    <p class="chapter-desc">Translating experimental results into action</p>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#9333ea"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#1e1b4b"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <polygon points="30,8 32,13 28,13" fill="#ffc107"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Maya <span class="role-badge">Senior Data Scientist</span></div>
+                        <p>"I dug deeper and found something interesting. The new thumbnails work great for new users but barely help returning users. Let me show you the data."</p>
+                    </div>
+                </div>
+
+                <div class="compact-scenario">
+                    This is a <span class="highlight">heterogeneous treatment effect</span> &mdash; the intervention works differently for different groups. Discovering this changes the optimal rollout strategy.
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter3-q6')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('ch4-segments')">See the Segments</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Interactive Segment Comparison -->
+            <div class="screen" id="ch4-segments">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Segment Analysis</h2>
+                </div>
+                <div class="canvas-container">
+                    <div class="chart-area">
+                        <canvas id="segment-canvas" width="500" height="320"></canvas>
+                    </div>
+                    <div class="info-panel">
+                        <h3>Treatment Effects by Segment</h3>
+                        <p style="color: #888; font-size: 0.85em; margin-bottom: 10px;">The overall effect (+3.3pp) hides a big difference between user types.</p>
+                        <div class="segment-row">
+                            <div class="segment-box">
+                                <div class="seg-val" style="color: #4ecca3;">+5.2pp</div>
+                                <div class="seg-lbl">New Users</div>
+                            </div>
+                            <div class="segment-box">
+                                <div class="seg-val" style="color: #888;">+0.8pp</div>
+                                <div class="seg-lbl">Returning Users</div>
+                            </div>
+                        </div>
+                        <div class="segment-row" style="margin-top: 6px;">
+                            <div class="segment-box" style="padding: 6px 14px;">
+                                <div style="font-weight: bold; color: #4ecca3; font-size: 0.9em;">p = 0.001</div>
+                                <div class="seg-lbl">Significant</div>
+                            </div>
+                            <div class="segment-box" style="padding: 6px 14px;">
+                                <div style="font-weight: bold; color: #e94560; font-size: 0.9em;">p = 0.34</div>
+                                <div class="seg-lbl">Not significant</div>
+                            </div>
+                        </div>
+                        <div class="ci-toggle">
+                            <input type="checkbox" id="ci-check" onchange="drawSegmentCanvas()">
+                            <label for="ci-check">Show 95% confidence intervals</label>
+                        </div>
+                        <p style="color: #ffc107; font-size: 0.85em; text-align: center; margin-top: 6px;">Interaction term: p = 0.008 (significant)</p>
+                    </div>
+                </div>
+                <div class="compact-scenario">
+                    The chart clearly shows the effect is <strong>concentrated in new users</strong>. For returning users, the confidence interval crosses zero &mdash; the effect could be nothing.
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-intro')">Back</button>
+                    <button class="btn btn-primary" onclick="showScreen('chapter4-q7')">Make the Call</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Q7 -->
+            <div class="screen" id="chapter4-q7">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">Segment-Based Decisions</h2>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128202; Segment Results</h3>
+                    <div style="margin: 10px 0;">
+                        <p><strong>New users:</strong> 22.1% &rarr; 27.3% (<span style="color: #4ecca3;">+5.2pp, p = 0.001</span>)</p>
+                        <p><strong>Returning:</strong> 26.8% &rarr; 27.6% (<span style="color: #888;">+0.8pp, p = 0.34</span>)</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">Given these segment results, what's the best recommendation?</div>
+                    <div class="options" id="q7-options">
+                        <div class="option" onclick="selectOption(this, 'q7', 0)">Roll out to all users &mdash; the overall effect is positive</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 1)">Don't roll out at all &mdash; returning users show no effect</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 2)">Deploy for new users, keep monitoring returning users</div>
+                        <div class="option" onclick="selectOption(this, 'q7', 3)">Rerun the entire experiment with twice the sample to make the returning user result significant too</div>
+                    </div>
+                    <div class="feedback" id="q7-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('ch4-segments')">Back</button>
+                    <button class="btn btn-primary" id="q7-next" onclick="showScreen('chapter4-q8')" disabled>Continue</button>
+                </div>
+            </div>
+
+            <!-- Ch4: Q8 -->
+            <div class="screen" id="chapter4-q8">
+                <div class="chapter-header">
+                    <div class="chapter-number">Chapter 4</div>
+                    <h2 class="chapter-title">The Final Decision</h2>
+                </div>
+
+                <div class="narrative narrative-with-avatar">
+                    <svg class="avatar-svg" viewBox="0 0 60 60">
+                        <circle cx="30" cy="18" r="11" fill="#e94560"/>
+                        <path d="M14 55 Q14 32 30 32 Q46 32 46 55" fill="#e94560"/>
+                        <circle cx="30" cy="18" r="7" fill="#1a1a2e"/>
+                        <path d="M22 12 Q30 6 38 12" stroke="#1a1a2e" stroke-width="3" fill="none"/>
+                    </svg>
+                    <div class="narrative-content">
+                        <div class="speaker">Dana <span class="role-badge">Head of Product</span></div>
+                        <p>"Board meeting in one hour. Given everything &mdash; chi-square, regression, segments &mdash; what do we present?"</p>
+                    </div>
+                </div>
+
+                <div class="scenario-card">
+                    <h3>&#128203; Summary of Evidence</h3>
+                    <div style="margin: 10px 0; line-height: 2;">
+                        <p>&#10004; Randomization balance checks pass</p>
+                        <p>&#10004; Overall: +3.3pp, p = 0.003</p>
+                        <p>&#10004; Robust to controls (+3.1pp)</p>
+                        <p>&#9888; Effect concentrated in new users</p>
+                        <p>&#10004; Interaction p = 0.008</p>
+                    </div>
+                </div>
+
+                <div class="quiz-container">
+                    <div class="question">What's the best recommendation for the board?</div>
+                    <div class="options" id="q8-options">
+                        <div class="option" onclick="selectOption(this, 'q8', 0)">Replace all thumbnails immediately for everyone</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 1)">Abandon the new thumbnails entirely</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 2)">Targeted rollout for new users with monitoring dashboards</div>
+                        <div class="option" onclick="selectOption(this, 'q8', 3)">Delay all decisions until at least 10 more tests are completed</div>
+                    </div>
+                    <div class="feedback" id="q8-feedback"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="showScreen('chapter4-q7')">Back</button>
+                    <button class="btn btn-primary" id="q8-next" onclick="completeChapter(4); showResults();" disabled>See Results</button>
+                </div>
+            </div>
+
+            <!-- ==================== RESULTS SCREEN ==================== -->
+            <div class="screen" id="results-screen">
+                <div class="results-container">
+                    <h1 style="font-size: 2em; margin-bottom: 10px;">Experiment Complete!</h1>
+                    <p style="color: #4ecca3; margin-bottom: 10px;">Performance Review</p>
+                    <p style="color: #888; margin-bottom: 30px;">You've completed the A/B testing analytics training</p>
+
+                    <div class="final-score" id="final-score">0</div>
+                    <p style="margin-bottom: 10px;">points earned</p>
+                    <div class="grade" id="grade">-</div>
+
+                    <div style="margin: 30px 0;">
+                        <div class="summary-card">
+                            <div class="stat-value" id="correct-count">0/8</div>
+                            <div class="stat-label">Questions Correct</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="stat-value" id="max-streak">0</div>
+                            <div class="stat-label">Best Streak</div>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned -->
+                    <div style="max-width: 700px; margin: 20px auto;">
+                        <h3 style="margin-bottom: 15px;">Badges Earned</h3>
+                        <div class="badges-container" id="results-badges">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Cheat Sheet -->
+                    <div class="cheat-sheet" style="max-width: 900px; margin: 30px auto; text-align: left;">
+                        <h4>A/B Testing Cheat Sheet &mdash; Save This!</h4>
+                        <div class="cheat-sheet-grid">
+                            <div class="cheat-item">
+                                <div class="term">Randomization</div>
+                                <div class="definition">Random assignment balances all factors across groups</div>
+                                <div class="formula">The foundation of causal inference</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Confounding</div>
+                                <div class="definition">A variable that affects both treatment and outcome</div>
+                                <div class="formula">Randomization eliminates confounding</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Chi-Square Test</div>
+                                <div class="definition">Tests independence of two categorical variables</div>
+                                <div class="formula">&#967;&sup2; = &#8721;(O &minus; E)&sup2; / E</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">P-value</div>
+                                <div class="definition">P(data | null hypothesis) &mdash; not P(hypothesis | data)</div>
+                                <div class="formula">p &lt; 0.05 is the conventional threshold</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Bonferroni Correction</div>
+                                <div class="definition">Adjusts threshold for multiple comparisons</div>
+                                <div class="formula">New threshold = &#945; / number of tests</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Effect Size</div>
+                                <div class="definition">Magnitude of the treatment effect (e.g., +3.3pp)</div>
+                                <div class="formula">Always report alongside p-values</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Practical Significance</div>
+                                <div class="definition">Whether the effect is large enough to matter</div>
+                                <div class="formula">Statistical &#8800; Practical significance</div>
+                            </div>
+                            <div class="cheat-item">
+                                <div class="term">Segmentation</div>
+                                <div class="definition">Checking if the effect varies across groups</div>
+                                <div class="formula">Interaction terms in regression</div>
+                            </div>
+                        </div>
+
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="copyCheatSheet()">Copy to Clipboard</button>
+                            <button class="btn-export" onclick="downloadCheatSheet()">Download as Text</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+                        <button class="btn btn-secondary" onclick="showScreen('leaderboard-screen'); loadLeaderboard('firstRun');">View Leaderboard</button>
+                        <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== LEADERBOARD ==================== -->
+            <div class="screen" id="leaderboard-screen">
+                <div class="leaderboard-container">
+                    <h2>Leaderboard</h2>
+                    <p style="color: #888; margin-bottom: 5px;">Top scores from the StreamVerse Lab</p>
+
+                    <div class="leaderboard-tabs">
+                        <button class="tab-btn active" id="tab-firstrun" onclick="loadLeaderboard('firstRun')">First Run Only</button>
+                        <button class="tab-btn" id="tab-allruns" onclick="loadLeaderboard('allRuns')">All Runs</button>
+                    </div>
+
+                    <div class="leaderboard-list" id="leaderboard-list">
+                        <div class="leaderboard-loading">Loading...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="goToMenu()">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Volume identifier for this game
+        const VOLUME_ID = 'ab-testing';
+
+        // ============== GAME STATE ==============
+        let gameState = null;
+
+        // Question answers (0-indexed correct answer)
+        const correctAnswers = {
+            'q1': 0, // It balances all factors
+            'q2': 1, // Created balanced groups on observed, confidence in unobserved
+            'q3': 2, // If no effect, 0.3% chance of this large a difference
+            'q4': 0, // Randomization successfully balanced confounders
+            'q5': 1, // No — corrected threshold is 0.0125
+            'q6': 1, // Large sample, tiny effect
+            'q7': 2, // Deploy for new users, monitor returning
+            'q8': 2  // Targeted rollout with monitoring
+        };
+
+        const explanations = {
+            'q1': {
+                correct: 'Exactly! Random assignment is the gold standard because it balances ALL factors \u2014 including ones we can\'t even measure. Showing thumbnails only to active users introduces selection bias.',
+                incorrect: 'Think about what makes groups truly comparable. If you only show new thumbnails to active users, any difference in clicks could be because active users simply click more \u2014 not because of the thumbnails.'
+            },
+            'q2': {
+                correct: 'Perfect! Balance on observed characteristics is evidence that randomization created comparable groups. If observed factors are balanced, unobserved factors likely are too \u2014 because all were randomized.',
+                incorrect: 'Balance checks show that randomization created similar groups on measured factors. The key insight: if observed factors are balanced, unobserved factors likely are too.'
+            },
+            'q3': {
+                correct: 'Exactly! The p-value is the probability of seeing a difference this large (or larger) IF the null hypothesis is true (no effect). It\'s NOT the probability that thumbnails work or don\'t work.',
+                incorrect: 'Common misconception! The p-value doesn\'t tell you the probability the thumbnails are better. It says: IF there were no real effect, how likely is a difference this large? Here, only 0.3% likely.'
+            },
+            'q4': {
+                correct: 'Spot on! When randomization works well, treatment is uncorrelated with confounders. Adding controls shouldn\'t change the estimate much \u2014 and this stability confirms our simple comparison was already unbiased.',
+                incorrect: 'When the treatment effect barely changes after adding controls, it\'s good news! It means the simple comparison wasn\'t confounded \u2014 exactly what we expect from proper randomization.'
+            },
+            'q5': {
+                correct: 'Correct! With 4 tests, the Bonferroni threshold becomes 0.05/4 = 0.0125. Since p = 0.04 > 0.0125, Variant C is NOT significant after correction. Without adjustment, the false positive rate is inflated.',
+                incorrect: 'With multiple tests, the Bonferroni correction divides the threshold by the number of tests: 0.05/4 = 0.0125. Variant C\'s p = 0.04 exceeds this, so it\'s no longer significant.'
+            },
+            'q6': {
+                correct: 'Exactly! With a huge sample (2M users), even tiny effects become statistically significant. The p-value confirms the effect is real, but says nothing about whether it\'s large enough to matter. Always consider effect size!',
+                incorrect: 'Statistical and practical significance are different. With very large samples, even tiny effects become detectable (small p). But +0.12pp might not justify the engineering cost to deploy.'
+            },
+            'q7': {
+                correct: 'Smart! Since the effect is concentrated in new users, a targeted rollout maximizes impact while being honest about the evidence. Monitoring returning users keeps the door open for future learning.',
+                incorrect: 'The data tells us the effect differs by segment. The strongest approach: deploy where evidence is strongest (new users), continue learning where it\'s weaker (returning users).'
+            },
+            'q8': {
+                correct: 'Outstanding! This recommendation is nuanced, data-driven, and actionable. It leverages the segment analysis, acknowledges limitations, and builds in monitoring. A/B testing mastery!',
+                incorrect: 'The best recommendation uses ALL the evidence: significant overall effect, segment differences, and robustness checks. A targeted deployment with monitoring captures the most value.'
+            }
+        };
+
+        // Screen management hook
+        function onScreenShow(screenId) {
+            switch (screenId) {
+                case 'ch1-randomizer':
+                    setTimeout(function() { drawRandomizerCanvas(); }, 50);
+                    break;
+                case 'ch2-chi-square':
+                    setTimeout(function() { updateChiSquare(); }, 50);
+                    break;
+                case 'ch3-false-positive':
+                    setTimeout(function() { updateFalsePositive(); }, 50);
+                    break;
+                case 'ch4-segments':
+                    setTimeout(function() { drawSegmentCanvas(); }, 50);
+                    break;
+            }
+        }
+
+        // ============== INIT ==============
+        async function loadGameConfig() {
+            try {
+                const response = await fetch('config.json');
+                gameConfig = await response.json();
+            } catch (e) { console.error('Config load failed:', e); }
+        }
+
+        async function init() {
+            await loadGameConfig();
+            await initAuth();
+            if (gameConfig) gameState = createGameState(gameConfig);
+            Analytics.init({ volumeId: VOLUME_ID, userId: currentUser?.id });
+        }
+
+        async function startGame() {
+            if (!currentUser) {
+                window.location.href = '../../index.html';
+                return;
+            }
+            gameState = createGameState(gameConfig);
+            await Analytics.trackVolumeStart();
+
+            // Reset UI
+            document.querySelectorAll('.badge').forEach(b => b.classList.remove('unlocked'));
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+            document.querySelectorAll('.feedback').forEach(fb => {
+                fb.className = 'feedback';
+                fb.innerHTML = '';
+            });
+            for (let i = 1; i <= 8; i++) {
+                const btn = document.getElementById('q' + i + '-next');
+                if (btn) btn.disabled = true;
+            }
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById('ch' + i + '-dot');
+                if (dot) {
+                    dot.classList.remove('active', 'completed');
+                    if (i === 1) dot.classList.add('active');
+                }
+            }
+
+            // Reset randomizer state
+            randState = { treat: [], control: [] };
+
+            updateStats();
+            updateProgress();
+            showScreen('chapter1-intro');
+        }
+
+        function restartGame() { startGame(); }
+
+        // ============== QUESTION HANDLING ==============
+        function selectOption(element, questionId, optionIndex) {
+            const result = processAnswer(gameState, questionId, optionIndex, correctAnswers[questionId], gameConfig);
+            if (result.alreadyAnswered) return;
+
+            Analytics.trackAnswer(questionId, optionIndex, correctAnswers[questionId], result.isCorrect, result.points, result.streak);
+
+            const options = document.querySelectorAll('#' + questionId + '-options .option');
+            options.forEach(opt => opt.classList.remove('selected', 'correct', 'incorrect'));
+            element.classList.add('selected');
+
+            updateAnswerUI(questionId, optionIndex, correctAnswers[questionId], result.isCorrect);
+
+            const feedback = document.getElementById(questionId + '-feedback');
+            if (result.isCorrect) {
+                feedback.className = 'feedback success show';
+                feedback.innerHTML = '<strong>&#10004; Correct!</strong> +' + Number(result.points) + ' points<br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].correct));
+            } else {
+                feedback.className = 'feedback error show';
+                feedback.innerHTML = '<strong>&#10008; Not quite.</strong><br><br>';
+                feedback.appendChild(document.createTextNode(explanations[questionId].incorrect));
+            }
+
+            updateStatsDisplay(gameState);
+            checkBadges(questionId, result.isCorrect);
+            document.getElementById(questionId + '-next').disabled = false;
+        }
+
+        function updateStats() { updateStatsDisplay(gameState); }
+
+        function updateProgress() {
+            const chapters = gameConfig.chapters;
+            const progress = ((gameState.currentChapter - 1) / chapters) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = 'Chapter ' + gameState.currentChapter + ' of ' + chapters;
+            document.getElementById('progress-percent').textContent = Math.round(progress) + '%';
+            for (let i = 1; i <= chapters; i++) {
+                const dot = document.getElementById('ch' + i + '-dot');
+                if (!dot) continue;
+                dot.classList.remove('active', 'completed');
+                if (i < gameState.currentChapter) dot.classList.add('completed');
+                else if (i === gameState.currentChapter) dot.classList.add('active');
+            }
+        }
+
+        function completeChapter(chapter) {
+            Analytics.trackChapterTransition(chapter, chapter + 1);
+            checkPerfectChapter(chapter);
+
+            document.getElementById('ch' + chapter + '-dot').classList.remove('active');
+            document.getElementById('ch' + chapter + '-dot').classList.add('completed');
+
+            if (chapter < 4) {
+                gameState.currentChapter = chapter + 1;
+                document.getElementById('ch' + (chapter + 1) + '-dot').classList.add('active');
+                showScreen('chapter' + (chapter + 1) + '-intro');
+            }
+            updateProgress();
+        }
+
+        // ============== BADGES ==============
+        function checkBadges(questionId, isCorrect) {
+            checkStandardBadges(gameState, gameConfig, { streakThreshold: 5 });
+
+            if (questionId === 'q1' && isCorrect && !gameState.badges.randomizer) {
+                gameState.badges.randomizer = true;
+                const badge = gameConfig.badges.randomizer;
+                unlockBadge('randomizer', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('randomizer', badge.name, questionId);
+            }
+            if (questionId === 'q3' && isCorrect && !gameState.badges.significant) {
+                gameState.badges.significant = true;
+                const badge = gameConfig.badges.significant;
+                unlockBadge('significant', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('significant', badge.name, questionId);
+            }
+        }
+
+        function checkPerfectChapter(chapter) {
+            if (isChapterPerfect(gameState, chapter) && !gameState.badges.perfect) {
+                gameState.badges.perfect = true;
+                const badge = gameConfig.badges.perfect;
+                unlockBadge('perfect', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('perfect', badge.name);
+            }
+        }
+
+        // ============== RESULTS ==============
+        function populateResultsBadges() {
+            const container = document.getElementById('results-badges');
+            const badges = [
+                { id: 'first', icon: '\u{1F3AF}', name: 'First Correct' },
+                { id: 'streak', icon: '\u{1F525}', name: '5+ Streak' },
+                { id: 'perfect', icon: '\u2B50', name: 'Perfect Chapter' },
+                { id: 'randomizer', icon: '\u{1F3B2}', name: 'Experiment Design Expert' },
+                { id: 'significant', icon: '\u{1F4CA}', name: 'Statistical Testing Pro' },
+                { id: 'master', icon: '\u{1F3C6}', name: 'All Correct' }
+            ];
+            container.innerHTML = badges.map(badge =>
+                '<div class="badge ' + (gameState.badges[badge.id] ? 'unlocked' : '') + '" title="' + badge.name + '">' +
+                '<span>' + badge.icon + '</span>' +
+                '<div class="badge-tooltip">' + badge.name + '</div></div>'
+            ).join('');
+        }
+
+        async function showResults() {
+            // Check master badge
+            if (gameState.correctAnswers === gameConfig.totalQuestions && !gameState.badges.master) {
+                gameState.badges.master = true;
+                const badge = gameConfig.badges.master;
+                unlockBadge('master', badge.icon, badge.name);
+                Analytics.trackBadgeUnlock('master', badge.name);
+            }
+
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('correct-count').textContent = gameState.correctAnswers + '/' + gameConfig.totalQuestions;
+            document.getElementById('max-streak').textContent = gameState.maxStreak;
+
+            const grade = gameConfig.grades.find(g => gameState.correctAnswers >= g.minCorrect);
+            if (grade) document.getElementById('grade').textContent = grade.title;
+
+            populateResultsBadges();
+
+            Analytics.trackVolumeComplete(gameState, grade ? grade.title : 'Unknown');
+
+            let result = null;
+            if (currentUser) {
+                result = await saveGameScore(gameState);
+                if (result && result.runNumber) Analytics.setRunNumber(result.runNumber);
+                else alert('Score could not be saved.');
+            }
+            showScreen('results-screen');
+            if (currentUser && result && result.runNumber) {
+                setTimeout(function() { showFeedbackModal(result.runNumber); }, 500);
+            }
+        }
+
+        // ============== CHEAT SHEET ==============
+        function copyCheatSheet() {
+            const text = generateCheatSheetText();
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Cheat sheet copied to clipboard!');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                alert('Cheat sheet copied to clipboard!');
+            });
+        }
+
+        function downloadCheatSheet() {
+            const text = generateCheatSheetText();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ab_testing_cheat_sheet.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateCheatSheetText() {
+            return '========================================\n' +
+                'A/B TESTING CHEAT SHEET\n' +
+                'StreamVerse Analytics Training\n' +
+                '========================================\n\n' +
+                'RANDOMIZATION\n--------------\n' +
+                'Random assignment ensures treatment and\ncontrol groups are comparable on ALL factors.\n\n' +
+                'CONFOUNDING\n-----------\n' +
+                'A variable that affects both treatment and\noutcome. Randomization eliminates this.\n\n' +
+                'CHI-SQUARE TEST\n---------------\n' +
+                'Tests independence of two categorical variables.\nchi2 = sum((O - E)^2 / E)\n\n' +
+                'P-VALUE\n-------\n' +
+                'P(data | null hypothesis). NOT P(hypothesis | data).\np < 0.05 is conventional threshold.\n\n' +
+                'BONFERRONI CORRECTION\n---------------------\n' +
+                'New threshold = alpha / number of tests\nPrevents inflated false positive rates.\n\n' +
+                'EFFECT SIZE\n-----------\n' +
+                'The magnitude of the treatment effect.\nAlways report alongside p-values.\n\n' +
+                'PRACTICAL SIGNIFICANCE\n---------------------\n' +
+                'Is the effect large enough to matter?\nStatistical != Practical significance.\n\n' +
+                'SEGMENTATION\n------------\n' +
+                'Check if effects vary across groups.\nUse interaction terms in regression.\n';
+        }
+
+        // ===========================================================
+        // VISUALIZATIONS
+        // ===========================================================
+
+        // ---- Ch1: Randomization Simulator ----
+        var randState = { treat: [], control: [] };
+
+        function seededRandom(seed) {
+            var s = seed;
+            return function() {
+                s = (s * 16807) % 2147483647;
+                return (s - 1) / 2147483646;
+            };
+        }
+
+        function runRandomizer() {
+            var rng = seededRandom(Date.now() % 100000);
+            var treat = [];
+            var control = [];
+
+            for (var i = 0; i < 200; i++) {
+                var age = 20 + rng() * 30;           // 20-50
+                var mobile = rng() < 0.63 ? 1 : 0;   // ~63% mobile
+                if (rng() < 0.5) {
+                    treat.push({ age: age, mobile: mobile });
+                } else {
+                    control.push({ age: age, mobile: mobile });
+                }
+            }
+
+            randState = { treat: treat, control: control };
+            animateRandomizer(0);
+        }
+
+        function animateRandomizer(step) {
+            var total = randState.treat.length + randState.control.length;
+            var show = Math.min(step, total);
+            drawRandomizerCanvas(show);
+
+            // Update counts and balance metrics
+            var tShow = 0, cShow = 0;
+            var tAgeSum = 0, cAgeSum = 0, tMobSum = 0, cMobSum = 0;
+            var idx = 0;
+            // Interleave treat/control assignment by order
+            var allUsers = [];
+            var ti = 0, ci = 0;
+            for (var i = 0; i < total; i++) {
+                if (ti < randState.treat.length && (ci >= randState.control.length || (ti + ci) % 2 === 0)) {
+                    allUsers.push({ group: 't', data: randState.treat[ti++] });
+                } else {
+                    allUsers.push({ group: 'c', data: randState.control[ci++] });
+                }
+            }
+            for (var i = 0; i < show; i++) {
+                var u = allUsers[i];
+                if (u.group === 't') {
+                    tShow++;
+                    tAgeSum += u.data.age;
+                    tMobSum += u.data.mobile;
+                } else {
+                    cShow++;
+                    cAgeSum += u.data.age;
+                    cMobSum += u.data.mobile;
+                }
+            }
+
+            document.getElementById('rand-treat').textContent = tShow;
+            document.getElementById('rand-control').textContent = cShow;
+            document.getElementById('rand-age-t').textContent = tShow > 0 ? (tAgeSum / tShow).toFixed(1) : '--';
+            document.getElementById('rand-age-c').textContent = cShow > 0 ? (cAgeSum / cShow).toFixed(1) : '--';
+            document.getElementById('rand-mob-t').textContent = tShow > 0 ? Math.round(tMobSum / tShow * 100) + '%' : '--';
+            document.getElementById('rand-mob-c').textContent = cShow > 0 ? Math.round(cMobSum / cShow * 100) + '%' : '--';
+
+            if (step < total) {
+                var speed = step < 20 ? 40 : step < 80 ? 15 : 5;
+                setTimeout(function() { animateRandomizer(step + 1); }, speed);
+            }
+        }
+
+        function drawRandomizerCanvas(showCount) {
+            var canvas = document.getElementById('randomizer-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw two group areas
+            var midX = w / 2;
+            // Treatment (left)
+            ctx.fillStyle = 'rgba(78, 204, 163, 0.08)';
+            ctx.fillRect(10, 50, midX - 20, h - 60);
+            ctx.strokeStyle = 'rgba(78, 204, 163, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(10, 50, midX - 20, h - 60);
+
+            // Control (right)
+            ctx.fillStyle = 'rgba(233, 69, 96, 0.08)';
+            ctx.fillRect(midX + 10, 50, midX - 20, h - 60);
+            ctx.strokeStyle = 'rgba(233, 69, 96, 0.3)';
+            ctx.strokeRect(midX + 10, 50, midX - 20, h - 60);
+
+            // Labels
+            ctx.fillStyle = '#4ecca3';
+            ctx.font = 'bold 13px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('Treatment (New)', midX / 2, 40);
+            ctx.fillStyle = '#e94560';
+            ctx.fillText('Control (Old)', midX + midX / 2, 40);
+
+            if (!showCount && showCount !== 0) showCount = randState.treat.length + randState.control.length;
+
+            // Draw dots for users
+            var total = randState.treat.length + randState.control.length;
+            if (total === 0) {
+                ctx.fillStyle = '#555';
+                ctx.font = '14px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click "Randomize" to assign users', w / 2, h / 2);
+                return;
+            }
+
+            // Interleave
+            var allUsers = [];
+            var ti = 0, ci = 0;
+            for (var i = 0; i < total; i++) {
+                if (ti < randState.treat.length && (ci >= randState.control.length || (ti + ci) % 2 === 0)) {
+                    allUsers.push({ group: 't', data: randState.treat[ti++] });
+                } else {
+                    allUsers.push({ group: 'c', data: randState.control[ci++] });
+                }
+            }
+
+            var tCount = 0, cCount = 0;
+            for (var i = 0; i < Math.min(showCount, total); i++) {
+                var u = allUsers[i];
+                var col, baseX, idx;
+                if (u.group === 't') {
+                    col = '#4ecca3';
+                    baseX = 15;
+                    idx = tCount++;
+                } else {
+                    col = '#e94560';
+                    baseX = midX + 15;
+                    idx = cCount++;
+                }
+                var cols = 10;
+                var dotX = baseX + (idx % cols) * ((midX - 30) / cols) + ((midX - 30) / cols) / 2;
+                var dotY = 60 + Math.floor(idx / cols) * 22 + 10;
+                if (dotY < h - 15) {
+                    ctx.beginPath();
+                    ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = u.data.mobile ? col : shadeColor(col, -30);
+                    ctx.globalAlpha = 0.8;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+
+        function shadeColor(hex, percent) {
+            var num = parseInt(hex.slice(1), 16);
+            var r = Math.min(255, Math.max(0, (num >> 16) + percent));
+            var g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+            var b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+            return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+        }
+
+        // ---- Ch2: Chi-Square Visualizer ----
+        function updateChiSquare() {
+            var slider = document.getElementById('chi-slider');
+            var treatRate = parseFloat(slider.value);
+            var controlRate = 24.5;
+            var n = 2500; // per group
+
+            // Observed counts
+            var tClick = Math.round(n * treatRate / 100);
+            var tNoClick = n - tClick;
+            var cClick = Math.round(n * controlRate / 100);
+            var cNoClick = n - cClick;
+
+            // Expected under null (pooled rate)
+            var totalClick = tClick + cClick;
+            var totalNoClick = tNoClick + cNoClick;
+            var total = 2 * n;
+            var eTC = n * totalClick / total;
+            var eTN = n * totalNoClick / total;
+            var eCC = eTC;
+            var eCN = eTN;
+
+            // Chi-square statistic
+            var chi2 = Math.pow(tClick - eTC, 2) / eTC +
+                       Math.pow(tNoClick - eTN, 2) / eTN +
+                       Math.pow(cClick - eCC, 2) / eCC +
+                       Math.pow(cNoClick - eCN, 2) / eCN;
+
+            // Approximate p-value for 1 dof chi-square
+            var pval = chiSquarePValue(chi2, 1);
+
+            document.getElementById('chi-treat-rate').textContent = treatRate.toFixed(1) + '%';
+            document.getElementById('chi-stat').textContent = chi2.toFixed(2);
+            document.getElementById('chi-stat').style.color = pval < 0.05 ? '#4ecca3' : '#888';
+            document.getElementById('chi-pval').textContent = pval < 0.001 ? '< 0.001' : pval.toFixed(3);
+            document.getElementById('chi-pval').style.color = pval < 0.05 ? '#4ecca3' : '#e94560';
+
+            drawChiSquareCanvas(tClick, tNoClick, cClick, cNoClick, eTC, eTN, eCC, eCN);
+        }
+
+        function chiSquarePValue(x, dof) {
+            // Approximation for dof=1 using normal distribution
+            if (x <= 0) return 1;
+            var z = Math.sqrt(x);
+            // Standard normal CDF approximation (Abramowitz & Stegun)
+            var t = 1 / (1 + 0.2316419 * z);
+            var d = 0.3989422804 * Math.exp(-z * z / 2);
+            var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+            return 2 * p; // two-tailed
+        }
+
+        function drawChiSquareCanvas(tC, tN, cC, cN, eTC, eTN, eCC, eCN) {
+            var canvas = document.getElementById('chi-square-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+            var m = { top: 35, right: 20, bottom: 50, left: 60 };
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            // We'll draw 4 bar pairs: Treatment Click, Treatment No-Click, Control Click, Control No-Click
+            var categories = [
+                { label: 'Treat\nClicked', obs: tC, exp: eTC },
+                { label: 'Treat\nNot Clicked', obs: tN, exp: eTN },
+                { label: 'Control\nClicked', obs: cC, exp: eCC },
+                { label: 'Control\nNot Clicked', obs: cN, exp: eCN }
+            ];
+
+            var maxVal = 0;
+            categories.forEach(function(c) { maxVal = Math.max(maxVal, c.obs, c.exp); });
+            maxVal = Math.ceil(maxVal / 100) * 100;
+
+            var plotW = w - m.left - m.right;
+            var plotH = h - m.top - m.bottom;
+            var groupW = plotW / 4;
+            var barW = groupW * 0.3;
+
+            function sy(v) { return m.top + plotH - (v / maxVal) * plotH; }
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(m.left, m.top);
+            ctx.lineTo(m.left, h - m.bottom);
+            ctx.lineTo(w - m.right, h - m.bottom);
+            ctx.stroke();
+
+            // Y-axis labels
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'right';
+            for (var i = 0; i <= 4; i++) {
+                var v = (maxVal / 4) * i;
+                ctx.fillText(Math.round(v), m.left - 8, sy(v) + 3);
+                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(m.left, sy(v));
+                ctx.lineTo(w - m.right, sy(v));
+                ctx.stroke();
+            }
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#888';
+            ctx.fillText('Count', m.left - 25, m.top - 10);
+
+            // Draw bars
+            categories.forEach(function(cat, i) {
+                var cx = m.left + groupW * i + groupW / 2;
+
+                // Expected bar (yellow, behind)
+                ctx.fillStyle = 'rgba(255, 193, 7, 0.4)';
+                var expH = (cat.exp / maxVal) * plotH;
+                ctx.fillRect(cx - barW - 2, sy(cat.exp), barW, expH);
+                ctx.strokeStyle = '#ffc107';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cx - barW - 2, sy(cat.exp), barW, expH);
+
+                // Observed bar (green)
+                ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+                var obsH = (cat.obs / maxVal) * plotH;
+                ctx.fillRect(cx + 2, sy(cat.obs), barW, obsH);
+                ctx.strokeStyle = '#4ecca3';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cx + 2, sy(cat.obs), barW, obsH);
+
+                // Labels
+                ctx.fillStyle = '#888';
+                ctx.font = '10px Segoe UI';
+                var lines = cat.label.split('\n');
+                lines.forEach(function(line, li) {
+                    ctx.fillText(line, cx, h - m.bottom + 14 + li * 13);
+                });
+            });
+
+            // Legend
+            ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+            ctx.fillRect(w - 150, 10, 12, 12);
+            ctx.fillStyle = '#ccc';
+            ctx.font = '11px Segoe UI';
+            ctx.textAlign = 'left';
+            ctx.fillText('Observed', w - 134, 20);
+
+            ctx.fillStyle = 'rgba(255, 193, 7, 0.4)';
+            ctx.fillRect(w - 150, 28, 12, 12);
+            ctx.fillStyle = '#ccc';
+            ctx.fillText('Expected (null)', w - 134, 38);
+        }
+
+        // ---- Ch3: False Positive Explorer ----
+        function updateFalsePositive() {
+            var slider = document.getElementById('fp-slider');
+            var k = parseInt(slider.value);
+            var alpha = 0.05;
+            var fpRate = 1 - Math.pow(1 - alpha, k);
+            var bonf = alpha / k;
+
+            document.getElementById('fp-tests').textContent = k;
+            document.getElementById('fp-rate').textContent = (fpRate * 100).toFixed(1) + '%';
+            document.getElementById('fp-rate').style.color = fpRate > 0.1 ? '#e94560' : '#ffc107';
+            document.getElementById('fp-bonf').textContent = bonf.toFixed(4);
+
+            drawFalsePositiveCanvas(k, fpRate);
+        }
+
+        function drawFalsePositiveCanvas(kHighlight, fpHighlight) {
+            var canvas = document.getElementById('fp-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+            var m = { top: 25, right: 20, bottom: 45, left: 55 };
+            var pw = w - m.left - m.right;
+            var ph = h - m.top - m.bottom;
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            var alpha = 0.05;
+            var maxK = 20;
+
+            function sx(v) { return m.left + (v / maxK) * pw; }
+            function sy(v) { return m.top + ph - v * ph; }
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            [0.05, 0.25, 0.50, 0.75, 1.0].forEach(function(v) {
+                ctx.beginPath(); ctx.moveTo(m.left, sy(v)); ctx.lineTo(w - m.right, sy(v)); ctx.stroke();
+            });
+
+            // 5% threshold line
+            ctx.strokeStyle = 'rgba(78, 204, 163, 0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(m.left, sy(0.05));
+            ctx.lineTo(w - m.right, sy(0.05));
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#4ecca3';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'left';
+            ctx.fillText('5% target', w - m.right - 55, sy(0.05) - 5);
+
+            // Axes
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(m.left, m.top);
+            ctx.lineTo(m.left, h - m.bottom);
+            ctx.lineTo(w - m.right, h - m.bottom);
+            ctx.stroke();
+
+            // Y labels
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'right';
+            [0, 0.25, 0.50, 0.75, 1.0].forEach(function(v) {
+                ctx.fillText(Math.round(v * 100) + '%', m.left - 8, sy(v) + 3);
+            });
+
+            // X labels
+            ctx.textAlign = 'center';
+            [1, 5, 10, 15, 20].forEach(function(v) {
+                ctx.fillText(v, sx(v), h - m.bottom + 14);
+            });
+            ctx.fillText('Number of Tests', w / 2, h - 5);
+            ctx.save();
+            ctx.translate(14, h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('P(at least 1 false positive)', 0, 0);
+            ctx.restore();
+
+            // Curve
+            ctx.strokeStyle = '#e94560';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (var k = 1; k <= maxK; k++) {
+                var fp = 1 - Math.pow(1 - alpha, k);
+                if (k === 1) ctx.moveTo(sx(k), sy(fp));
+                else ctx.lineTo(sx(k), sy(fp));
+            }
+            ctx.stroke();
+
+            // Data points
+            for (var k = 1; k <= maxK; k++) {
+                var fp = 1 - Math.pow(1 - alpha, k);
+                ctx.beginPath();
+                ctx.arc(sx(k), sy(fp), k === kHighlight ? 7 : 3, 0, Math.PI * 2);
+                ctx.fillStyle = k === kHighlight ? '#ffc107' : '#e94560';
+                ctx.fill();
+                if (k === kHighlight) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            // Highlight label
+            if (kHighlight) {
+                var fpH = 1 - Math.pow(1 - alpha, kHighlight);
+                ctx.fillStyle = '#ffc107';
+                ctx.font = 'bold 12px Segoe UI';
+                ctx.textAlign = 'center';
+                var labelY = sy(fpH) - 14;
+                if (labelY < m.top + 10) labelY = sy(fpH) + 20;
+                ctx.fillText((fpH * 100).toFixed(1) + '%', sx(kHighlight), labelY);
+            }
+
+            // Danger zone shading
+            ctx.fillStyle = 'rgba(233, 69, 96, 0.08)';
+            ctx.beginPath();
+            ctx.moveTo(m.left, sy(0.05));
+            ctx.lineTo(w - m.right, sy(0.05));
+            ctx.lineTo(w - m.right, m.top);
+            ctx.lineTo(m.left, m.top);
+            ctx.fill();
+        }
+
+        // ---- Ch4: Segment Effect Comparison ----
+        function drawSegmentCanvas() {
+            var canvas = document.getElementById('segment-canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width, h = canvas.height;
+            var m = { top: 35, right: 30, bottom: 55, left: 60 };
+
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            var showCI = document.getElementById('ci-check') && document.getElementById('ci-check').checked;
+
+            // Data: segments with treatment effects and CIs
+            var segments = [
+                { label: 'Overall', effect: 3.3, ci: [1.2, 5.4], color: '#ffc107', sig: true },
+                { label: 'New Users', effect: 5.2, ci: [2.8, 7.6], color: '#4ecca3', sig: true },
+                { label: 'Returning', effect: 0.8, ci: [-1.5, 3.1], color: '#e94560', sig: false }
+            ];
+
+            var plotW = w - m.left - m.right;
+            var plotH = h - m.top - m.bottom;
+            var xMin = -3, xMax = 9;
+
+            function sx(v) { return m.left + ((v - xMin) / (xMax - xMin)) * plotW; }
+
+            var barH = 40;
+            var gap = 25;
+            var startY = m.top + 20;
+
+            // Zero line
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(sx(0), m.top);
+            ctx.lineTo(sx(0), h - m.bottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#888';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('No Effect', sx(0), h - m.bottom + 14);
+
+            // X-axis labels
+            for (var v = -2; v <= 8; v += 2) {
+                ctx.fillText((v > 0 ? '+' : '') + v + 'pp', sx(v), h - m.bottom + 30);
+                if (v !== 0) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(sx(v), m.top);
+                    ctx.lineTo(sx(v), h - m.bottom);
+                    ctx.stroke();
+                }
+            }
+            ctx.fillText('Treatment Effect (pp)', w / 2, h - 5);
+
+            // Draw bars
+            segments.forEach(function(seg, i) {
+                var y = startY + i * (barH + gap);
+
+                // Bar
+                var barStart = sx(0);
+                var barEnd = sx(seg.effect);
+                var bx = Math.min(barStart, barEnd);
+                var bw = Math.abs(barEnd - barStart);
+
+                ctx.fillStyle = seg.sig ? seg.color : 'rgba(136,136,136,0.4)';
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(bx, y, bw, barH);
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = seg.color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bx, y, bw, barH);
+
+                // Effect label inside bar
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Segoe UI';
+                ctx.textAlign = seg.effect >= 0 ? 'left' : 'right';
+                var textX = barEnd + (seg.effect >= 0 ? 8 : -8);
+                ctx.fillText((seg.effect > 0 ? '+' : '') + seg.effect.toFixed(1) + 'pp', textX, y + barH / 2 + 5);
+
+                // Segment label
+                ctx.fillStyle = '#ccc';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'right';
+                ctx.fillText(seg.label, m.left - 8, y + barH / 2 + 4);
+
+                // Significance indicator
+                if (seg.sig) {
+                    ctx.fillStyle = '#4ecca3';
+                    ctx.font = '10px Segoe UI';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('sig.', sx(seg.effect) + (seg.effect >= 0 ? 50 : -50), y + barH / 2 + 5);
+                } else {
+                    ctx.fillStyle = '#e94560';
+                    ctx.font = '10px Segoe UI';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('n.s.', sx(seg.effect) + 50, y + barH / 2 + 5);
+                }
+
+                // Confidence interval
+                if (showCI) {
+                    var ciY = y + barH / 2;
+                    ctx.strokeStyle = seg.color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(sx(seg.ci[0]), ciY);
+                    ctx.lineTo(sx(seg.ci[1]), ciY);
+                    ctx.stroke();
+
+                    // CI caps
+                    ctx.beginPath();
+                    ctx.moveTo(sx(seg.ci[0]), ciY - 8);
+                    ctx.lineTo(sx(seg.ci[0]), ciY + 8);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(sx(seg.ci[1]), ciY - 8);
+                    ctx.lineTo(sx(seg.ci[1]), ciY + 8);
+                    ctx.stroke();
+
+                    // CI point estimate
+                    ctx.beginPath();
+                    ctx.arc(sx(seg.effect), ciY, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = seg.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // ============== NAVIGATION ==============
+        function goToMenu() {
+            window.location.href = '../../index.html';
+        }
+
+        // ============== STARTUP ==============
+        init();
+    </script>
+</body>
+</html>
