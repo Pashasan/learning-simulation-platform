@@ -33,7 +33,7 @@ Scroll to the bottom. Write a short commit message like `Fix typo in CONTRIBUTIN
 
 GitHub will walk you through opening a PR. Fill in the PR template:
 
-- **Summary**: "Fix typo in CONTRIBUTING.md: `recieve` -> `receive`"
+- **Summary**: "Fix typo in CONTRIBUTING.md: correct misspelled `receive`"
 - **Type of change**: Bug fix
 - **Area**: Docs
 - **Checklist**: tick off the boxes that apply
